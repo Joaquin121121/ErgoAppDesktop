@@ -12,7 +12,7 @@ function StudyCard({ study, height, width }: StudyCardProps) {
 
   return (
     <div
-      className="bg-white rounded-2xl shadow-sm flex flex-col items-center hover:bg-lightRed hover:cursor-pointer transition-all duration-300 ease-in-out  p-4"
+      className="bg-white rounded-2xl shadow-sm hover:shadow-xl flex flex-col items-center hover:scale-105 hover:cursor-pointer transition-all duration-300 ease-in-out px-4 pt-4"
       style={{ width: width || "auto", height: height || "auto" }}
     >
       <h6 className="text-secondary mb-2 text-2xl">{study.name}</h6>

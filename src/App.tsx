@@ -7,7 +7,13 @@ import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import { useNavigate } from "react-router-dom";
 
-const Layout = ({ children }: { children: React.ReactNode }) => {
+const Layout = ({
+  children,
+  isBlured = false,
+}: {
+  children: React.ReactNode;
+  isBlured?: boolean;
+}) => {
   const options = ["studies", "athletes", "about"];
   const navigate = useNavigate();
 
@@ -20,6 +26,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         <nav
           className={`h-full relative pt-12 px-8 bg-white ${
             isExpanded ? "w-56" : "w-32"
+          } ${
+            isBlured ? "blur-md pointer-events-none" : ""
           } flex flex-col shadow-sm transition-all duration-300 ease-in-out`}
           onMouseEnter={() => setIsExpanded(true)}
           onMouseLeave={() => setIsExpanded(false)}
@@ -65,12 +73,16 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
+  const [isBlured, setIsBlured] = useState(false);
   return (
     <BrowserRouter>
-      <Layout>
+      <Layout isBlured={isBlured}>
         <Routes>
-          <Route path="/" element={<Studies />} />
-          <Route path="/studies" element={<Studies />} />
+          <Route path="/" element={<Studies onBlurChange={setIsBlured} />} />
+          <Route
+            path="/studies"
+            element={<Studies onBlurChange={setIsBlured} />}
+          />
           <Route path="/athletes" element={<Athletes />} />
           <Route path="/about" element={<About />} />
           <Route path="*" element={<NotFound />} />
