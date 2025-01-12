@@ -1,6 +1,6 @@
 import React from "react";
 
-function Athletes() {
+function Athletes({ isExpanded }: { isExpanded: boolean }) {
   return <div></div>;
 }
 

@@ -9,25 +9,28 @@ import { useNavigate } from "react-router-dom";
 
 const Layout = ({
   children,
-  isBlured = false,
+  isBlurred = false,
+  isExpanded,
+  setIsExpanded,
 }: {
   children: React.ReactNode;
-  isBlured?: boolean;
+  isBlurred?: boolean;
+  isExpanded: boolean;
+  setIsExpanded: (isExpanded: boolean) => void;
 }) => {
   const options = ["studies", "athletes", "about"];
   const navigate = useNavigate();
 
   const [selectedOption, setSelectedOption] = useState("studies");
-  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <>
       <div className="flex w-screen h-screen bg-offWhite">
         <nav
-          className={`h-full relative pt-12 px-8 bg-white ${
+          className={`h-full fixed z-10 pt-12 px-8 bg-white ${
             isExpanded ? "w-56" : "w-32"
           } ${
-            isBlured ? "blur-md pointer-events-none" : ""
+            isBlurred ? "blur-md pointer-events-none" : ""
           } flex flex-col shadow-sm transition-all duration-300 ease-in-out`}
           onMouseEnter={() => setIsExpanded(true)}
           onMouseLeave={() => setIsExpanded(false)}
@@ -61,7 +64,7 @@ const Layout = ({
             </div>
           ))}
           <img
-            className="absolute h-36 w-18 left-4 bottom-16"
+            className="absolute h-36 w-18 left-4 bottom-8"
             src="/lucy.png"
             alt="test"
           />
@@ -73,19 +76,35 @@ const Layout = ({
 };
 
 function App() {
-  const [isBlured, setIsBlured] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const [isBlurred, setIsBlurred] = useState(false);
   return (
     <BrowserRouter>
-      <Layout isBlured={isBlured}>
+      <Layout
+        isBlurred={isBlurred}
+        isExpanded={isExpanded}
+        setIsExpanded={setIsExpanded}
+      >
         <Routes>
-          <Route path="/" element={<Studies onBlurChange={setIsBlured} />} />
+          <Route
+            path="/"
+            element={
+              <Studies onBlurChange={setIsBlurred} isExpanded={isExpanded} />
+            }
+          />
           <Route
             path="/studies"
-            element={<Studies onBlurChange={setIsBlured} />}
+            element={
+              <Studies onBlurChange={setIsBlurred} isExpanded={isExpanded} />
+            }
           />
-          <Route path="/athletes" element={<Athletes />} />
-          <Route path="/about" element={<About />} />
-          <Route path="*" element={<NotFound />} />
+          <Route
+            path="/athletes"
+            element={<Athletes isExpanded={isExpanded} />}
+          />
+          <Route path="/about" element={<About isExpanded={isExpanded} />} />
+          <Route path="*" element={<NotFound isExpanded={isExpanded} />} />
         </Routes>
       </Layout>
     </BrowserRouter>

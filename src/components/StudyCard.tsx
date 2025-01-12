@@ -16,7 +16,7 @@ function StudyCard({ study, height, width }: StudyCardProps) {
       style={{ width: width || "auto", height: height || "auto" }}
     >
       <h6 className="text-secondary mb-2 text-2xl">{study.name}</h6>
-      <p className="text-xl mb-8">{study.description}</p>
+      <p className="text-xl mb-8 text-black">{study.description}</p>
       {elements.map((element) => (
         <div className="flex mb-8 w-3/4 items-center" key={element}>
           <img src={`/${element}.png`} alt={element} className="h-8 w-8" />

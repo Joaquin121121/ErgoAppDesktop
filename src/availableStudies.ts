@@ -71,4 +71,17 @@ const availableStudies: Studies = {
   },
 };
 
+export const availableEquipment = [
+  "Alfombra de Contacto",
+  "Encoder Lineal",
+  "Plataforma de Fuerza",
+];
+
+export const statsToMeasure = [
+  "Potencia",
+  "Explosividad",
+  "Tren Inferior",
+  "Tren Superior",
+];
+
 export default availableStudies;

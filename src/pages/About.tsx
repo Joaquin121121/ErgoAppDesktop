@@ -1,6 +1,6 @@
 import React from "react";
 
-function About() {
+function About({ isExpanded }: { isExpanded: boolean }) {
   return <div></div>;
 }
 
