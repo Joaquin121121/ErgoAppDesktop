@@ -1,22 +1,33 @@
 import React, { useState } from "react";
 import type { Study } from "../availableStudies";
 import { statsToMeasure, availableEquipment } from "../availableStudies";
+import OutlinedButton from "./OutlinedButton";
+import TonalButton from "./TonalButton";
+import availableStudies from "../availableStudies";
 
-function Filter({
-  setFilteredStudies,
-  setIsBlurred,
-  onBlurChange,
-  top,
-  right,
-}: {
+interface FilterProps {
+  selectedEquipment: string[]; // Changed from [string] to string[]
+  setSelectedEquipment: (selectedEquipment: string[]) => void; // Fixed type
+  selectedStatsToMeasure: string[]; // Changed from [string] to string[]
+  setSelectedStatsToMeasure: (selectedStatsToMeasure: string[]) => void; // Fixed type
   setFilteredStudies: (filteredStudies: [string, Study][]) => void;
   setIsBlurred: (isBlurred: boolean) => void;
   onBlurChange: (isBlurred: boolean) => void;
   top: number;
   right: number;
-}) {
-  const [selectedEquipment, setSelectedEquipment] = useState([]);
+}
 
+function Filter({
+  selectedEquipment,
+  setSelectedEquipment,
+  selectedStatsToMeasure,
+  setSelectedStatsToMeasure,
+  setFilteredStudies,
+  setIsBlurred,
+  onBlurChange,
+  top,
+  right,
+}: FilterProps) {
   const selectEquipment = (equipment: string): void => {
     if (!selectedEquipment.includes(equipment)) {
       setSelectedEquipment([...selectedEquipment, equipment]);
@@ -25,9 +36,71 @@ function Filter({
     setSelectedEquipment(selectedEquipment.filter((e) => e !== equipment));
   };
 
+  const selectStatsToMeasure = (statToMeasure: string): void => {
+    if (!selectedStatsToMeasure.includes(statToMeasure)) {
+      setSelectedStatsToMeasure([...selectedStatsToMeasure, statToMeasure]);
+      return;
+    }
+    setSelectedStatsToMeasure(
+      selectedStatsToMeasure.filter((e) => e !== statToMeasure)
+    );
+  };
+
+  const resetFilters = () => {
+    setSelectedEquipment([]);
+    setSelectedStatsToMeasure([]);
+  };
+
+  const saveFilters = () => {
+    setFilteredStudies(
+      Object.entries(availableStudies).filter(
+        ([id, study]: [string, Study]) => {
+          // If no filters are selected, show all studies
+          if (
+            selectedEquipment.length === 0 &&
+            selectedStatsToMeasure.length === 0
+          ) {
+            return true;
+          }
+
+          // If only equipment filters are selected
+          if (
+            selectedEquipment.length > 0 &&
+            selectedStatsToMeasure.length === 0
+          ) {
+            return study.preview.equipment.some((e) =>
+              selectedEquipment.includes(e)
+            );
+          }
+
+          // If only stats filters are selected
+          if (
+            selectedEquipment.length === 0 &&
+            selectedStatsToMeasure.length > 0
+          ) {
+            return study.preview.statsToMeasure.some((e) =>
+              selectedStatsToMeasure.includes(e)
+            );
+          }
+
+          // If both filters are selected
+          return (
+            study.preview.equipment.some((e) =>
+              selectedEquipment.includes(e)
+            ) &&
+            study.preview.statsToMeasure.some((e) =>
+              selectedStatsToMeasure.includes(e)
+            )
+          );
+        }
+      )
+    );
+    setIsBlurred(false);
+    onBlurChange(false);
+  };
   return (
     <div
-      className="bg-white shadow-sm fixed z-50 rounded-2xl py-2 px-8"
+      className="bg-white shadow-sm fixed z-50 rounded-2xl py-2 w-[500px] px-8"
       style={{ top: `${top}px`, right: `${right}px` }}
     >
       <div
@@ -39,7 +112,7 @@ function Filter({
       >
         <img src="/close.png" className="h-6 w-6" alt="" />
       </div>
-      <p className="text-xl text-black ml-2 my-6">Equipamiento</p>
+      <p className="text-xl text-black ml-2 mt-8 mb-4">Equipamiento</p>
       <div className="flex mb-4">
         {availableEquipment.slice(0, 2).map((equipment) => (
           <button
@@ -67,6 +140,49 @@ function Filter({
             {equipment}
           </button>
         ))}
+      </div>
+      <p className="text-xl text-black ml-2 mt-8 mb-4">Objeto de Evaluación</p>
+      <div className="flex mb-4">
+        {statsToMeasure.slice(0, 2).map((statToMeasure) => (
+          <button
+            key={statToMeasure}
+            onClick={() => selectStatsToMeasure(statToMeasure)}
+            className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-2 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+              selectedStatsToMeasure.includes(statToMeasure) &&
+              "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+            }`}
+          >
+            {statToMeasure}
+          </button>
+        ))}
+      </div>
+      <div className="flex">
+        {statsToMeasure.slice(2).map((statToMeasure) => (
+          <button
+            key={statToMeasure}
+            onClick={() => selectStatsToMeasure(statToMeasure)}
+            className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-2 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+              selectedStatsToMeasure.includes(statToMeasure) &&
+              "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+            }`}
+          >
+            {statToMeasure}
+          </button>
+        ))}
+      </div>
+      <div className="mt-12 w-full flex mb-4 justify-between">
+        <OutlinedButton
+          title="Restablecer"
+          onClick={resetFilters}
+          containerStyles="w-[45%]"
+          icon="reset"
+        />
+        <TonalButton
+          title="Aplicar Filtros"
+          onClick={saveFilters}
+          containerStyles="w-[45%]"
+          icon="check"
+        />
       </div>
       Filter
     </div>

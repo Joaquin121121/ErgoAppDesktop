@@ -6,6 +6,7 @@ import Athletes from "./pages/Athletes";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import { useNavigate } from "react-router-dom";
+import StartTest from "./pages/StartTest";
 
 const Layout = ({
   children,
@@ -104,6 +105,10 @@ function App() {
             element={<Athletes isExpanded={isExpanded} />}
           />
           <Route path="/about" element={<About isExpanded={isExpanded} />} />
+          <Route
+            path="/startTest"
+            element={<StartTest isExpanded={isExpanded} />}
+          />
           <Route path="*" element={<NotFound isExpanded={isExpanded} />} />
         </Routes>
       </Layout>

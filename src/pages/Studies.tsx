@@ -4,6 +4,8 @@ import availableStudies from "../availableStudies";
 import StudyCard from "../components/StudyCard";
 import OutlinedButton from "../components/OutlinedButton";
 import Filter from "../components/Filter";
+import TonalButton from "../components/TonalButton";
+import { useNavigate } from "react-router-dom";
 
 function Studies({
   onBlurChange,
@@ -17,6 +19,8 @@ function Studies({
     email: "",
   };
 
+  const navigate = useNavigate();
+
   const filterButtonRef = useRef<HTMLButtonElement>(null);
   const [overlayPosition, setOverlayPosition] = useState({ top: 0, right: 0 });
 
@@ -24,17 +28,22 @@ function Studies({
   const [searchTerm, setSearchTerm] = useState("");
   const [isBlurred, setIsBlurred] = useState(false);
 
+  const [selectedEquipment, setSelectedEquipment] = useState([]);
+  const [selectedStatsToMeasure, setSelectedStatsToMeasure] = useState([]);
+
   // Filter studies based on search term
   const [filteredStudies, setFilteredStudies] = useState(
     Object.entries(availableStudies)
   );
 
   const handleFilter = () => {
+    setSearchTerm("");
     updateOverlayPosition();
     setIsBlurred(true);
     onBlurChange(true);
-    console.log(overlayPosition);
   };
+
+  const createTest = () => {};
 
   // Add a function to calculate position
   const updateOverlayPosition = () => {
@@ -96,16 +105,32 @@ function Studies({
             icon="filter"
             ref={filterButtonRef}
           />
+          <TonalButton
+            title="Crear Test"
+            onClick={createTest}
+            containerStyles="ml-8"
+            icon="add"
+          />
         </div>
 
         <div className="grid grid-cols-3 gap-x-[5%] gap-y-16 w-full  px-36">
           {filteredStudies.map(([key, study]) => (
-            <StudyCard key={key} study={study} />
+            <StudyCard
+              key={key}
+              study={study}
+              onClick={() => {
+                navigate(`/startTest?name=${key}`);
+              }}
+            />
           ))}
         </div>
       </div>
       {isBlurred && (
         <Filter
+          selectedEquipment={selectedEquipment}
+          setSelectedEquipment={setSelectedEquipment}
+          selectedStatsToMeasure={selectedStatsToMeasure}
+          setSelectedStatsToMeasure={setSelectedStatsToMeasure}
           setFilteredStudies={setFilteredStudies}
           setIsBlurred={setIsBlurred}
           onBlurChange={onBlurChange}

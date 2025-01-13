@@ -1,5 +1,5 @@
 // OutlinedButton.tsx or OutlinedButton.jsx
-import React from "react";
+import React, { useEffect } from "react";
 
 interface ButtonProps {
   title: string;
@@ -10,6 +10,7 @@ interface ButtonProps {
   icon?: React.ReactNode;
   inverse?: boolean;
   disabled?: boolean;
+  large?: boolean;
 }
 
 // Using React.forwardRef to forward the ref to the underlying button element
@@ -24,6 +25,7 @@ const OutlinedButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
       icon,
       inverse = false,
       disabled = false,
+      large,
     },
     ref
   ) => {
@@ -33,7 +35,9 @@ const OutlinedButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isLoading || disabled}
         ref={ref} // Forwarded ref
         className={`
-          flex items-center justify-center px-4 py-2 rounded-2xl
+          flex items-center justify-center ${
+            large && "flex-col gap-y-4 h-[130px]"
+          } px-4 py-2 rounded-2xl
           bg-lightRed shadow-sm
           transition-all duration-200
           hover:bg-lightRed/10 focus:outline-none focus:ring-2 focus:ring-lightRed
@@ -47,12 +51,16 @@ const OutlinedButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
           <>
             {icon && inverse && (
               <img
-                className="mr-4 h-8 w-8"
+                className={`${large ? "h-12 w-12" : "mr-4  -8 w-8"}`}
                 src={`/${icon}.png`}
                 alt={`${icon} icon`}
               />
             )}
-            <span className={`text-secondary font-medium ${textStyles}`}>
+            <span
+              className={`text-secondary font-medium ${
+                large && "text-xl"
+              } ${textStyles}`}
+            >
               {title}
             </span>
             {icon && !inverse && (

@@ -39,7 +39,7 @@ const availableStudies: Studies = {
     preview: {
       equipment: ["Alfombra de Contacto"],
       time: 5,
-      statsToMeasure: ["Fuerza explosiva en tren inferior"],
+      statsToMeasure: ["Fuerza explosiva en tren inferior", "Potencia"],
     },
   },
   dropJump: {
