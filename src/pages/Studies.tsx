@@ -5,20 +5,30 @@ import StudyCard from "../components/StudyCard";
 import OutlinedButton from "../components/OutlinedButton";
 import Filter from "../components/Filter";
 import TonalButton from "../components/TonalButton";
+import { useStudyContext } from "../contexts/StudyContext";
 import { useNavigate } from "react-router-dom";
 
 function Studies({
   onBlurChange,
   isExpanded,
+  animation,
+  customNavigate,
 }: {
   onBlurChange: (isBlurred: boolean) => void;
   isExpanded: boolean;
+  animation: string;
+  customNavigate: (
+    direction: "back" | "forward",
+    page: string,
+    nextPage: string
+  ) => void;
 }) {
   const user = {
     fullName: "Joaquin Berrini",
     email: "",
   };
 
+  const { setStudy } = useStudyContext();
   const navigate = useNavigate();
 
   const filterButtonRef = useRef<HTMLButtonElement>(null);
@@ -43,7 +53,12 @@ function Studies({
     onBlurChange(true);
   };
 
-  const createTest = () => {};
+  const createTest = () => {
+    customNavigate("forward", "studies", "newTest");
+    setTimeout(() => {
+      navigate("/newTest");
+    }, 300);
+  };
 
   // Add a function to calculate position
   const updateOverlayPosition = () => {
@@ -54,6 +69,14 @@ function Studies({
         right: window.innerWidth - buttonRect.right,
       });
     }
+  };
+
+  const onClick = (key) => {
+    setStudy(availableStudies[key]);
+    customNavigate("forward", "studies", "startTest");
+    setTimeout(() => {
+      navigate(`/startTest?name=${key}`);
+    }, 200);
   };
 
   useEffect(() => {
@@ -69,7 +92,7 @@ function Studies({
       <div
         className={`flex-1 relative flex flex-col items-center ${
           isBlurred && "blur-md pointer-events-none"
-        } transition-all duration-300 ease-in-out`}
+        } transition-all duration-300 ease-in-out ${animation}`}
         style={{ paddingLeft: isExpanded ? "100px" : "32px" }}
       >
         <div className="absolute w-16 h-16 top-8 right-8 bg-gray rounded-full"></div>
@@ -119,7 +142,7 @@ function Studies({
               key={key}
               study={study}
               onClick={() => {
-                navigate(`/startTest?name=${key}`);
+                onClick(key);
               }}
             />
           ))}

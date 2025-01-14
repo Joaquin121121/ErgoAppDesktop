@@ -1,6 +1,6 @@
 import React from "react";
 
-function Athletes({
+function HandleTest({
   isExpanded,
   animation,
   customNavigate,
@@ -13,7 +13,7 @@ function Athletes({
     nextPage: string
   ) => void;
 }) {
-  return <div></div>;
+  return <div>HandleTest</div>;
 }
 
-export default Athletes;
+export default HandleTest;

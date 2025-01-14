@@ -38,7 +38,7 @@ const TonalButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
           } px-4 py-2 rounded-2xl
           bg-secondary text-white shadow-sm
           transition-all duration-200
-          hover:bg-secondary/90 focus:outline-none focus:ring-2 focus:ring-secondary
+          hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-secondary
           disabled:opacity-50 disabled:cursor-not-allowed
           ${containerStyles}
         `}

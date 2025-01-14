@@ -1,12 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, HashRouter } from "react-router-dom";
 import Studies from "./pages/Studies";
 import Athletes from "./pages/Athletes";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import { useNavigate } from "react-router-dom";
 import StartTest from "./pages/StartTest";
+import HandleTest from "./pages/HandleTest";
+import NewTest from "./pages/NewTest";
+import styles from "./animations.module.css";
+import { useTranslation } from "react-i18next";
+import { camelToNatural } from "./utils";
 
 const Layout = ({
   children,
@@ -21,6 +26,7 @@ const Layout = ({
 }) => {
   const options = ["studies", "athletes", "about"];
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [selectedOption, setSelectedOption] = useState("studies");
 
@@ -59,7 +65,7 @@ const Layout = ({
                     option === selectedOption && "text-white"
                   }`}
                 >
-                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                  {camelToNatural(t(option))}
                 </p>
               )}
             </div>
@@ -78,41 +84,119 @@ const Layout = ({
 
 function App() {
   const [isExpanded, setIsExpanded] = useState(false);
-
   const [isBlurred, setIsBlurred] = useState(false);
+
+  const keys = [
+    "studies",
+    "athletes",
+    "about",
+    "notFound",
+    "startTest",
+    "handleTest",
+    "newTest",
+  ] as const;
+  const [animations, setAnimations] = useState(
+    Object.fromEntries(keys.map((key) => [key, ""]))
+  );
+  type Page = (typeof keys)[number];
+
+  const customNavigate = (
+    direction: "back" | "forward",
+    page: Page,
+    nextPage: Page
+  ) => {
+    if (direction === "back") {
+      setAnimations({
+        ...animations,
+        [page]: styles.fadeOutRight,
+        [nextPage]: styles.fadeInLeft,
+      });
+
+      return;
+    }
+    setAnimations({
+      ...animations,
+      [page]: styles.fadeOutLeft,
+      [nextPage]: styles.fadeInRight,
+    });
+    setTimeout(() => {
+      setAnimations(Object.fromEntries(keys.map((key) => [key, ""])));
+    }, 600);
+  };
+
+  const pages = {
+    studies: (
+      <Studies
+        onBlurChange={setIsBlurred}
+        isExpanded={isExpanded}
+        animation={animations.studies}
+        customNavigate={customNavigate}
+      />
+    ),
+    athletes: (
+      <Athletes
+        isExpanded={isExpanded}
+        animation={animations.athletes}
+        customNavigate={customNavigate}
+      />
+    ),
+    about: (
+      <About
+        isExpanded={isExpanded}
+        animation={animations.about}
+        customNavigate={customNavigate}
+      />
+    ),
+    notFound: (
+      <NotFound
+        isExpanded={isExpanded}
+        animation={animations.notFound}
+        customNavigate={customNavigate}
+      />
+    ),
+    startTest: (
+      <StartTest
+        isExpanded={isExpanded}
+        onBlurChange={setIsBlurred}
+        animation={animations.startTest}
+        customNavigate={customNavigate}
+      />
+    ),
+    handleTest: (
+      <HandleTest
+        isExpanded={isExpanded}
+        animation={animations.handleTest}
+        customNavigate={customNavigate}
+      />
+    ),
+    newTest: (
+      <NewTest
+        isExpanded={isExpanded}
+        animation={animations.newTest}
+        customNavigate={customNavigate}
+      />
+    ),
+  } as const;
+
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Layout
         isBlurred={isBlurred}
         isExpanded={isExpanded}
         setIsExpanded={setIsExpanded}
       >
         <Routes>
-          <Route
-            path="/"
-            element={
-              <Studies onBlurChange={setIsBlurred} isExpanded={isExpanded} />
-            }
-          />
-          <Route
-            path="/studies"
-            element={
-              <Studies onBlurChange={setIsBlurred} isExpanded={isExpanded} />
-            }
-          />
-          <Route
-            path="/athletes"
-            element={<Athletes isExpanded={isExpanded} />}
-          />
-          <Route path="/about" element={<About isExpanded={isExpanded} />} />
-          <Route
-            path="/startTest"
-            element={<StartTest isExpanded={isExpanded} />}
-          />
-          <Route path="*" element={<NotFound isExpanded={isExpanded} />} />
+          <Route path="/" element={pages.studies} />
+          <Route path="/studies" element={pages.studies} />
+          <Route path="/athletes" element={pages.athletes} />
+          <Route path="/about" element={pages.about} />
+          <Route path="/startTest" element={pages.startTest} />
+          <Route path="/handleTest" element={pages.handleTest} />
+          <Route path="/newTest" element={pages.newTest} />
+          <Route path="*" element={pages.notFound} />
         </Routes>
       </Layout>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
