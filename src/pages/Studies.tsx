@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import { useState } from "react";
 import availableStudies from "../availableStudies";
+import type { Studies, Study } from "../availableStudies";
 import StudyCard from "../components/StudyCard";
 import OutlinedButton from "../components/OutlinedButton";
 import Filter from "../components/Filter";
@@ -38,13 +39,15 @@ function Studies({
   const [searchTerm, setSearchTerm] = useState("");
   const [isBlurred, setIsBlurred] = useState(false);
 
-  const [selectedEquipment, setSelectedEquipment] = useState([]);
-  const [selectedStatsToMeasure, setSelectedStatsToMeasure] = useState([]);
+  const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
+  const [selectedStatsToMeasure, setSelectedStatsToMeasure] = useState<
+    string[]
+  >([]);
 
   // Filter studies based on search term
-  const [filteredStudies, setFilteredStudies] = useState(
-    Object.entries(availableStudies)
-  );
+  const [filteredStudies, setFilteredStudies] = useState<
+    [keyof Studies, Study][]
+  >(Object.entries(availableStudies) as [keyof Studies, Study][]);
 
   const handleFilter = () => {
     setSearchTerm("");
@@ -71,7 +74,7 @@ function Studies({
     }
   };
 
-  const onClick = (key) => {
+  const onClick = (key: keyof Studies) => {
     setStudy(availableStudies[key]);
     customNavigate("forward", "studies", "startTest");
     setTimeout(() => {
@@ -81,9 +84,9 @@ function Studies({
 
   useEffect(() => {
     setFilteredStudies(
-      Object.entries(availableStudies).filter(([key, study]) =>
+      Object.entries(availableStudies).filter(([_, study]) =>
         study.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      ) as [keyof Studies, Study][]
     );
   }, [searchTerm]);
 

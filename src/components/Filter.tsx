@@ -1,16 +1,17 @@
 import React, { useState } from "react";
-import type { Study } from "../availableStudies";
+import type { Study, Studies } from "../availableStudies";
 import { statsToMeasure, availableEquipment } from "../availableStudies";
 import OutlinedButton from "./OutlinedButton";
 import TonalButton from "./TonalButton";
 import availableStudies from "../availableStudies";
+import { Dispatch, SetStateAction } from "react";
 
 interface FilterProps {
   selectedEquipment: string[]; // Changed from [string] to string[]
   setSelectedEquipment: (selectedEquipment: string[]) => void; // Fixed type
   selectedStatsToMeasure: string[]; // Changed from [string] to string[]
   setSelectedStatsToMeasure: (selectedStatsToMeasure: string[]) => void; // Fixed type
-  setFilteredStudies: (filteredStudies: [string, Study][]) => void;
+  setFilteredStudies: Dispatch<SetStateAction<[keyof Studies, Study][]>>;
   setIsBlurred: (isBlurred: boolean) => void;
   onBlurChange: (isBlurred: boolean) => void;
   top: number;
@@ -53,47 +54,46 @@ function Filter({
 
   const saveFilters = () => {
     setFilteredStudies(
-      Object.entries(availableStudies).filter(
-        ([id, study]: [string, Study]) => {
-          // If no filters are selected, show all studies
-          if (
-            selectedEquipment.length === 0 &&
-            selectedStatsToMeasure.length === 0
-          ) {
-            return true;
-          }
+      Object.entries(availableStudies).filter(([_, study]) => {
+        // Removed explicit type here since we'll cast the whole result
+        // If no filters are selected, show all studies
+        if (
+          selectedEquipment.length === 0 &&
+          selectedStatsToMeasure.length === 0
+        ) {
+          return true;
+        }
 
-          // If only equipment filters are selected
-          if (
-            selectedEquipment.length > 0 &&
-            selectedStatsToMeasure.length === 0
-          ) {
-            return study.preview.equipment.some((e) =>
-              selectedEquipment.includes(e)
-            );
-          }
-
-          // If only stats filters are selected
-          if (
-            selectedEquipment.length === 0 &&
-            selectedStatsToMeasure.length > 0
-          ) {
-            return study.preview.statsToMeasure.some((e) =>
-              selectedStatsToMeasure.includes(e)
-            );
-          }
-
-          // If both filters are selected
-          return (
-            study.preview.equipment.some((e) =>
-              selectedEquipment.includes(e)
-            ) &&
-            study.preview.statsToMeasure.some((e) =>
-              selectedStatsToMeasure.includes(e)
-            )
+        // If only equipment filters are selected
+        if (
+          selectedEquipment.length > 0 &&
+          selectedStatsToMeasure.length === 0
+        ) {
+          return study.preview.equipment.some((e: string) =>
+            selectedEquipment.includes(e)
           );
         }
-      )
+
+        // If only stats filters are selected
+        if (
+          selectedEquipment.length === 0 &&
+          selectedStatsToMeasure.length > 0
+        ) {
+          return study.preview.statsToMeasure.some((e: string) =>
+            selectedStatsToMeasure.includes(e)
+          );
+        }
+
+        // If both filters are selected
+        return (
+          study.preview.equipment.some((e: string) =>
+            selectedEquipment.includes(e)
+          ) &&
+          study.preview.statsToMeasure.some((e: string) =>
+            selectedStatsToMeasure.includes(e)
+          )
+        );
+      }) as [keyof Studies, Study][]
     );
     setIsBlurred(false);
     onBlurChange(false);

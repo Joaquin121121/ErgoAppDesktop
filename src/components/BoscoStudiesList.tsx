@@ -15,7 +15,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { camelToNatural } from "../utils";
+import { camelToNatural } from "../utils/utils";
 
 const SortableItem = ({ id, index, isDragging }) => {
   const {

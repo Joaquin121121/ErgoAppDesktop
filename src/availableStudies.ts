@@ -61,6 +61,10 @@ interface MultipleJumpsStudy extends BaseStudy {
   // MultipleJumps-specific properties
 }
 
+export interface NewStudy extends BaseStudy {
+  jumpTypes: "simple" | "multiple";
+}
+
 // Union type of all possible studies
 export type Study =
   | CMJStudy

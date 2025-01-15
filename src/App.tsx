@@ -11,7 +11,7 @@ import HandleTest from "./pages/HandleTest";
 import NewTest from "./pages/NewTest";
 import styles from "./animations.module.css";
 import { useTranslation } from "react-i18next";
-import { camelToNatural } from "./utils";
+import { camelToNatural } from "./utils/utils";
 
 const Layout = ({
   children,
