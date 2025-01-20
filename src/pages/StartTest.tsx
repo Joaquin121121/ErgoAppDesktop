@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import availableStudies from "../availableStudies";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import { useStudyContext } from "../contexts/StudyContext";
 import BoscoStudiesList from "../components/BoscoStudiesList";
+import inputStyles from "../styles/inputStyles.module.css";
+import { Studies } from "../types/Studies";
 function StartTest({
   isExpanded,
   onBlurChange,
@@ -22,14 +22,24 @@ function StartTest({
   ) => void;
 }) {
   const [isBlurred, setIsBlurred] = useState(false);
-  const [searchParams] = useSearchParams();
-  const testName = searchParams.get("name");
 
   const navigate = useNavigate();
 
   const { study, setStudy } = useStudyContext();
 
-  const searchAthlete = () => {};
+  const searchAthlete = () => {
+    customNavigate("forward", "startTest", "selectAthlete");
+    setTimeout(() => {
+      navigate("/selectAthlete");
+    }, 300);
+  };
+
+  const newAthlete = () => {
+    customNavigate("forward", "startTest", "newAthlete");
+    setTimeout(() => {
+      navigate("/newAthlete");
+    }, 300);
+  };
 
   const showInfo = () => {
     onBlurChange(true);
@@ -39,6 +49,17 @@ function StartTest({
   const hideInfo = () => {
     onBlurChange(false);
     setIsBlurred(false);
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    if (
+      (field === "load" || field === "sensitivity") &&
+      value !== "" &&
+      !/^\d+$/.test(String(value))
+    ) {
+      return;
+    }
+    setStudy({ ...study, [field]: value });
   };
 
   const onClose = () => {
@@ -59,14 +80,14 @@ function StartTest({
         } transition-all 300 ease-in-out ${animation}`}
       >
         <div
-          className="mt-4 -mr-10 self-end my-0 p-1 rounded-full bg-lightRed flex justify-center cursor-pointer"
+          className="mt-4 -mr-10 self-end my-0 p-1 rounded-full bg-lightRed hover:opacity-70 flex justify-center cursor-pointer"
           onClick={onClose}
         >
           <img src="/close.png" className="h-10 w-10" alt="" />
         </div>
 
         <p className="text-5xl text-secondary self-center -mt-10">
-          {availableStudies[testName]["name"]}
+          {study["name"]}
         </p>
         <p className="text-4xl mt-8 text-black">Datos del Atleta</p>
         <div className="flex mt-12 justify-around items-center">
@@ -81,7 +102,7 @@ function StartTest({
           <TonalButton
             large
             title="Añadir Atleta"
-            onClick={searchAthlete}
+            onClick={newAthlete}
             inverse
             icon="add"
             containerStyles="w-1/5"
@@ -131,8 +152,12 @@ function StartTest({
               <p className="text-black w-36 text-end mr-12">Carga</p>
               <input
                 type="numeric"
-                className="bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-48 h-10 text-black"
+                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-48 h-10 text-black ${inputStyles.input}`}
                 placeholder="Ingrese la carga..."
+                value={study.load}
+                onChange={(e) => {
+                  handleInputChange("load", e.target.value);
+                }}
               />
               <button
                 key={`${study.loadUnit}-right`}
@@ -198,8 +223,12 @@ function StartTest({
               <p className="text-black w-36 text-end mr-12">Sensibilidad</p>
               <input
                 type="numeric"
-                className="bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-48 h-10 text-black"
+                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-48 h-10 text-black ${inputStyles.input}`}
                 placeholder="Sensibilidad..."
+                value={study.sensitivity}
+                onChange={(e) => {
+                  handleInputChange("sensitivity", e.target.value);
+                }}
               />
               <div
                 className="flex items-center hover:opacity-70 cursor-pointer absolute right-0"

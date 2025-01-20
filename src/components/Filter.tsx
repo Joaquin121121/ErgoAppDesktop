@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import type { Study, Studies } from "../availableStudies";
-import { statsToMeasure, availableEquipment } from "../availableStudies";
+import type { Study, Studies } from "../types/Studies";
+import { statsToMeasure, availableEquipment } from "../types/Studies";
 import OutlinedButton from "./OutlinedButton";
 import TonalButton from "./TonalButton";
-import availableStudies from "../availableStudies";
+import availableStudies from "../types/Studies";
 import { Dispatch, SetStateAction } from "react";
 
 interface FilterProps {
@@ -104,7 +104,7 @@ function Filter({
       style={{ top: `${top}px`, right: `${right}px` }}
     >
       <div
-        className="absolute top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
+        className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
         onClick={() => {
           setIsBlurred(false);
           onBlurChange(false);
@@ -141,7 +141,7 @@ function Filter({
           </button>
         ))}
       </div>
-      <p className="text-xl text-black ml-2 mt-8 mb-4">Objeto de Evaluación</p>
+      {/* <p className="text-xl text-black ml-2 mt-8 mb-4">Objeto de Evaluación</p>
       <div className="flex mb-4">
         {statsToMeasure.slice(0, 2).map((statToMeasure) => (
           <button
@@ -169,7 +169,7 @@ function Filter({
             {statToMeasure}
           </button>
         ))}
-      </div>
+      </div> */}
       <div className="mt-12 w-full flex mb-4 justify-between">
         <OutlinedButton
           title="Restablecer"

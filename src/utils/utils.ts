@@ -38,3 +38,18 @@ export function camelToNatural(camelCase: string): string {
     })
     .join(" ");
 }
+export const naturalToCamelCase = (text: string): string => {
+  if (!text) return "";
+
+  return text
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9\s_-]/g, " ")
+    .replace(/[-_]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .map((word, i) =>
+      i === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)
+    )
+    .join("");
+};

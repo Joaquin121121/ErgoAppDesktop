@@ -1,5 +1,17 @@
 {
   "studies": "estudios",
   "athletes": "atletas",
-  "about": "info"
+  "about": "info",
+  "name": "nombre",
+  "birthDate": "fecha de nacimiento",
+  "country": "país",
+  "state": "estado",
+  "height": "altura",
+  "heightUnit": "unidad de altura",
+  "weight": "peso",
+  "weightUnit": "unidad de peso",
+  "discipline": "disciplina",
+  "category": "categoría",
+  "institution": "institución",
+  "comments": "comentarios"
 }

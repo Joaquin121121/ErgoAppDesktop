@@ -1,0 +1,22 @@
+@keyframes glowEffect {
+  0% {
+    box-shadow: 0 0 0 0 rgba(232, 29, 35, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 2px rgba(232, 29, 35, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(232, 29, 35, 0);
+  }
+}
+
+.focused {
+  border: 2px solid #e81d23;
+  animation: glowEffect 1s ease-out;
+}
+
+.input:focus {
+  outline: #e81d23;
+  border: 1px solid #e81d23;
+  animation: glowEffect 1s ease-out;
+}

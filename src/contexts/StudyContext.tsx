@@ -1,7 +1,7 @@
 // Import necessary modules and types
 import React, { createContext, useContext, useState } from "react";
-import { Study, Studies } from "../availableStudies";
-import availableStudies from "../availableStudies";
+import { Study, Studies } from "../types/Studies";
+import availableStudies from "../types/Studies";
 
 // Type for the selected study
 type SelectedStudy = Study | null;

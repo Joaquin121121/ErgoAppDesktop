@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import { useState } from "react";
-import availableStudies from "../availableStudies";
-import type { Studies, Study } from "../availableStudies";
+import availableStudies from "../types/Studies";
+import type { Studies, Study } from "../types/Studies";
 import StudyCard from "../components/StudyCard";
 import OutlinedButton from "../components/OutlinedButton";
 import Filter from "../components/Filter";
 import TonalButton from "../components/TonalButton";
 import { useStudyContext } from "../contexts/StudyContext";
 import { useNavigate } from "react-router-dom";
+import { useJsonFiles } from "../hooks/useJsonFiles";
+import { naturalToCamelCase } from "../utils/utils";
 
 function Studies({
   onBlurChange,
@@ -30,6 +32,7 @@ function Studies({
   };
 
   const { setStudy } = useStudyContext();
+  const { readDirectoryJsons, deleteJson } = useJsonFiles();
   const navigate = useNavigate();
 
   const filterButtonRef = useRef<HTMLButtonElement>(null);
@@ -43,11 +46,28 @@ function Studies({
   const [selectedStatsToMeasure, setSelectedStatsToMeasure] = useState<
     string[]
   >([]);
+  const [studyToDelete, setStudyToDelete] = useState("");
 
-  // Filter studies based on search term
-  const [filteredStudies, setFilteredStudies] = useState<
-    [keyof Studies, Study][]
-  >(Object.entries(availableStudies) as [keyof Studies, Study][]);
+  const [allStudies, setAllStudies] = useState([
+    ...Object.entries(availableStudies),
+  ]);
+  const [filteredStudies, setFilteredStudies] = useState(allStudies);
+
+  const loadCustomStudies = async () => {
+    try {
+      const result = await readDirectoryJsons("customStudies");
+      console.log(result.message);
+      const customStudies = result.files;
+      const formattedCustomStudies: [string, any][] = customStudies.map(
+        (study) => {
+          return [study.content.name, study.content];
+        }
+      );
+      setAllStudies([...filteredStudies, ...formattedCustomStudies]);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const handleFilter = () => {
     setSearchTerm("");
@@ -73,28 +93,55 @@ function Studies({
       });
     }
   };
-
-  const onClick = (key: keyof Studies) => {
-    setStudy(availableStudies[key]);
+  const onClick = (key) => {
+    console.log(filteredStudies);
+    console.log(filteredStudies.find((array) => array[0] === key)?.[1]);
+    setStudy(filteredStudies.find((array) => array[0] === key)?.[1]);
     customNavigate("forward", "studies", "startTest");
     setTimeout(() => {
-      navigate(`/startTest?name=${key}`);
+      navigate("/startTest");
     }, 200);
+  };
+
+  const onDelete = async () => {
+    try {
+      const result = await deleteJson(
+        naturalToCamelCase(studyToDelete) + ".json",
+        "customStudies"
+      );
+      console.log(result);
+      setAllStudies(allStudies.filter((e) => e[1].name !== studyToDelete));
+      setStudyToDelete("");
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   useEffect(() => {
     setFilteredStudies(
-      Object.entries(availableStudies).filter(([_, study]) =>
+      allStudies.filter(([_, study]) =>
         study.name.toLowerCase().includes(searchTerm.toLowerCase())
-      ) as [keyof Studies, Study][]
+      )
     );
-  }, [searchTerm]);
+  }, [searchTerm, allStudies]);
+
+  useEffect(() => {
+    loadCustomStudies();
+  }, []);
+
+  useEffect(() => {
+    if (studyToDelete.length) {
+      onBlurChange(true);
+      return;
+    }
+    onBlurChange(false);
+  }, [studyToDelete.length]);
 
   return (
     <>
       <div
         className={`flex-1 relative flex flex-col items-center ${
-          isBlurred && "blur-md pointer-events-none"
+          (isBlurred || studyToDelete.length) && "blur-md pointer-events-none"
         } transition-all duration-300 ease-in-out ${animation}`}
         style={{ paddingLeft: isExpanded ? "100px" : "32px" }}
       >
@@ -147,6 +194,7 @@ function Studies({
               onClick={() => {
                 onClick(key);
               }}
+              onDelete={(name) => setStudyToDelete(name)}
             />
           ))}
         </div>
@@ -163,6 +211,34 @@ function Studies({
           top={overlayPosition.top}
           right={overlayPosition.right}
         />
+      )}
+      {studyToDelete.length && (
+        <div
+          className="bg-white shadow-sm fixed z-50 rounded-2xl py-2 px-8 w-[500px]
+             top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center"
+        >
+          <p className="text-darkGray my-8">
+            Está seguro que desea eliminar el test{" "}
+            <span className="text-black">{studyToDelete}</span>?
+          </p>
+          <div className="flex justify-around w-full mb-8">
+            <OutlinedButton
+              icon="back"
+              onClick={() => {
+                setStudyToDelete("");
+              }}
+              title="Volver"
+              containerStyles="w-[35%]"
+              inverse
+            />
+            <TonalButton
+              icon="check"
+              onClick={onDelete}
+              title="Eliminar"
+              containerStyles="w-[35%]"
+            />
+          </div>
+        </div>
       )}
     </>
   );

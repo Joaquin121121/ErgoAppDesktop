@@ -9,9 +9,11 @@ import { useNavigate } from "react-router-dom";
 import StartTest from "./pages/StartTest";
 import HandleTest from "./pages/HandleTest";
 import NewTest from "./pages/NewTest";
-import styles from "./animations.module.css";
+import styles from "./styles/animations.module.css";
 import { useTranslation } from "react-i18next";
 import { camelToNatural } from "./utils/utils";
+import NewAthlete from "./pages/NewAthlete";
+import SelectAthlete from "./pages/SelectAthlete";
 
 const Layout = ({
   children,
@@ -94,6 +96,8 @@ function App() {
     "startTest",
     "handleTest",
     "newTest",
+    "selectAthlete",
+    "newAthlete",
   ] as const;
   const [animations, setAnimations] = useState(
     Object.fromEntries(keys.map((key) => [key, ""]))
@@ -176,6 +180,21 @@ function App() {
         customNavigate={customNavigate}
       />
     ),
+
+    selectAthlete: (
+      <SelectAthlete
+        isExpanded={isExpanded}
+        animation={animations.selectAthlete}
+        customNavigate={customNavigate}
+      />
+    ),
+    newAthlete: (
+      <NewAthlete
+        isExpanded={isExpanded}
+        animation={animations.newAthlete}
+        customNavigate={customNavigate}
+      />
+    ),
   } as const;
 
   return (
@@ -193,6 +212,8 @@ function App() {
           <Route path="/startTest" element={pages.startTest} />
           <Route path="/handleTest" element={pages.handleTest} />
           <Route path="/newTest" element={pages.newTest} />
+          <Route path="/selectAthlete" element={pages.selectAthlete} />
+          <Route path="/newAthlete" element={pages.newAthlete} />
           <Route path="*" element={pages.notFound} />
         </Routes>
       </Layout>

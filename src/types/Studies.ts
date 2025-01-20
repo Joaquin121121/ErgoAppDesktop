@@ -1,8 +1,6 @@
 // Base interfaces
 interface BaseStudyPreview {
   equipment: string[];
-  time: number;
-  statsToMeasure: string[];
 }
 
 interface BaseStudy {
@@ -62,7 +60,12 @@ interface MultipleJumpsStudy extends BaseStudy {
 }
 
 export interface NewStudy extends BaseStudy {
+  type: "custom";
   jumpTypes: "simple" | "multiple";
+  takeoffFoot: "right" | "left" | "both";
+  load: number;
+  sensitivity: number;
+  loadUnit: LoadUnit;
 }
 
 // Union type of all possible studies
@@ -72,7 +75,8 @@ export type Study =
   | AbalakovStudy
   | DropJumpStudy
   | BoscoStudy
-  | MultipleJumpsStudy;
+  | MultipleJumpsStudy
+  | NewStudy;
 
 // Type-safe lookup object type
 export interface Studies {
@@ -95,8 +99,6 @@ const availableStudies: Studies = {
     sensitivity: 0.8,
     preview: {
       equipment: ["Alfombra de Contacto"],
-      time: 5,
-      statsToMeasure: ["Fuerza explosiva en tren inferior"],
     },
   },
   squatJump: {
@@ -109,8 +111,6 @@ const availableStudies: Studies = {
     sensitivity: 0.8,
     preview: {
       equipment: ["Alfombra de Contacto"],
-      time: 5,
-      statsToMeasure: ["Fuerza explosiva en tren inferior"],
     },
   },
   abalakov: {
@@ -123,8 +123,6 @@ const availableStudies: Studies = {
     sensitivity: 0.8,
     preview: {
       equipment: ["Alfombra de Contacto"],
-      time: 5,
-      statsToMeasure: ["Fuerza explosiva en tren inferior", "Potencia"],
     },
   },
   dropJump: {
@@ -137,8 +135,6 @@ const availableStudies: Studies = {
     sensitivity: 0.8,
     preview: {
       equipment: ["Alfombra de Contacto"],
-      time: 5,
-      statsToMeasure: ["Fuerza explosiva en tren inferior"],
     },
   },
   bosco: {
@@ -148,8 +144,6 @@ const availableStudies: Studies = {
     studies: ["cmj", "squatJump", "abalakov", "multipleJumps"],
     preview: {
       equipment: ["Alfombra de Contacto"],
-      time: 30,
-      statsToMeasure: ["Fuerza explosiva en tren inferior"],
     },
   },
   multipleJumps: {
@@ -162,8 +156,6 @@ const availableStudies: Studies = {
     sensitivity: 0.8,
     preview: {
       equipment: ["Alfombra de Contacto"],
-      time: 5,
-      statsToMeasure: ["Fuerza explosiva en tren inferior"],
     },
   },
 };
