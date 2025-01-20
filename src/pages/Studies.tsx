@@ -10,6 +10,7 @@ import { useStudyContext } from "../contexts/StudyContext";
 import { useNavigate } from "react-router-dom";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
+import inputStyles from "../styles/inputStyles.module.css";
 
 function Studies({
   onBlurChange,
@@ -157,7 +158,7 @@ function Studies({
         <div className="self-end w-3/4 flex items-center">
           <div
             className={`w-3/5 h-16 rounded-2xl bg-white shadow-sm flex items-center mt-12 px-4 mb-12 ${
-              searchBarFocus && "border border-secondary"
+              searchBarFocus && inputStyles.focused
             }`}
           >
             <img src="/search.png" alt="Buscar" className="h-8 w-8 mr-8" />

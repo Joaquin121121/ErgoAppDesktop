@@ -11,12 +11,12 @@
 }
 
 .focused {
-  border: 2px solid #e81d23;
-  animation: glowEffect 1s ease-out;
+  border: 1px solid #e81d23;
+  animation: glowEffect 1s ease-in-out;
 }
 
 .input:focus {
   outline: #e81d23;
   border: 1px solid #e81d23;
-  animation: glowEffect 1s ease-out;
+  animation: glowEffect 1s ease-in-out;
 }

@@ -7,7 +7,6 @@ import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 import { useNavigate } from "react-router-dom";
 import StartTest from "./pages/StartTest";
-import HandleTest from "./pages/HandleTest";
 import NewTest from "./pages/NewTest";
 import styles from "./styles/animations.module.css";
 import { useTranslation } from "react-i18next";
@@ -94,7 +93,6 @@ function App() {
     "about",
     "notFound",
     "startTest",
-    "handleTest",
     "newTest",
     "selectAthlete",
     "newAthlete",
@@ -166,13 +164,6 @@ function App() {
         customNavigate={customNavigate}
       />
     ),
-    handleTest: (
-      <HandleTest
-        isExpanded={isExpanded}
-        animation={animations.handleTest}
-        customNavigate={customNavigate}
-      />
-    ),
     newTest: (
       <NewTest
         isExpanded={isExpanded}
@@ -210,7 +201,6 @@ function App() {
           <Route path="/athletes" element={pages.athletes} />
           <Route path="/about" element={pages.about} />
           <Route path="/startTest" element={pages.startTest} />
-          <Route path="/handleTest" element={pages.handleTest} />
           <Route path="/newTest" element={pages.newTest} />
           <Route path="/selectAthlete" element={pages.selectAthlete} />
           <Route path="/newAthlete" element={pages.newAthlete} />

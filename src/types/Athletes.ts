@@ -6,7 +6,7 @@ export interface Athlete {
   gender: "male" | "female" | "other";
   height: string;
   heightUnit: "cm" | "ft";
-  weight: number;
+  weight: string;
   weightUnit: "kgs" | "lbs";
   discipline: string;
   category: string;
@@ -27,6 +27,7 @@ export function isAthlete(value: unknown): value is Athlete {
     "country",
     "state",
     "height",
+    "weight",
     "discipline",
     "category",
     "institution",
@@ -55,11 +56,6 @@ export function isAthlete(value: unknown): value is Athlete {
     return false;
   }
 
-  // Check weight
-  if (typeof athlete.weight !== "number" || isNaN(athlete.weight)) {
-    return false;
-  }
-
   // Check weightUnit
   if (!["kgs", "lbs"].includes(athlete.weightUnit)) {
     return false;
@@ -78,7 +74,7 @@ export function transformToAthlete(data: any): Athlete | null {
       gender: data.gender as "male" | "female" | "other",
       height: String(data.height || ""),
       heightUnit: data.heightUnit as "cm" | "ft",
-      weight: Number(data.weight || 0),
+      weight: String(data.weight || 0),
       weightUnit: data.weightUnit as "kgs" | "lbs",
       discipline: String(data.discipline || ""),
       category: String(data.category || ""),

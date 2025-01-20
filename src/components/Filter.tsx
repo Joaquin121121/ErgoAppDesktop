@@ -184,7 +184,6 @@ function Filter({
           icon="check"
         />
       </div>
-      Filter
     </div>
   );
 }

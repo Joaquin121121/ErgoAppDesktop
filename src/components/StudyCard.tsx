@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { Study } from "../types/Studies";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
@@ -22,7 +22,7 @@ function StudyCard({
 
   return (
     <div
-      className="bg-white rounded-2xl shadow-sm hover:shadow-xl flex relative flex-col items-center hover:scale-105 hover:cursor-pointer transition-all duration-300 ease-in-out px-4 pt-4"
+      className={`bg-white rounded-2xl shadow-sm hover:shadow-xl flex relative flex-col items-center hover:scale-105 hover:cursor-pointer transition-transform active:opacity-70 duration-300 ease-in-out px-4 pt-4 `}
       style={{ width: width || "auto", height: height || "auto" }}
       onClick={onClick}
     >

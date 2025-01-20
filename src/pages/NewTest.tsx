@@ -33,6 +33,7 @@ function NewTest({
     load: 0,
     loadUnit: "kgs",
     takeoffFoot: "both",
+    sensitivity: 0,
   });
   const [customStudies, setCustomStudies] = useState([]);
 
@@ -149,7 +150,7 @@ function NewTest({
               setErrors({ ...errors, name: "" });
             }}
           />
-          {errors.name.length && (
+          {errors.name.length > 0 && (
             <p className="text-secondary ml-12">
               {errors.name === "already in use"
                 ? "Este nombre ya se encuentra en uso. Ingrese otro."
@@ -301,7 +302,7 @@ function NewTest({
           >
             Plataforma de Fuerza
           </button>
-          {errors.equipment.length && (
+          {errors.equipment.length > 0 && (
             <p className="text-secondary ml-12">Seleccione un instrumento</p>
           )}
         </div>
@@ -357,7 +358,7 @@ function NewTest({
             }}
           ></textarea>
         </div>
-        {errors.description.length && (
+        {errors.description.length > 0 && (
           <p className="text-secondary ml-48 mt-2">
             Ingrese una descripción válida
           </p>

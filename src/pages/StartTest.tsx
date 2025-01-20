@@ -6,6 +6,7 @@ import { useStudyContext } from "../contexts/StudyContext";
 import BoscoStudiesList from "../components/BoscoStudiesList";
 import inputStyles from "../styles/inputStyles.module.css";
 import { Studies } from "../types/Studies";
+import TestInProgress from "../components/TestInProgress";
 function StartTest({
   isExpanded,
   onBlurChange,
@@ -22,10 +23,12 @@ function StartTest({
   ) => void;
 }) {
   const [isBlurred, setIsBlurred] = useState(false);
+  const [testInProgress, setTestInProgress] = useState(false);
+  const [noAthlete, setNoAthlete] = useState(false);
 
   const navigate = useNavigate();
 
-  const { study, setStudy } = useStudyContext();
+  const { study, setStudy, athlete, resetAthlete } = useStudyContext();
 
   const searchAthlete = () => {
     customNavigate("forward", "startTest", "selectAthlete");
@@ -51,14 +54,25 @@ function StartTest({
     setIsBlurred(false);
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    if (
-      (field === "load" || field === "sensitivity") &&
-      value !== "" &&
-      !/^\d+$/.test(String(value))
-    ) {
+  const startTest = () => {
+    if (athlete.name.length === 0) {
+      setNoAthlete(true);
       return;
     }
+    onBlurChange(true);
+    setTestInProgress(true);
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    // Allow empty string (to clear input) or only digits
+    if (field === "load" || field === "sensitivity") {
+      if (value === "" || /^\d+$/.test(value)) {
+        setStudy({ ...study, [field]: value });
+      }
+      return;
+    }
+
+    // For other fields, update normally
     setStudy({ ...study, [field]: value });
   };
 
@@ -69,14 +83,18 @@ function StartTest({
     }, 200);
   };
 
+  useEffect(() => {
+    setNoAthlete(false);
+  }, [athlete]);
+
   return (
     <div
-      className={`flex-1 relative flex flex-col items-center transition-all duration-300 ease-in-out `}
+      className={`flex-1  relative flex flex-col items-center transition-all duration-300 ease-in-out `}
       style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
     >
       <div
         className={`w-[90%] bg-white shadow-sm rounded-2xl mt-8 flex flex-col px-16 ${
-          isBlurred && "blur-md"
+          (isBlurred || testInProgress) && "blur-md pointer-events-none"
         } transition-all 300 ease-in-out ${animation}`}
       >
         <div
@@ -90,24 +108,45 @@ function StartTest({
           {study["name"]}
         </p>
         <p className="text-4xl mt-8 text-black">Datos del Atleta</p>
-        <div className="flex mt-12 justify-around items-center">
-          <OutlinedButton
-            large
-            title="Buscar Atleta"
-            onClick={searchAthlete}
-            inverse
-            icon="search"
-            containerStyles="w-1/5"
-          />
-          <TonalButton
-            large
-            title="Añadir Atleta"
-            onClick={newAthlete}
-            inverse
-            icon="add"
-            containerStyles="w-1/5"
-          />
-        </div>
+        {athlete.name.length ? (
+          <div className="w-full self-center mt-12 flex items-center justify-center gap-x-16">
+            <p className="text-2xl">
+              Atleta Seleccionado:{" "}
+              <span className="text-secondary">{athlete.name}</span>
+            </p>
+            <OutlinedButton
+              title="Cambiar"
+              onClick={resetAthlete}
+              icon="reset"
+            />
+          </div>
+        ) : (
+          <div className="flex mt-12 justify-around items-center">
+            <OutlinedButton
+              large
+              title="Buscar Atleta"
+              onClick={searchAthlete}
+              inverse
+              icon="search"
+              containerStyles="w-1/5"
+            />
+            <TonalButton
+              large
+              title="Añadir Atleta"
+              onClick={newAthlete}
+              inverse
+              icon="add"
+              containerStyles="w-1/5"
+            />
+          </div>
+        )}
+
+        {noAthlete && (
+          <p className="text-secondary text-2xl self-center my-4">
+            Seleccione un atleta
+          </p>
+        )}
+
         <p className="text-4xl mt-16 text-black">
           {study.type === "bosco" ? "Tests a Realizar" : "Datos del Test"}
         </p>
@@ -152,8 +191,8 @@ function StartTest({
               <p className="text-black w-36 text-end mr-12">Carga</p>
               <input
                 type="numeric"
-                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-48 h-10 text-black ${inputStyles.input}`}
-                placeholder="Ingrese la carga..."
+                className={`bg-offWhite border border-gray focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
+                placeholder="70..."
                 value={study.load}
                 onChange={(e) => {
                   handleInputChange("load", e.target.value);
@@ -223,8 +262,8 @@ function StartTest({
               <p className="text-black w-36 text-end mr-12">Sensibilidad</p>
               <input
                 type="numeric"
-                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-48 h-10 text-black ${inputStyles.input}`}
-                placeholder="Sensibilidad..."
+                className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
+                placeholder="20..."
                 value={study.sensitivity}
                 onChange={(e) => {
                   handleInputChange("sensitivity", e.target.value);
@@ -246,7 +285,7 @@ function StartTest({
         <TonalButton
           title="Realizar Test"
           icon="next"
-          onClick={() => navigate("/handleTest")}
+          onClick={startTest}
           containerStyles="self-center my-8"
         />
       </div>
@@ -256,6 +295,7 @@ function StartTest({
             className="absolute top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
             onClick={() => {
               setIsBlurred(false);
+
               onBlurChange(false);
             }}
           >
@@ -273,6 +313,12 @@ function StartTest({
             containerStyles="mt-12"
           />
         </div>
+      )}
+      {testInProgress && (
+        <TestInProgress
+          setTestInProgress={setTestInProgress}
+          onBlurChange={onBlurChange}
+        />
       )}
     </div>
   );

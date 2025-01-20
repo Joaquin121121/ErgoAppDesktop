@@ -29,22 +29,6 @@ function NewAthlete({
 
   const [loadedAthletes, setLoadedAthletes] = useState<Athlete[]>([]);
 
-  const [athlete, setAthlete] = useState<Athlete>({
-    name: "",
-    birthDate: new Date(),
-    country: "",
-    state: "",
-    gender: "male",
-    height: "",
-    heightUnit: "cm",
-    weight: 70,
-    weightUnit: "kgs",
-    discipline: "",
-    category: "",
-    institution: "",
-    comments: "",
-  });
-
   const [errors, setErrors] = useState<Record<keyof Athlete, string>>({
     name: "",
     birthDate: "",
@@ -67,6 +51,7 @@ function NewAthlete({
   const [prevWeightUnit, setPrevWeightUnit] = useState<"kgs" | "lbs" | "">("");
 
   const { saveJson, readDirectoryJsons } = useJsonFiles();
+  const { athlete, setAthlete } = useStudyContext();
 
   const onClose = () => {
     customNavigate("back", "newAthlete", "startTest");
@@ -82,13 +67,97 @@ function NewAthlete({
   };
 
   const handleInputChange = (field: keyof Athlete, value: string | Date) => {
+    const VALIDATION_LIMITS = {
+      weight: {
+        kgs: { max: 200 },
+        lbs: { max: 440 },
+      },
+      height: {
+        cm: { max: 230 },
+        ft: { max: 7 },
+      },
+    };
+
+    if (
+      athlete.heightUnit === "ft" &&
+      typeof value === "string" &&
+      value.length > 0
+    ) {
+      // Split the value into an array of characters
+      const chars = value.split("");
+
+      // If length is 4 (e.g., "5'11"), check if the second to last char is '1'
+      // and the last char is between '0' and '1'
+      if (value.length === 4) {
+        const secondToLast = chars[value.length - 2];
+        const last = chars[value.length - 1];
+
+        if (secondToLast !== "1" || (last !== "0" && last !== "1")) {
+          return;
+        }
+      }
+
+      // Don't allow inputs longer than 4 characters (e.g., "5'111")
+      if (value.length > 4) {
+        return;
+      }
+    }
     if (
       (field === "weight" || field === "height") &&
       value !== "" &&
-      !/^\d+$/.test(String(value))
+      !/^\d+$/.test(String(value)) &&
+      // Allow the feet/inches format (e.g., "5'11")
+      !(
+        field === "height" &&
+        athlete.heightUnit === "ft" &&
+        /^\d'?\d*$/.test(String(value))
+      )
     ) {
       return;
     }
+
+    if (field === "height" && typeof value === "string" && value !== "") {
+      if (athlete.heightUnit === "cm") {
+        const numValue = parseFloat(value);
+        if (numValue > VALIDATION_LIMITS.height.cm.max) {
+          return;
+        }
+      } else if (athlete.heightUnit === "ft") {
+        const [feet, inches = "0"] = value.split("'");
+        const feetNum = parseInt(feet);
+        const inchesNum = parseInt(inches);
+        if (!isNaN(feetNum) && !isNaN(inchesNum)) {
+          const newHeight = Math.round(feetNum * 30.48 + inchesNum * 2.54);
+          if (newHeight > VALIDATION_LIMITS.height.cm.max) {
+            return;
+          }
+        }
+        // Only validate the feet part when there's a single digit
+        if (
+          value.length === 1 &&
+          parseInt(value) > VALIDATION_LIMITS.height.ft.max
+        ) {
+          return;
+        }
+      }
+    }
+
+    if (field === "weight" && typeof value === "string" && value !== "") {
+      const numValue = parseFloat(value);
+      const maxValue =
+        VALIDATION_LIMITS.weight[athlete.weightUnit as "kgs" | "lbs"].max;
+      if (numValue > maxValue) {
+        return;
+      }
+    }
+
+    if (field === "heightUnit") {
+      setPrevHeightUnit(athlete.heightUnit);
+    }
+    if (field === "weightUnit") {
+      setPrevWeightUnit(athlete.weightUnit);
+    }
+
     setAthlete({ ...athlete, [field]: value });
     setErrors({ ...errors, [field]: "" });
   };
@@ -188,19 +257,19 @@ function NewAthlete({
   useEffect(() => {
     if (prevWeightUnit === "kgs" && athlete.weightUnit === "lbs") {
       const weightNum = athlete.weight;
-      if (!isNaN(weightNum)) {
+      if (!isNaN(parseFloat(weightNum))) {
         setAthlete({
           ...athlete,
-          weight: Math.round(2.2 * weightNum),
+          weight: Math.round(2.2 * parseFloat(weightNum)).toString(),
         });
       }
     }
     if (prevWeightUnit === "lbs" && athlete.weightUnit === "kgs") {
       const weightNum = athlete.weight;
-      if (!isNaN(weightNum)) {
+      if (!isNaN(parseFloat(weightNum))) {
         setAthlete({
           ...athlete,
-          weight: Math.round(0.45392 * weightNum),
+          weight: Math.round(0.45392 * parseFloat(weightNum)).toString(),
         });
       }
     }
@@ -499,7 +568,7 @@ function NewAthlete({
         <textarea
           name=""
           id=""
-          className={`bg-offWhite shadow-sm rounded-2xl h-20 p-2 text-black mt-2 w-3/4 self-center ${inputStyles.input}`}
+          className={`bg-offWhite border border-gray shadow-sm rounded-2xl h-20 p-2 text-black mt-2 w-3/4 self-center ${inputStyles.input}`}
         ></textarea>
         <TonalButton
           containerStyles="self-center my-8"

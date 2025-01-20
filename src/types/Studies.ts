@@ -96,7 +96,7 @@ const availableStudies: Studies = {
     takeoffFoot: "both",
     load: 0,
     loadUnit: "kgs",
-    sensitivity: 0.8,
+    sensitivity: 10,
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
@@ -108,7 +108,7 @@ const availableStudies: Studies = {
     takeoffFoot: "both",
     load: 0,
     loadUnit: "kgs",
-    sensitivity: 0.8,
+    sensitivity: 10,
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
@@ -120,7 +120,7 @@ const availableStudies: Studies = {
     takeoffFoot: "both",
     load: 0,
     loadUnit: "kgs",
-    sensitivity: 0.8,
+    sensitivity: 10,
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
@@ -132,7 +132,7 @@ const availableStudies: Studies = {
     takeoffFoot: "both",
     load: 20,
     loadUnit: "kgs",
-    sensitivity: 0.8,
+    sensitivity: 10,
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
@@ -153,7 +153,7 @@ const availableStudies: Studies = {
     takeoffFoot: "both",
     criteria: "numberOfJumps",
     time: 30,
-    sensitivity: 0.8,
+    sensitivity: 10,
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
