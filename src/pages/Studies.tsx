@@ -32,7 +32,7 @@ function Studies({
     email: "",
   };
 
-  const { setStudy } = useStudyContext();
+  const { setStudy, resetAthlete } = useStudyContext();
 
   const { readDirectoryJsons, deleteJson } = useJsonFiles();
   const navigate = useNavigate();
@@ -129,6 +129,7 @@ function Studies({
 
   useEffect(() => {
     loadCustomStudies();
+    resetAthlete();
   }, []);
 
   useEffect(() => {
@@ -219,7 +220,7 @@ function Studies({
           className="bg-white shadow-sm fixed z-50 rounded-2xl py-2 px-8 w-[500px]
              top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center"
         >
-          <p className="text-darkGray my-8">
+          <p className="text-darkGray text-lg my-8">
             Está seguro que desea eliminar el test{" "}
             <span className="text-black">{studyToDelete}</span>?
           </p>

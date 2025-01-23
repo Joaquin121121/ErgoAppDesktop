@@ -7,6 +7,10 @@ import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
 import { Athlete, transformToAthlete, isAthlete } from "../types/Athletes";
 import inputStyles from "../styles/inputStyles.module.css";
+import AutocompleteDropdown from "../components/AutocompleteDropdown";
+import { Country, State } from "country-state-city";
+import { disciplines } from "../constants/data";
+import { useSearchParams } from "react-router-dom";
 
 function NewAthlete({
   isExpanded,
@@ -22,6 +26,9 @@ function NewAthlete({
   ) => void;
 }) {
   const { t } = useTranslation();
+
+  const [searchParams] = useSearchParams();
+  const from = searchParams.get("from");
 
   const navigate = useNavigate();
 
@@ -49,14 +56,28 @@ function NewAthlete({
   const [prevHeight, setPrevHeight] = useState<string>("");
   const [prevHeightUnit, setPrevHeightUnit] = useState<"cm" | "ft" | "">("");
   const [prevWeightUnit, setPrevWeightUnit] = useState<"kgs" | "lbs" | "">("");
+  const [statesList, setStatesList] = useState([]);
+  const [countryReset, setCountryReset] = useState(false);
+  const [stateReset, setStateReset] = useState(false);
+  const [genderReset, setGenderReset] = useState(false);
+  const [disciplineReset, setDisciplineReset] = useState(false);
 
   const { saveJson, readDirectoryJsons } = useJsonFiles();
-  const { athlete, setAthlete } = useStudyContext();
+  const { athlete, setAthlete, resetAthlete } = useStudyContext();
+
+  const countries = Country.getAllCountries();
+
+  const genders = [
+    { name: "Femenino", isoCode: "F" },
+    { name: "Masculino", isoCode: "M" },
+    { name: "Otro", isoCode: "O" },
+  ];
 
   const onClose = () => {
-    customNavigate("back", "newAthlete", "startTest");
+    resetAthlete();
+    customNavigate("back", "newAthlete", from ? "athletes" : "startTest");
     setTimeout(() => {
-      navigate("/startTest");
+      navigate(from ? "/athletes" : "/startTest");
     }, 300);
   };
 
@@ -65,6 +86,12 @@ function NewAthlete({
       inputRef.current.showPicker();
     }
   };
+
+  useEffect(() => {
+    if (countryReset) {
+      setStateReset(true);
+    }
+  }, [countryReset]);
 
   const handleInputChange = (field: keyof Athlete, value: string | Date) => {
     const VALIDATION_LIMITS = {
@@ -78,6 +105,10 @@ function NewAthlete({
       },
     };
 
+    if (field === "name" && typeof value === "string" && /\d/.test(value)) {
+      setErrors({ ...errors, name: "numbers" });
+      return;
+    }
     if (
       athlete.heightUnit === "ft" &&
       typeof value === "string" &&
@@ -180,18 +211,36 @@ function NewAthlete({
       setErrors({ ...errors, name: "empty" });
       return;
     }
-    if (athlete.discipline === "") {
-      setErrors({ ...errors, discipline: "empty" });
-      return;
-    }
     if (athlete.country === "") {
       setErrors({ ...errors, country: "empty" });
       return;
     }
-    if (athlete.state === "") {
+    if (athlete.state === "" && statesList.length > 0) {
       setErrors({ ...errors, state: "empty" });
       return;
     }
+    if (athlete.gender === "") {
+      setErrors({ ...errors, gender: "empty" });
+      return;
+    }
+    if (athlete.height === "") {
+      setErrors({ ...errors, height: "empty" });
+      return;
+    }
+    if (athlete.weight === "") {
+      setErrors({ ...errors, weight: "empty" });
+      return;
+    }
+
+    if (athlete.discipline === "") {
+      setErrors({ ...errors, discipline: "empty" });
+      return;
+    }
+    if (athlete.category === "") {
+      setErrors({ ...errors, category: "empty" });
+      return;
+    }
+
     if (athlete.institution === "") {
       setErrors({ ...errors, institution: "empty" });
       return;
@@ -209,9 +258,9 @@ function NewAthlete({
         "athletes"
       );
       console.log(result.message);
-      customNavigate("back", "newAthlete", "startTest");
+      customNavigate("back", "newAthlete", from ? "athletes" : "startTest");
       setTimeout(() => {
-        navigate("/startTest");
+        navigate(from ? "/athletes" : "/startTest");
       }, 300);
     } catch (error) {
       console.log(error);
@@ -279,6 +328,27 @@ function NewAthlete({
     loadAthletes();
   }, []);
 
+  useEffect(() => {
+    if (athlete.country.length) {
+      setStatesList(State.getStatesOfCountry(athlete.country));
+      setAthlete({ ...athlete, state: "" });
+    }
+  }, [athlete.country]);
+
+  useEffect(() => {
+    if (genderReset) setAthlete({ ...athlete, gender: "" });
+  }, [genderReset]);
+
+  useEffect(() => {
+    if (countryReset) setAthlete({ ...athlete, country: "" });
+  }, [countryReset]);
+  useEffect(() => {
+    if (stateReset) setAthlete({ ...athlete, state: "" });
+  }, [stateReset]);
+  useEffect(() => {
+    if (disciplineReset) setAthlete({ ...athlete, discipline: "" });
+  }, [disciplineReset]);
+
   return (
     <div
       className="flex-1 relative flex flex-col items-center transition-all duration-300 ease-in-out"
@@ -324,6 +394,11 @@ function NewAthlete({
                 El atleta ya existe
               </p>
             )}
+            {errors.name === "numbers" && (
+              <p className="text-secondary -mt-1 self-center">
+                Los nombres no pueden contener números
+              </p>
+            )}
             {/* Birth Date */}
             <div className="flex items-center my-4">
               <p className="w-40 text-right mr-8 text-darkGray">
@@ -361,18 +436,18 @@ function NewAthlete({
               <p className="w-40 text-right mr-8 text-darkGray">
                 {t("country").charAt(0).toUpperCase() + t("country").slice(1)}
               </p>
-              <input
-                type="text"
-                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
-                  inputStyles.input
-                } ${errors.country && inputStyles.focused}`}
-                placeholder={
-                  t("country").charAt(0).toUpperCase() +
-                  t("country").slice(1) +
-                  "..."
-                }
-                value={athlete.country}
-                onChange={(e) => handleInputChange("country", e.target.value)}
+              <AutocompleteDropdown
+                data={countries}
+                onSelect={(e: string) => {
+                  setAthlete({ ...athlete, country: e });
+                }}
+                placeholder="Selecciona un país"
+                valueKey="isoCode"
+                displayKey="name"
+                reset={countryReset}
+                error={errors.country}
+                setError={(e: string) => setErrors({ ...errors, country: e })}
+                setReset={setCountryReset}
               />
             </div>
             {/* State */}
@@ -380,38 +455,42 @@ function NewAthlete({
               <p className="w-40 text-right mr-8 text-darkGray">
                 {t("state").charAt(0).toUpperCase() + t("state").slice(1)}
               </p>
-              <input
-                type="text"
-                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
-                  inputStyles.input
-                } ${errors.state && inputStyles.focused}`}
+              <AutocompleteDropdown
                 placeholder={
-                  t("state").charAt(0).toUpperCase() +
-                  t("state").slice(1) +
-                  "..."
+                  statesList.length === 0 ? "No aplica" : "Selecciona un estado"
                 }
-                value={athlete.state}
-                onChange={(e) => handleInputChange("state", e.target.value)}
+                data={statesList}
+                onSelect={(e) => {
+                  setAthlete({ ...athlete, state: e });
+                }}
+                valueKey="isoCode"
+                displayKey="name"
+                disabled={statesList.length === 0}
+                reset={stateReset}
+                setReset={setStateReset}
+                error={errors.state}
+                setError={(e: string) => setErrors({ ...errors, state: e })}
               />
             </div>
 
             {/* Gender */}
             <div className="flex items-center my-4">
-              <p className="w-40 text-right mr-8 text-darkGray">Género</p>
-              <select
-                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black
-                  [&>option]:bg-offWhite
-                  [&>option:hover]:bg-lightRed [&>option:hover]:text-secondary
-                  [&>option:checked]:bg-lightRed [&>option:checked]:text-secondary
-                  ${inputStyles?.input}
-                  ${errors.birthDate && inputStyles?.focused}`}
-                value={athlete.gender}
-                onChange={(e) => handleInputChange("gender", e.target.value)}
-              >
-                <option value="male">Masculino</option>
-                <option value="female">Femenino</option>
-                <option value="other">Otro</option>
-              </select>
+              <p className="w-40 text-right mr-8 text-darkGray">
+                {t("gender").charAt(0).toUpperCase() + t("gender").slice(1)}
+              </p>
+              <AutocompleteDropdown
+                placeholder="Selecciona un género"
+                data={genders}
+                onSelect={(e: "M" | "F" | "O") => {
+                  setAthlete({ ...athlete, gender: e });
+                }}
+                valueKey="isoCode"
+                displayKey="name"
+                reset={genderReset}
+                setReset={setGenderReset}
+                error={errors.gender}
+                setError={(e: string) => setErrors({ ...errors, gender: e })}
+              />
             </div>
           </div>
 
@@ -503,20 +582,18 @@ function NewAthlete({
                 {t("discipline").charAt(0).toUpperCase() +
                   t("discipline").slice(1)}
               </p>
-              <input
-                type="text"
-                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
-                  inputStyles.input
-                } ${errors.discipline && inputStyles.focused}`}
-                placeholder={
-                  t("discipline").charAt(0).toUpperCase() +
-                  t("discipline").slice(1) +
-                  "..."
-                }
-                value={athlete.discipline}
-                onChange={(e) =>
-                  handleInputChange("discipline", e.target.value)
-                }
+              <AutocompleteDropdown
+                placeholder="Selecciona una disciplina"
+                data={disciplines}
+                error={errors.discipline}
+                onSelect={(e) => {
+                  setAthlete({ ...athlete, discipline: e });
+                }}
+                setError={(e) => {
+                  setErrors({ ...errors, discipline: e });
+                }}
+                reset={disciplineReset}
+                setReset={setDisciplineReset}
               />
             </div>
 

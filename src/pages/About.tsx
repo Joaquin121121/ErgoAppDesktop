@@ -1,5 +1,5 @@
-import React from "react";
-
+import React, { useEffect } from "react";
+import { useStudyContext } from "../contexts/StudyContext";
 function About({
   isExpanded,
   animation,
@@ -13,6 +13,11 @@ function About({
     nextPage: string
   ) => void;
 }) {
+  const { resetAthlete } = useStudyContext();
+
+  useEffect(() => {
+    resetAthlete();
+  }, []);
   return <div></div>;
 }
 

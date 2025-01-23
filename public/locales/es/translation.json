@@ -13,5 +13,9 @@
   "discipline": "disciplina",
   "category": "categoría",
   "institution": "institución",
-  "comments": "comentarios"
+  "comments": "comentarios",
+  "M": "masculino",
+  "F": "femenino",
+  "O": "otro",
+  "gender": "género"
 }

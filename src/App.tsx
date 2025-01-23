@@ -19,11 +19,13 @@ const Layout = ({
   isBlurred = false,
   isExpanded,
   setIsExpanded,
+  resetAnimations,
 }: {
   children: React.ReactNode;
   isBlurred?: boolean;
   isExpanded: boolean;
   setIsExpanded: (isExpanded: boolean) => void;
+  resetAnimations: () => void;
 }) => {
   const options = ["studies", "athletes", "about"];
   const navigate = useNavigate();
@@ -54,6 +56,7 @@ const Layout = ({
                 option === selectedOption && "bg-secondary text-white"
               } hover:bg-lightRed hover:text-secondary transition-colors duration-800 ease-in-out`}
               onClick={() => {
+                resetAnimations();
                 setSelectedOption(option);
                 navigate("/" + option);
               }}
@@ -108,6 +111,10 @@ function App() {
   );
   type Page = (typeof keys)[number];
 
+  const resetAnimations = () => {
+    setAnimations(Object.fromEntries(keys.map((key) => [key, ""])));
+  };
+
   const customNavigate = (
     direction: "back" | "forward",
     page: Page,
@@ -127,9 +134,7 @@ function App() {
       [page]: styles.fadeOutLeft,
       [nextPage]: styles.fadeInRight,
     });
-    setTimeout(() => {
-      setAnimations(Object.fromEntries(keys.map((key) => [key, ""])));
-    }, 600);
+    setTimeout(() => {}, 600);
   };
 
   const pages = {
@@ -146,6 +151,7 @@ function App() {
         isExpanded={isExpanded}
         animation={animations.athletes}
         customNavigate={customNavigate}
+        onBlurChange={setIsBlurred}
       />
     ),
     about: (
@@ -200,6 +206,7 @@ function App() {
         isBlurred={isBlurred}
         isExpanded={isExpanded}
         setIsExpanded={setIsExpanded}
+        resetAnimations={resetAnimations}
       >
         <Routes>
           <Route path="/" element={pages.studies} />

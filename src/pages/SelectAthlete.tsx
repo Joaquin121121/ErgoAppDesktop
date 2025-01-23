@@ -8,6 +8,10 @@ import { useJsonFiles } from "../hooks/useJsonFiles";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import { naturalToCamelCase } from "../utils/utils";
+import AutocompleteDropdown from "../components/AutocompleteDropdown";
+import { Country, State } from "country-state-city";
+import { disciplines } from "../constants/data";
+import { getStateByCodeAndCountry } from "country-state-city/lib/state";
 
 const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const [searchBarFocus, setSearchBarFocus] = useState(false);
@@ -18,8 +22,12 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const [prevHeight, setPrevHeight] = useState<string>("");
   const [prevHeightUnit, setPrevHeightUnit] = useState<"cm" | "ft" | "">("");
   const [prevWeightUnit, setPrevWeightUnit] = useState<"kgs" | "lbs" | "">("");
-
-  const [allowEdit, setAllowEdit] = useState(false);
+  const [statesList, setStatesList] = useState([]);
+  const [countryReset, setCountryReset] = useState(false);
+  const [stateReset, setStateReset] = useState(false);
+  const [genderReset, setGenderReset] = useState(false);
+  const [disciplineReset, setDisciplineReset] = useState(false);
+  const [initialState, setInitialState] = useState("");
 
   const [errors, setErrors] = useState({
     name: "",
@@ -38,11 +46,18 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   });
 
   const inputRef = useRef(null);
-
   const { readDirectoryJsons, saveJson } = useJsonFiles();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { athlete, setAthlete } = useStudyContext();
+  const { athlete, setAthlete, resetAthlete } = useStudyContext();
+
+  const countries = Country.getAllCountries();
+
+  const genders = [
+    { name: "Femenino", isoCode: "F" },
+    { name: "Masculino", isoCode: "M" },
+    { name: "Otro", isoCode: "O" },
+  ];
 
   const filteredAthletes = loadedAthletes.filter((athlete) =>
     athlete.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -53,9 +68,14 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     setAthlete(selectedAthlete);
     setSearchTerm(selectedAthlete.name);
     setShowDropdown(false);
+    setInitialState(
+      getStateByCodeAndCountry(selectedAthlete.state, selectedAthlete.country)
+        ?.name || ""
+    );
   };
 
   const onClose = () => {
+    resetAthlete();
     customNavigate("back", "selectAthlete", "startTest");
     setTimeout(() => {
       navigate("/startTest");
@@ -80,35 +100,33 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       },
     };
 
+    if (field === "name" && typeof value === "string" && /\d/.test(value)) {
+      setErrors({ ...errors, name: "numbers" });
+      return;
+    }
+
     if (
       athlete.heightUnit === "ft" &&
       typeof value === "string" &&
       value.length > 0
     ) {
-      // Split the value into an array of characters
       const chars = value.split("");
-
-      // If length is 4 (e.g., "5'11"), check if the second to last char is '1'
-      // and the last char is between '0' and '1'
       if (value.length === 4) {
         const secondToLast = chars[value.length - 2];
         const last = chars[value.length - 1];
-
         if (secondToLast !== "1" || (last !== "0" && last !== "1")) {
           return;
         }
       }
-
-      // Don't allow inputs longer than 4 characters (e.g., "5'111")
       if (value.length > 4) {
         return;
       }
     }
+
     if (
       (field === "weight" || field === "height") &&
       value !== "" &&
       !/^\d+$/.test(String(value)) &&
-      // Allow the feet/inches format (e.g., "5'11")
       !(
         field === "height" &&
         athlete.heightUnit === "ft" &&
@@ -134,7 +152,6 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
             return;
           }
         }
-        // Only validate the feet part when there's a single digit
         if (
           value.length === 1 &&
           parseInt(value) > VALIDATION_LIMITS.height.ft.max
@@ -170,12 +187,52 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
         .map((item) => transformToAthlete(item.content))
         .filter((athlete) => athlete !== null);
       setLoadedAthletes(parsedAthletes);
+      console.log(parsedAthletes);
     } catch (error) {
       console.log(error);
     }
   };
 
   const onSave = async () => {
+    if (athlete.name === "") {
+      setErrors({ ...errors, name: "empty" });
+      return;
+    }
+    if (athlete.country === "") {
+      setErrors({ ...errors, country: "empty" });
+      return;
+    }
+    if (athlete.state === "" && statesList.length > 0) {
+      setErrors({ ...errors, state: "empty" });
+      return;
+    }
+    if (athlete.gender === "") {
+      setErrors({ ...errors, gender: "empty" });
+      return;
+    }
+    if (athlete.height === "") {
+      setErrors({ ...errors, height: "empty" });
+      return;
+    }
+    if (athlete.weight === "") {
+      setErrors({ ...errors, weight: "empty" });
+      return;
+    }
+
+    if (athlete.discipline === "") {
+      setErrors({ ...errors, discipline: "empty" });
+      return;
+    }
+    if (athlete.category === "") {
+      setErrors({ ...errors, category: "empty" });
+      return;
+    }
+
+    if (athlete.institution === "") {
+      setErrors({ ...errors, institution: "empty" });
+      return;
+    }
+
     try {
       const result = await saveJson(
         `${naturalToCamelCase(athlete.name)}.json`,
@@ -191,7 +248,62 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       console.log(error);
     }
   };
-  // Auto-format height when typing in feet mode
+
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const dropdownRef = useRef(null);
+
+  // Reset selected index when search term changes or dropdown visibility changes
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [searchTerm, showDropdown]);
+
+  const handleKeyDown = (e) => {
+    if (!showDropdown || !filteredAthletes.length) return;
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setSelectedIndex((prev) =>
+          prev < filteredAthletes.length - 1 ? prev + 1 : prev
+        );
+        break;
+
+      case "ArrowUp":
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+        break;
+
+      case "Enter":
+        e.preventDefault();
+        if (selectedIndex >= 0) {
+          handleAthleteSelect(filteredAthletes[selectedIndex]);
+        }
+        break;
+
+      default:
+        break;
+    }
+  };
+
+  // Ensure selected item is visible in the dropdown
+  useEffect(() => {
+    if (selectedIndex >= 0 && dropdownRef.current) {
+      const dropdown = dropdownRef.current;
+      const selectedElement = dropdown.children[selectedIndex];
+
+      if (selectedElement) {
+        const dropdownRect = dropdown.getBoundingClientRect();
+        const selectedRect = selectedElement.getBoundingClientRect();
+
+        if (selectedRect.bottom > dropdownRect.bottom) {
+          selectedElement.scrollIntoView(false);
+        } else if (selectedRect.top < dropdownRect.top) {
+          selectedElement.scrollIntoView(true);
+        }
+      }
+    }
+  }, [selectedIndex]);
+
   useEffect(() => {
     if (
       athlete.heightUnit === "ft" &&
@@ -203,7 +315,6 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     setPrevHeight(athlete.height);
   }, [athlete.height]);
 
-  // Handle height unit conversion
   useEffect(() => {
     if (athlete.heightUnit === "ft" && prevHeightUnit === "cm") {
       const heightNum = parseFloat(athlete.height);
@@ -226,7 +337,6 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     }
   }, [athlete.heightUnit]);
 
-  // Handle weight unit conversion
   useEffect(() => {
     if (prevWeightUnit === "kgs" && athlete.weightUnit === "lbs") {
       const weightNum = athlete.weight;
@@ -247,6 +357,29 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       }
     }
   }, [athlete.weightUnit]);
+
+  useEffect(() => {
+    if (athlete.country.length) {
+      setStatesList(State.getStatesOfCountry(athlete.country));
+      setAthlete({ ...athlete, state: "" });
+    }
+  }, [athlete.country]);
+
+  useEffect(() => {
+    if (genderReset) setAthlete({ ...athlete, gender: "" });
+  }, [genderReset]);
+
+  useEffect(() => {
+    if (countryReset) setAthlete({ ...athlete, country: "" });
+  }, [countryReset]);
+
+  useEffect(() => {
+    if (stateReset) setAthlete({ ...athlete, state: "" });
+  }, [stateReset]);
+
+  useEffect(() => {
+    if (disciplineReset) setAthlete({ ...athlete, discipline: "" });
+  }, [disciplineReset]);
 
   useEffect(() => {
     loadAthletes();
@@ -285,27 +418,68 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                 setSearchTerm(e.target.value);
                 setShowDropdown(true);
               }}
-              className="flex-1 h-full focus:outline-none text-lg  bg-offWhite text-black"
+              onKeyDown={(e) => {
+                if (!showDropdown || !filteredAthletes.length) return;
+
+                switch (e.key) {
+                  case "ArrowDown":
+                    e.preventDefault();
+                    setSelectedIndex((prev) =>
+                      prev < filteredAthletes.length - 1 ? prev + 1 : prev
+                    );
+                    break;
+
+                  case "ArrowUp":
+                    e.preventDefault();
+                    setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+                    break;
+
+                  case "Enter":
+                    e.preventDefault();
+                    if (selectedIndex >= 0) {
+                      handleAthleteSelect(filteredAthletes[selectedIndex]);
+                    }
+                    break;
+
+                  default:
+                    break;
+                }
+              }}
+              className="flex-1 h-full focus:outline-none text-lg bg-offWhite text-black"
               onFocus={() => {
                 setSearchBarFocus(true);
                 setShowDropdown(true);
               }}
               onBlur={() => {
                 setSearchBarFocus(false);
-                // Delay hiding dropdown to allow click events
-                setTimeout(() => setShowDropdown(false), 200);
+                // Only hide dropdown if we're not using keyboard navigation
+                if (selectedIndex === -1) {
+                  setTimeout(() => setShowDropdown(false), 200);
+                }
               }}
               placeholder="Buscar atleta..."
             />
           </div>
 
           {showDropdown && searchTerm && (
-            <div className="absolute w-full mt-2 bg-white rounded-lg shadow-lg max-h-64 overflow-y-auto z-50">
+            <div
+              ref={dropdownRef}
+              className="absolute w-full mt-2 bg-white rounded-lg shadow-lg max-h-64 overflow-y-auto z-50"
+              role="listbox"
+              tabIndex={-1}
+              onKeyDown={handleKeyDown}
+            >
               {filteredAthletes.length > 0 ? (
                 filteredAthletes.map((athlete, index) => (
                   <div
                     key={index}
-                    className="px-4 py-2 hover:bg-lightRed hover:text-secondary cursor-pointer text-black"
+                    role="option"
+                    aria-selected={selectedIndex === index}
+                    className={`px-4 py-2 cursor-pointer ${
+                      selectedIndex === index
+                        ? "bg-lightRed text-secondary"
+                        : "text-black hover:bg-lightRed hover:text-secondary"
+                    }`}
                     onClick={() => handleAthleteSelect(athlete)}
                   >
                     {athlete.name}
@@ -397,19 +571,19 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                 <p className="w-40 text-right mr-8 text-darkGray">
                   {t("country").charAt(0).toUpperCase() + t("country").slice(1)}
                 </p>
-                <input
-                  type="text"
-                  disabled={selectedAthleteName.length === 0}
-                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
-                    inputStyles.input
-                  } ${errors.country && inputStyles.focused}`}
-                  placeholder={
-                    t("country").charAt(0).toUpperCase() +
-                    t("country").slice(1) +
-                    "..."
-                  }
-                  value={athlete.country}
-                  onChange={(e) => handleInputChange("country", e.target.value)}
+                <AutocompleteDropdown
+                  initialQuery={Country.getCountryByCode(athlete.country)?.name}
+                  data={countries}
+                  onSelect={(e: string) => {
+                    setAthlete({ ...athlete, country: e });
+                  }}
+                  placeholder="Selecciona un país"
+                  valueKey="isoCode"
+                  displayKey="name"
+                  reset={countryReset}
+                  error={errors.country}
+                  setError={(e: string) => setErrors({ ...errors, country: e })}
+                  setReset={setCountryReset}
                 />
               </div>
 
@@ -418,37 +592,45 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                 <p className="w-40 text-right mr-8 text-darkGray">
                   {t("state").charAt(0).toUpperCase() + t("state").slice(1)}
                 </p>
-                <input
-                  type="text"
-                  disabled={selectedAthleteName.length === 0}
-                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
-                    inputStyles.input
-                  } ${errors.state && inputStyles.focused}`}
+                <AutocompleteDropdown
+                  initialQuery={initialState}
                   placeholder={
-                    t("state").charAt(0).toUpperCase() +
-                    t("state").slice(1) +
-                    "..."
+                    statesList.length === 0
+                      ? "No aplica"
+                      : "Selecciona un estado"
                   }
-                  value={athlete.state}
-                  onChange={(e) => handleInputChange("state", e.target.value)}
+                  data={statesList}
+                  onSelect={(e) => {
+                    setAthlete({ ...athlete, state: e });
+                  }}
+                  valueKey="isoCode"
+                  displayKey="name"
+                  disabled={statesList.length === 0}
+                  reset={stateReset}
+                  setReset={setStateReset}
+                  error={errors.state}
+                  setError={(e: string) => setErrors({ ...errors, state: e })}
                 />
               </div>
-
               {/* Gender */}
               <div className="flex items-center my-4">
-                <p className="w-40 text-right mr-8 text-darkGray">Género</p>
-                <select
-                  disabled={selectedAthleteName.length === 0}
-                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
-                    inputStyles.input
-                  } ${errors.gender && inputStyles.focused}`}
-                  value={athlete.gender}
-                  onChange={(e) => handleInputChange("gender", e.target.value)}
-                >
-                  <option value="male">Masculino</option>
-                  <option value="female">Femenino</option>
-                  <option value="other">Otro</option>
-                </select>
+                <p className="w-40 text-right mr-8 text-darkGray">
+                  {t("gender").charAt(0).toUpperCase() + t("gender").slice(1)}
+                </p>
+                <AutocompleteDropdown
+                  initialQuery={t(athlete.gender)}
+                  placeholder="Selecciona un género"
+                  data={genders}
+                  onSelect={(e: "M" | "F" | "O") => {
+                    setAthlete({ ...athlete, gender: e });
+                  }}
+                  valueKey="isoCode"
+                  displayKey="name"
+                  reset={genderReset}
+                  setReset={setGenderReset}
+                  error={errors.gender}
+                  setError={(e: string) => setErrors({ ...errors, gender: e })}
+                />
               </div>
             </div>
 
@@ -546,21 +728,19 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                   {t("discipline").charAt(0).toUpperCase() +
                     t("discipline").slice(1)}
                 </p>
-                <input
-                  type="text"
-                  disabled={selectedAthleteName.length === 0}
-                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
-                    inputStyles.input
-                  } ${errors.discipline && inputStyles.focused}`}
-                  placeholder={
-                    t("discipline").charAt(0).toUpperCase() +
-                    t("discipline").slice(1) +
-                    "..."
-                  }
-                  value={athlete.discipline}
-                  onChange={(e) =>
-                    handleInputChange("discipline", e.target.value)
-                  }
+                <AutocompleteDropdown
+                  initialQuery={athlete.discipline}
+                  placeholder="Selecciona una disciplina"
+                  data={disciplines}
+                  error={errors.discipline}
+                  onSelect={(e) => {
+                    setAthlete({ ...athlete, discipline: e });
+                  }}
+                  setError={(e) => {
+                    setErrors({ ...errors, discipline: e });
+                  }}
+                  reset={disciplineReset}
+                  setReset={setDisciplineReset}
                 />
               </div>
 
@@ -619,7 +799,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
           title={selectedAthleteName.length > 0 ? "Continuar" : "Volver"}
           icon={selectedAthleteName.length > 0 ? "check" : "backWhite"}
           containerStyles="self-center my-8 "
-          onClick={onSave}
+          onClick={onClose}
           inverse={selectedAthleteName.length === 0}
         />
       </div>
