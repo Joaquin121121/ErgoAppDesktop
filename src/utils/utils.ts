@@ -53,3 +53,13 @@ export const naturalToCamelCase = (text: string): string => {
     )
     .join("");
 };
+
+export function getSecondsBetweenDates(date1, date2) {
+  // Obtenemos la diferencia en milisegundos
+  const diffInMs = date2.getTime() - date1.getTime();
+
+  // Convertimos milisegundos a segundos (dividiendo por 1000)
+  const diffInSeconds = diffInMs / 1000;
+
+  return diffInSeconds;
+}

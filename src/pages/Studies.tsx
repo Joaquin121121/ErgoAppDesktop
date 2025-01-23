@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
 import inputStyles from "../styles/inputStyles.module.css";
-
+import useSerialMonitor from "../hooks/useSerialMonitor";
 function Studies({
   onBlurChange,
   isExpanded,
@@ -33,6 +33,7 @@ function Studies({
   };
 
   const { setStudy } = useStudyContext();
+
   const { readDirectoryJsons, deleteJson } = useJsonFiles();
   const navigate = useNavigate();
 

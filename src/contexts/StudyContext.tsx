@@ -17,7 +17,7 @@ const initialAthlete: Athlete = {
   gender: "male",
   height: "",
   heightUnit: "cm",
-  weight: 70,
+  weight: "70",
   weightUnit: "kgs",
   discipline: "",
   category: "",

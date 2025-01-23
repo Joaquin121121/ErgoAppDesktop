@@ -43,7 +43,10 @@ const Layout = ({
           onMouseEnter={() => setIsExpanded(true)}
           onMouseLeave={() => setIsExpanded(false)}
         >
-          <img src="/logo.png" className={`h-16 w-16 flex-shrink-0 mb-16 `} />
+          <img
+            src="/logo.png"
+            className={`h-16 w-16 flex-shrink-0 mb-16 self-center`}
+          />
           {options.map((option, index) => (
             <div
               key={option}
@@ -72,7 +75,10 @@ const Layout = ({
             </div>
           ))}
           <img
-            className="absolute h-36 w-18 left-4 bottom-8"
+            className={`absolute h-36 w-18 bottom-8 transition-all duration-300 ease-in-out`}
+            style={{
+              left: isExpanded ? "58px" : "16px",
+            }}
             src="/lucy.png"
             alt="test"
           />

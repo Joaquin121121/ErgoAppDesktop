@@ -2,6 +2,11 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::AppHandle;
 use tauri::Manager;
+use std::io::{self, BufRead};
+use std::sync::{mpsc, Arc, Mutex}; // Add Arc and Mutex for thread-safe sharing
+use std::thread;
+use serialport::SerialPort;
+use tauri::Emitter;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JsonResponse {
@@ -166,4 +171,69 @@ pub async fn delete_json(
         message: format!("File deleted successfully: {:?}", file_path),
         data: None,
     })
+}
+
+#[tauri::command]
+pub fn listen_serial(app_handle: tauri::AppHandle, port_name: String, baud_rate: u32) -> Result<(), String> {
+    // Ensure Manager is in scope for `get_webview_window`
+    let window = app_handle.get_webview_window("main").ok_or("Main window not found")?;
+
+    // Wrap window in Arc<Mutex<>> to share across threads safely
+    let window = Arc::new(Mutex::new(window));
+    
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    // Spawn a thread for serial communication
+    thread::spawn({
+        let window = Arc::clone(&window); // Clone the Arc to move it into the thread
+        move || {
+            let port = serialport::new(&port_name, baud_rate)
+                .timeout(std::time::Duration::from_secs(2))
+                .open();
+
+            let mut port = match port {
+                Ok(p) => p,
+                Err(e) => {
+                    let _ = tx.send(format!("Error opening serial port: {}", e));
+                    return;
+                }
+            };
+
+            let mut reader = io::BufReader::new(port);
+
+            loop {
+                let mut buffer = String::new();
+                match reader.read_line(&mut buffer) {
+                    Ok(_) => {
+                        let trimmed = buffer.trim().to_string();
+                        if !trimmed.is_empty() {
+                            // Lock the window and emit data
+                            if let Ok(window) = window.lock() {
+                                let _ = window.emit("serial-data", trimmed);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        let _ = tx.send(format!("Error reading from serial port: {}", e));
+                        break;
+                    }
+                }
+            }
+        }
+    });
+
+    // Log errors from the serial thread to the frontend
+    thread::spawn({
+        let window = Arc::clone(&window); // Clone the Arc to move it into this thread
+        move || {
+            for err in rx {
+                // Lock the window and emit error messages
+                if let Ok(window) = window.lock() {
+                    let _ = window.emit("serial-error", err);
+                }
+            }
+        }
+    });
+
+    Ok(())
 }
