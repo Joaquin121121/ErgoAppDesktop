@@ -7,7 +7,7 @@ interface ButtonProps {
   onClick: () => void;
   containerStyles?: string;
   textStyles?: string;
-  icon?: React.ReactNode;
+  icon?: string;
   inverse?: boolean;
   disabled?: boolean;
   large?: boolean;

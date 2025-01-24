@@ -172,4 +172,65 @@ export const statsToMeasure = [
   "Tren Superior",
 ] as const;
 
+export interface CMJResult {
+  flightTime: number;
+  heightReached: number;
+}
+
+export interface CompletedStudy {
+  studyInfo: BaseStudy;
+  date: Date;
+  results: CMJResult;
+}
+
+export const units = {
+  flightTime: "s",
+  heightReached: "cm",
+};
+
+export const studyInfoLookup = {
+  cmj: {
+    name: "CMJ",
+    description: "Salto en Movimiento",
+    preview: {
+      equipment: ["Alfombra de Contacto"],
+    },
+  },
+  squatJump: {
+    name: "Squat Jump",
+    description: "Salto de Sentadilla",
+    preview: {
+      equipment: ["Alfombra de Contacto"],
+    },
+  },
+  abalakov: {
+    name: "Abalakov",
+    description: "Salto en Movimiento",
+    preview: {
+      equipment: ["Alfombra de Contacto"],
+    },
+  },
+  dropJump: {
+    name: "Drop Jump",
+    description: "Salto de Caída",
+    preview: {
+      equipment: ["Alfombra de Contacto"],
+    },
+  },
+  bosco: {
+    name: "BOSCO",
+    description: "Combinación de Tests",
+    preview: {
+      equipment: ["Alfombra de Contacto"],
+    },
+  },
+  multipleJumps: {
+    name: "Saltos Múltiples",
+    description: "Saltos Repetidos Continuos",
+    preview: {
+      equipment: ["Alfombra de Contacto"],
+    },
+  },
+} satisfies Record<keyof Studies, BaseStudy>;
+
 export default availableStudies;

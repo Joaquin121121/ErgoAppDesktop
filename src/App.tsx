@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { camelToNatural } from "./utils/utils";
 import NewAthlete from "./pages/NewAthlete";
 import SelectAthlete from "./pages/SelectAthlete";
+import AthleteStudies from "./pages/AthleteStudies";
 
 const Layout = ({
   children,
@@ -105,6 +106,7 @@ function App() {
     "newTest",
     "selectAthlete",
     "newAthlete",
+    "athleteStudies",
   ] as const;
   const [animations, setAnimations] = useState(
     Object.fromEntries(keys.map((key) => [key, ""]))
@@ -198,6 +200,13 @@ function App() {
         customNavigate={customNavigate}
       />
     ),
+    athleteStudies: (
+      <AthleteStudies
+        isExpanded={isExpanded}
+        animation={animations.athleteStudies}
+        customNavigate={customNavigate}
+      />
+    ),
   } as const;
 
   return (
@@ -217,6 +226,7 @@ function App() {
           <Route path="/newTest" element={pages.newTest} />
           <Route path="/selectAthlete" element={pages.selectAthlete} />
           <Route path="/newAthlete" element={pages.newAthlete} />
+          <Route path="/athleteStudies" element={pages.athleteStudies} />
           <Route path="*" element={pages.notFound} />
         </Routes>
       </Layout>

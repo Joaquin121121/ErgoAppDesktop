@@ -50,6 +50,7 @@ function NewAthlete({
     category: "",
     institution: "",
     comments: "",
+    completedStudies: "",
   });
 
   // Store previous values for conversion calculations

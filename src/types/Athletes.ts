@@ -1,3 +1,5 @@
+import { CompletedStudy } from "./Studies";
+
 export interface Athlete {
   name: string;
   birthDate: Date;
@@ -12,6 +14,7 @@ export interface Athlete {
   category: string;
   institution: string;
   comments: string;
+  completedStudies: CompletedStudy[];
 }
 
 export function isAthlete(value: unknown): value is Athlete {
@@ -61,6 +64,21 @@ export function isAthlete(value: unknown): value is Athlete {
     return false;
   }
 
+  // Check completedStudies is an array
+  if (!Array.isArray(athlete.completedStudies)) {
+    return false;
+  }
+
+  // Validate each completed study
+  const isValidCompletedStudy = (study: unknown): study is CompletedStudy => {
+    return typeof study === "object" && study !== null;
+    // Additional validation should be added based on CompletedStudy interface
+  };
+
+  if (!athlete.completedStudies.every(isValidCompletedStudy)) {
+    return false;
+  }
+
   return true;
 }
 
@@ -82,11 +100,11 @@ export function transformToAthlete(data: unknown): Athlete | null {
     ) {
       birthDate = new Date(input.birthDate);
     } else {
-      birthDate = new Date(); // Default to current date if invalid
+      birthDate = new Date();
     }
 
     if (isNaN(birthDate.getTime())) {
-      birthDate = new Date(); // Fallback to current date if parsing failed
+      birthDate = new Date();
     }
 
     // Transform gender to match the union type
@@ -97,18 +115,26 @@ export function transformToAthlete(data: unknown): Athlete | null {
       }
     }
 
-    // Transform height and weight units with proper type checking
+    // Transform height and weight units
     const heightUnit =
       typeof input.heightUnit === "string" &&
       ["cm", "ft"].includes(input.heightUnit)
         ? (input.heightUnit as "cm" | "ft")
-        : "cm"; // Default to cm if invalid
+        : "cm";
 
     const weightUnit =
       typeof input.weightUnit === "string" &&
       ["kgs", "lbs"].includes(input.weightUnit)
         ? (input.weightUnit as "kgs" | "lbs")
-        : "kgs"; // Default to kgs if invalid
+        : "kgs";
+
+    // Handle completedStudies array
+    const completedStudies = Array.isArray(input.completedStudies)
+      ? input.completedStudies.filter(
+          (study): study is CompletedStudy =>
+            typeof study === "object" && study !== null
+        )
+      : [];
 
     const athlete: Athlete = {
       name: String(input.name || ""),
@@ -124,6 +150,7 @@ export function transformToAthlete(data: unknown): Athlete | null {
       category: String(input.category || ""),
       institution: String(input.institution || ""),
       comments: String(input.comments || ""),
+      completedStudies,
     };
 
     return isAthlete(athlete) ? athlete : null;

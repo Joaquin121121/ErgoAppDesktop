@@ -12,6 +12,8 @@ import AutocompleteDropdown from "../components/AutocompleteDropdown";
 import { Country, State } from "country-state-city";
 import { disciplines } from "../constants/data";
 import { getStateByCodeAndCountry } from "country-state-city/lib/state";
+import { useSearchParams } from "react-router-dom";
+import _ from "lodash";
 
 const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const [searchBarFocus, setSearchBarFocus] = useState(false);
@@ -28,6 +30,8 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const [genderReset, setGenderReset] = useState(false);
   const [disciplineReset, setDisciplineReset] = useState(false);
   const [initialState, setInitialState] = useState("");
+  const [originalCountry, setOriginalCountry] = useState("");
+  const [isModified, setIsModified] = useState(false);
 
   const [errors, setErrors] = useState({
     name: "",
@@ -45,11 +49,15 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     comments: "",
   });
 
+  const [searchParams] = useSearchParams();
+  const from = searchParams.get("from");
+
   const inputRef = useRef(null);
   const { readDirectoryJsons, saveJson } = useJsonFiles();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { athlete, setAthlete, resetAthlete } = useStudyContext();
+  const [originalAthlete, setOriginalAthlete] = useState(athlete);
 
   const countries = Country.getAllCountries();
 
@@ -66,6 +74,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const handleAthleteSelect = (selectedAthlete) => {
     setSelectedAthleteName(selectedAthlete.name);
     setAthlete(selectedAthlete);
+    setOriginalAthlete(selectedAthlete);
     setSearchTerm(selectedAthlete.name);
     setShowDropdown(false);
     setInitialState(
@@ -75,10 +84,16 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   };
 
   const onClose = () => {
-    resetAthlete();
-    customNavigate("back", "selectAthlete", "startTest");
+    if (!from) {
+      resetAthlete();
+    }
+    customNavigate(
+      "back",
+      "selectAthlete",
+      from ? "athleteStudies" : "startTest"
+    );
     setTimeout(() => {
-      navigate("/startTest");
+      navigate(from ? "/athleteStudies" : "/startTest");
     }, 300);
   };
 
@@ -184,7 +199,12 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     try {
       const result = await readDirectoryJsons("athletes");
       const parsedAthletes = result.files
-        .map((item) => transformToAthlete(item.content))
+        .map((item) => {
+          console.log("Raw content:", item.content);
+          const transformed = transformToAthlete(item.content);
+          console.log("Transformed athlete:", transformed);
+          return transformed;
+        })
         .filter((athlete) => athlete !== null);
       setLoadedAthletes(parsedAthletes);
       console.log(parsedAthletes);
@@ -202,6 +222,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       setErrors({ ...errors, country: "empty" });
       return;
     }
+
     if (athlete.state === "" && statesList.length > 0) {
       setErrors({ ...errors, state: "empty" });
       return;
@@ -240,13 +261,19 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
         "athletes"
       );
       console.log(result);
-      customNavigate("back", "selectAthlete", "startTest");
+      customNavigate("back", "selectAthlete", from ? "athletes" : "startTest");
       setTimeout(() => {
-        navigate("/startTest");
+        navigate(from ? "/athletes" : "/startTest");
       }, 300);
     } catch (error) {
       console.log(error);
     }
+  };
+
+  const getButtonTitle = () => {
+    if (!selectedAthleteName) return "Volver";
+    if (from && isModified) return "Guardar Cambios";
+    return isModified ? "Guardar y Continuar" : "Continuar";
   };
 
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -359,8 +386,11 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   }, [athlete.weightUnit]);
 
   useEffect(() => {
-    if (athlete.country.length) {
-      setStatesList(State.getStatesOfCountry(athlete.country));
+    setStatesList(State.getStatesOfCountry(athlete.country));
+    if (!originalCountry.length) {
+      setOriginalCountry(athlete.country);
+    } else {
+      setStateReset(true);
       setAthlete({ ...athlete, state: "" });
     }
   }, [athlete.country]);
@@ -382,8 +412,21 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   }, [disciplineReset]);
 
   useEffect(() => {
-    loadAthletes();
+    if (from) {
+      handleAthleteSelect(athlete);
+    } else {
+      loadAthletes();
+    }
   }, []);
+
+  useEffect(() => {
+    if (!_.isEqual(originalAthlete, athlete)) {
+      setIsModified(true);
+    } else {
+      setIsModified(false);
+    }
+    console.log(_.isEqual(originalAthlete, athlete));
+  }, [athlete]);
 
   return (
     <div
@@ -401,99 +444,102 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
         </div>
 
         <p className="text-3xl text-secondary self-center -mt-10">
-          Buscar Atleta
+          {from ? "Modificar" : "Buscar"} Atleta
         </p>
 
-        <div className="relative w-2/5 self-center">
-          <div
-            className={`h-12 rounded-2xl bg-offWhite shadow-sm flex items-center mt-8 px-4 ${
-              searchBarFocus && "border border-secondary"
-            }`}
-          >
-            <img src="/search.png" alt="Buscar" className="h-8 w-8 mr-8" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setShowDropdown(true);
-              }}
-              onKeyDown={(e) => {
-                if (!showDropdown || !filteredAthletes.length) return;
-
-                switch (e.key) {
-                  case "ArrowDown":
-                    e.preventDefault();
-                    setSelectedIndex((prev) =>
-                      prev < filteredAthletes.length - 1 ? prev + 1 : prev
-                    );
-                    break;
-
-                  case "ArrowUp":
-                    e.preventDefault();
-                    setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
-                    break;
-
-                  case "Enter":
-                    e.preventDefault();
-                    if (selectedIndex >= 0) {
-                      handleAthleteSelect(filteredAthletes[selectedIndex]);
-                    }
-                    break;
-
-                  default:
-                    break;
-                }
-              }}
-              className="flex-1 h-full focus:outline-none text-lg bg-offWhite text-black"
-              onFocus={() => {
-                setSearchBarFocus(true);
-                setShowDropdown(true);
-              }}
-              onBlur={() => {
-                setSearchBarFocus(false);
-                // Only hide dropdown if we're not using keyboard navigation
-                if (selectedIndex === -1) {
-                  setTimeout(() => setShowDropdown(false), 200);
-                }
-              }}
-              placeholder="Buscar atleta..."
-            />
-          </div>
-
-          {showDropdown && searchTerm && (
+        {!from && (
+          <div className="relative w-2/5 self-center">
             <div
-              ref={dropdownRef}
-              className="absolute w-full mt-2 bg-white rounded-lg shadow-lg max-h-64 overflow-y-auto z-50"
-              role="listbox"
-              tabIndex={-1}
-              onKeyDown={handleKeyDown}
+              className={`h-12 rounded-2xl bg-offWhite shadow-sm flex items-center mt-8 px-4 ${
+                searchBarFocus && "border border-secondary"
+              }`}
             >
-              {filteredAthletes.length > 0 ? (
-                filteredAthletes.map((athlete, index) => (
-                  <div
-                    key={index}
-                    role="option"
-                    aria-selected={selectedIndex === index}
-                    className={`px-4 py-2 cursor-pointer ${
-                      selectedIndex === index
-                        ? "bg-lightRed text-secondary"
-                        : "text-black hover:bg-lightRed hover:text-secondary"
-                    }`}
-                    onClick={() => handleAthleteSelect(athlete)}
-                  >
-                    {athlete.name}
-                  </div>
-                ))
-              ) : (
-                <div className="px-4 py-2 text-darkGray">
-                  No hay ningun atleta de nombre '{searchTerm}'
-                </div>
-              )}
+              <img src="/search.png" alt="Buscar" className="h-8 w-8 mr-8" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setShowDropdown(true);
+                }}
+                onKeyDown={(e) => {
+                  if (!showDropdown || !filteredAthletes.length) return;
+
+                  switch (e.key) {
+                    case "ArrowDown":
+                      e.preventDefault();
+                      setSelectedIndex((prev) =>
+                        prev < filteredAthletes.length - 1 ? prev + 1 : prev
+                      );
+                      break;
+
+                    case "ArrowUp":
+                      e.preventDefault();
+                      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+                      break;
+
+                    case "Enter":
+                      e.preventDefault();
+                      if (selectedIndex >= 0) {
+                        handleAthleteSelect(filteredAthletes[selectedIndex]);
+                      }
+                      break;
+
+                    default:
+                      break;
+                  }
+                }}
+                className="flex-1 h-full focus:outline-none text-lg bg-offWhite text-black"
+                onFocus={() => {
+                  setSearchBarFocus(true);
+                  setShowDropdown(true);
+                }}
+                onBlur={() => {
+                  setSearchBarFocus(false);
+                  // Only hide dropdown if we're not using keyboard navigation
+                  if (selectedIndex === -1) {
+                    setTimeout(() => setShowDropdown(false), 200);
+                  }
+                }}
+                placeholder="Buscar atleta..."
+              />
             </div>
-          )}
-        </div>
-        {selectedAthleteName.length > 0 && (
+
+            {showDropdown && searchTerm && (
+              <div
+                ref={dropdownRef}
+                className="absolute w-full mt-2 bg-white rounded-lg shadow-lg max-h-64 overflow-y-auto z-50"
+                role="listbox"
+                tabIndex={-1}
+                onKeyDown={handleKeyDown}
+              >
+                {filteredAthletes.length > 0 ? (
+                  filteredAthletes.map((athlete, index) => (
+                    <div
+                      key={index}
+                      role="option"
+                      aria-selected={selectedIndex === index}
+                      className={`px-4 py-2 cursor-pointer ${
+                        selectedIndex === index
+                          ? "bg-lightRed text-secondary"
+                          : "text-black hover:bg-lightRed hover:text-secondary"
+                      }`}
+                      onClick={() => handleAthleteSelect(athlete)}
+                    >
+                      {athlete.name}
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-2 text-darkGray">
+                    No hay ningun atleta de nombre '{searchTerm}'
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {selectedAthleteName.length > 0 && !from && (
           <div className="flex mt-8 items-center self-center">
             <p className="text-lg text-black ">
               Atleta seleccionado:{" "}
@@ -794,14 +840,29 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
             </div>
           </div>
         )}
+        {(!from || (from && isModified)) && (
+          <TonalButton
+            title={getButtonTitle()}
+            icon={selectedAthleteName ? "check" : "backWhite"}
+            containerStyles="self-center my-8"
+            onClick={selectedAthleteName ? onSave : onClose}
+            inverse={!selectedAthleteName}
+          />
+        )}
 
-        <TonalButton
-          title={selectedAthleteName.length > 0 ? "Continuar" : "Volver"}
-          icon={selectedAthleteName.length > 0 ? "check" : "backWhite"}
-          containerStyles="self-center my-8 "
-          onClick={onClose}
-          inverse={selectedAthleteName.length === 0}
-        />
+        {from && (
+          <OutlinedButton
+            title="Ver Estudios"
+            onClick={() => {
+              customNavigate("forward", "selectAthlete", "athleteStudies");
+              setTimeout(() => {
+                navigate("/athleteStudies?from=athlete");
+              }, 300);
+            }}
+            icon="test"
+            containerStyles="self-center mt-4 mb-8 "
+          />
+        )}
       </div>
     </div>
   );

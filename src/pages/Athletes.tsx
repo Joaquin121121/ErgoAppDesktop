@@ -43,7 +43,7 @@ function Athletes({
 
   const { readDirectoryJsons, deleteJson } = useJsonFiles();
 
-  const { resetAthlete } = useStudyContext();
+  const { resetAthlete, setAthlete } = useStudyContext();
 
   const filterButtonRef = useRef(null);
 
@@ -73,7 +73,16 @@ function Athletes({
     }, 300);
   };
 
-  const onClick = (key: string) => {};
+  const onClick = (key: string) => {
+    const athlete = loadedAthletes.find((athlete) => athlete[0] === key);
+    if (athlete) {
+      setAthlete(athlete[1]);
+      customNavigate("forward", "athletes", "athleteStudies");
+      setTimeout(() => {
+        navigate("/athleteStudies");
+      }, 300);
+    }
+  };
 
   const onDelete = async () => {
     try {
@@ -172,7 +181,19 @@ function Athletes({
             />
           ))}
         </div>
+        {!loadedAthletes.length && (
+          <>
+            <p className=" text-xl mt-16">No hay atletas cargados</p>
+            <TonalButton
+              containerStyles=" mt-8"
+              title="Nuevo Atleta"
+              icon="add"
+              onClick={createAthlete}
+            />
+          </>
+        )}
       </div>
+
       {athleteToDelete.length && (
         <div
           className="bg-white shadow-sm fixed z-50 rounded-2xl py-2 px-8 w-[500px]
