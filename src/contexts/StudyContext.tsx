@@ -23,6 +23,7 @@ const initialAthlete: Athlete = {
   category: "",
   institution: "",
   comments: "",
+  completedStudies: [],
 };
 
 // Context interface

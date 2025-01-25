@@ -67,16 +67,27 @@ function AthleteStudies({
         }`}
         style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
       >
-        <p className="text-3xl text-dark self-center my-10">
-          Estudios Realizados:{" "}
-          <span className="text-secondary font-medium">{athlete.name}</span>
-        </p>
+        <div className="self-end flex w-3/5 items-center">
+          <p className="text-3xl text-dark self-center my-10">
+            Estudios Realizados:{" "}
+            <span className="text-secondary font-medium">{athlete.name}</span>
+          </p>
+          <OutlinedButton
+            title="Ver Información del Atleta"
+            onClick={() => {
+              customNavigate("forward", "athleteStudies", "selectAthlete");
+              setTimeout(() => {
+                navigate("/selectAthlete?from=athlete");
+              }, 300);
+            }}
+            icon="info"
+            containerStyles="self-center ml-16"
+          />
+        </div>
 
         {studies.length ? (
           <div
-            className={`grid grid-cols-3 gap-x-[5%] gap-y-16 w-full px-36 ${
-              studies.length > 6 && "max-h-[460px] overflow-y-auto"
-            }`}
+            className={`grid grid-cols-3 gap-x-[5%] gap-y-16 w-full px-36 $`}
           >
             {studies.map((study) => (
               <CompletedStudyCard
@@ -94,18 +105,6 @@ function AthleteStudies({
         ) : (
           <p className="text-xl my-16 self-center">No hay estudios cargados</p>
         )}
-
-        <OutlinedButton
-          title="Ver Información del Atleta"
-          onClick={() => {
-            customNavigate("forward", "athleteStudies", "selectAthlete");
-            setTimeout(() => {
-              navigate("/selectAthlete?from=athlete");
-            }, 300);
-          }}
-          icon="info"
-          containerStyles="self-center my-16 "
-        />
       </div>
       {studyToDelete && (
         <div

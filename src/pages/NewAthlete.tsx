@@ -66,7 +66,14 @@ function NewAthlete({
   const { saveJson, readDirectoryJsons } = useJsonFiles();
   const { athlete, setAthlete, resetAthlete } = useStudyContext();
 
-  const countries = Country.getAllCountries();
+  const countries = Country.getAllCountries()
+    .map((country) => ({
+      ...country,
+      name:
+        new Intl.DisplayNames(["es"], { type: "region" }).of(country.isoCode) ||
+        country.name,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
 
   const genders = [
     { name: "Femenino", isoCode: "F" },

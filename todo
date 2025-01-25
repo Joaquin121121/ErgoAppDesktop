@@ -1,0 +1,6 @@
+MVP
+    Implementar sensibilidad
+    Implementar autodeteccion de puerto
+    Implementar registro, login, persistencia de sesión
+    Implementar estudios en nube (boton de sincronizar ErgoSync, automatico si se detecta conexion a internet)
+    Constatar con Anibal

@@ -4,16 +4,18 @@ import TonalButton from "./TonalButton";
 import useSerialMonitor from "../hooks/useSerialMonitor";
 import { getSecondsBetweenDates } from "../utils/utils";
 import OutlinedButton from "./OutlinedButton";
-import { CompletedStudy, studyInfoLookup } from "../types/Studies";
+import { CompletedStudy, studyInfoLookup, BoscoResult } from "../types/Studies";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
 import { useNavigate } from "react-router-dom";
-import { set } from "lodash";
+import { useTransition } from "react";
+import { useTranslation } from "react-i18next";
 
 function TestInProgress({
   setTestInProgress,
   onBlurChange,
   customNavigate,
+  tests,
 }: {
   setTestInProgress: (testInProgress: boolean) => void;
   onBlurChange: (isBlurred: boolean) => void;
@@ -22,17 +24,31 @@ function TestInProgress({
     page: string,
     nextPage: string
   ) => void;
+  tests: string[];
 }) {
   const [status, setStatus] = useState("Súbase a la alfombra");
   const [data, setData] = useState({ avgTime: 0, height: 0 });
+  const [pointer, setPointer] = useState(0);
   const { serialData, error, startSerialListener, logs, clearLogs } =
     useSerialMonitor();
   const { study, setStudy, athlete, setAthlete } = useStudyContext();
   const { saveJson } = useJsonFiles();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [startTime, setStartTime] = useState(new Date());
   const [jumpTimes, setJumpTimes] = useState<number[]>([]);
+  const [boscoResults, setBoscoResults] = useState<BoscoResult>({
+    cmj: { flightTime: 0, heightReached: 0 },
+    squatJump: { flightTime: 0, heightReached: 0 },
+    abalakov: { flightTime: 0, heightReached: 0 },
+  });
+
+  const nextTest = () => {
+    setJumpTimes([]);
+    setPointer(pointer + 1);
+    setStatus("Súbase a la alfombra");
+  };
 
   const finishTest = () => {
     const avgTime =
@@ -42,19 +58,31 @@ function TestInProgress({
       setStatus("Error");
       return;
     }
+    if (study.type === "bosco") {
+      setBoscoResults({
+        ...boscoResults,
+        [tests[pointer]]: {
+          avgTime: avgTime,
+          height: ((9.81 * avgTime ** 2) / 8) * 100,
+        },
+      });
+    } else {
+      setData({ avgTime: avgTime, height: ((9.81 * avgTime ** 2) / 8) * 100 });
+    }
     setStatus("Finalizado");
-
-    setData({ avgTime: avgTime, height: ((9.81 * avgTime ** 2) / 8) * 100 });
   };
 
   const saveTest = async () => {
     const studyToSave: CompletedStudy = {
       studyInfo: studyInfoLookup[study.name.toLowerCase()],
       date: new Date(),
-      results: {
-        flightTime: data.avgTime,
-        heightReached: data.height,
-      },
+      results:
+        study.type === "bosco"
+          ? boscoResults
+          : {
+              flightTime: data.avgTime,
+              heightReached: data.height,
+            },
     };
 
     try {
@@ -80,6 +108,10 @@ function TestInProgress({
 
   useEffect(() => {
     startSerialListener("COM6", 9600);
+  }, []);
+
+  useEffect(() => {
+    setStatus("Finalizado");
   }, []);
 
   useEffect(() => {
@@ -126,10 +158,35 @@ function TestInProgress({
       >
         <img src="/close.png" className="h-6 w-6" alt="" />
       </div>
-      <p className="self-center text-3xl text-secondary">{study.name}</p>
-      <p className="self-center my-16 text-2xl text-black">
-        Estado: <span className="text-secondary font-medium">{status}</span>
-      </p>
+      <p className="self-center text-4xl text-secondary">{t(study.type)}</p>
+      {tests.length > 1 && (
+        <p className="self-center text-3xl mt-12 text-secondary">
+          Test {pointer + 1}: {t(tests[pointer])}
+        </p>
+      )}
+
+      <div>
+        <p className="self-center mt-16 text-2xl text-black">
+          Estado: <span className="text-secondary font-medium">{status}</span>
+        </p>
+        {status === "Finalizado" && (
+          <>
+            <p className="text-2xl text-black mt-4">
+              Tiempo promedio:{" "}
+              <span className="text-secondary font-medium">
+                {data.avgTime.toFixed(1)}s
+              </span>
+            </p>
+            <p className="text-2xl text-black mt-4">
+              Altura:{" "}
+              <span className="text-secondary font-medium">
+                {data.height.toFixed(1)}cm
+              </span>
+            </p>
+          </>
+        )}
+      </div>
+
       {(status === "Listo para saltar" || status === "Saltando") && (
         <TonalButton
           containerStyles="self-center mt-20"
@@ -139,32 +196,22 @@ function TestInProgress({
         />
       )}
       {status === "Finalizado" && (
-        <>
-          <div className="mt-20">
-            <p className="text-2xl text-black">
-              Tiempo promedio:{" "}
-              <span className="text-secondary font-medium">
-                {data.avgTime.toFixed(2)}s
-              </span>
-            </p>
-            <p className="text-2xl text-black">
-              Altura:{" "}
-              <span className="text-secondary font-medium">
-                {data.height.toFixed(3)}cm
-              </span>
-            </p>
-          </div>
-          <div className="flex items-center justify-around w-full my-20">
-            <OutlinedButton
-              title="Rehacer Test"
-              icon="again"
-              onClick={() => {
-                setStatus("Súbase a la alfombra");
-              }}
-            />
-            <TonalButton title="Guardar Test" icon="check" onClick={saveTest} />
-          </div>
-        </>
+        <div className="flex items-center justify-around w-full my-20">
+          <OutlinedButton
+            title="Rehacer Test"
+            icon="again"
+            onClick={() => {
+              setStatus("Súbase a la alfombra");
+            }}
+          />
+          <TonalButton
+            title={
+              pointer === tests.length - 1 ? "Guardar Test" : "Siguiente Test"
+            }
+            icon="check"
+            onClick={pointer === tests.length - 1 ? saveTest : nextTest}
+          />
+        </div>
       )}
       {status === "Error" && (
         <>

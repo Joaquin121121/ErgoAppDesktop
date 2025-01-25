@@ -59,6 +59,8 @@ function StartTest({
       setNoAthlete(true);
       return;
     }
+    if (study.type === "bosco") {
+    }
     onBlurChange(true);
     setTestInProgress(true);
   };
@@ -87,6 +89,11 @@ function StartTest({
     setNoAthlete(false);
   }, [athlete]);
 
+  useEffect(() => {
+    if (study.type === "bosco") {
+      console.log(study.studies);
+    }
+  }, [study]);
   return (
     <div
       className={`flex-1  relative flex flex-col items-center transition-all duration-300 ease-in-out `}
@@ -319,6 +326,7 @@ function StartTest({
           setTestInProgress={setTestInProgress}
           onBlurChange={onBlurChange}
           customNavigate={customNavigate}
+          tests={study.type === "bosco" ? study.studies : [study.type]}
         />
       )}
     </div>

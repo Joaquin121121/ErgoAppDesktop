@@ -854,7 +854,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
           <OutlinedButton
             title="Ver Estudios"
             onClick={() => {
-              customNavigate("forward", "selectAthlete", "athleteStudies");
+              customNavigate("back", "selectAthlete", "athleteStudies");
               setTimeout(() => {
                 navigate("/athleteStudies?from=athlete");
               }, 300);

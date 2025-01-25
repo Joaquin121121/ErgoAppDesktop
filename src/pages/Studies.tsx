@@ -148,7 +148,7 @@ function Studies({
         } transition-all duration-300 ease-in-out ${animation}`}
         style={{ paddingLeft: isExpanded ? "100px" : "32px" }}
       >
-        <div className="absolute w-16 h-16 top-8 right-8 bg-gray rounded-full"></div>
+        {/* <div className="absolute w-16 h-16 top-8 right-8 bg-gray rounded-full"></div> */}
         <div className="flex mt-12">
           <h1 className="pt-2">
             Bienvenido,{" "}

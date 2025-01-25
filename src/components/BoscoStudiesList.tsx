@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { camelToNatural } from "../utils/utils";
+import { useTranslation } from "react-i18next";
 
 const SortableItem = ({ id, index, isDragging }) => {
   const {
@@ -54,6 +55,8 @@ const SortableItem = ({ id, index, isDragging }) => {
     transition-colors duration-200
   `;
 
+  const { t } = useTranslation();
+
   return (
     <div
       ref={setNodeRef}
@@ -63,7 +66,7 @@ const SortableItem = ({ id, index, isDragging }) => {
       className={className}
     >
       <p className="text-secondary text-lg">
-        {index + 1}. {camelToNatural(id)}
+        {index + 1}. {t(id)}
       </p>
     </div>
   );

@@ -46,7 +46,7 @@ interface DropJumpStudy extends BaseStudy {
 
 interface BoscoStudy extends BaseStudy {
   type: "bosco";
-  studies: (keyof Omit<Studies, "bosco">)[];
+  studies: ("cmj" | "squatJump" | "abalakov")[];
   // Bosco-specific properties
 }
 
@@ -141,7 +141,7 @@ const availableStudies: Studies = {
     type: "bosco",
     name: "BOSCO",
     description: "Combinación de Tests",
-    studies: ["cmj", "squatJump", "abalakov", "multipleJumps"],
+    studies: ["cmj", "squatJump", "abalakov"],
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
@@ -177,10 +177,16 @@ export interface CMJResult {
   heightReached: number;
 }
 
+export interface BoscoResult {
+  cmj: CMJResult;
+  squatJump: CMJResult;
+  abalakov: CMJResult;
+}
+
 export interface CompletedStudy {
   studyInfo: BaseStudy;
   date: Date;
-  results: CMJResult;
+  results: CMJResult | BoscoResult;
 }
 
 export const units = {

@@ -40,16 +40,31 @@ function CompletedStudyCard({
         {formatDate(study.date)}
       </p>
       <h6 className="text-secondary mb-2 text-2xl">{study.studyInfo.name}</h6>
-      {Object.keys(study.results).map((key) => (
+
+      {study.studyInfo.name.toLowerCase() === "bosco" ? (
         <div>
-          <p className="text-lg text-darkGray mt-8">
-            -{t(key)}:{" "}
-            <span className="text-black font-medium">
-              {study.results[key].toFixed(1)} {units[key]}
-            </span>
-          </p>
+          {Object.keys(study.results).map((key) => (
+            <p className="text-lg text-darkGray mt-8">
+              -{t(key)}:{" "}
+              <span className="text-black font-medium">
+                {study.results[key].heightReached.toFixed(1)}{" "}
+                {units.heightReached}
+              </span>
+            </p>
+          ))}
         </div>
-      ))}
+      ) : (
+        Object.keys(study.results).map((key) => (
+          <div>
+            <p className="text-lg text-darkGray mt-8">
+              -{t(key)}:{" "}
+              <span className="text-black font-medium">
+                {study.results[key].toFixed(1)} {units[key]}
+              </span>
+            </p>
+          </div>
+        ))
+      )}
     </div>
   );
 }
