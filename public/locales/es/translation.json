@@ -17,5 +17,7 @@
   "M": "masculino",
   "F": "femenino",
   "O": "otro",
-  "gender": "género"
+  "gender": "género",
+  "flightTime": "Tiempo de vuelo",
+  "heightReached": "Altura alcanzada"
 }

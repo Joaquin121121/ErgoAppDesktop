@@ -444,7 +444,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
         </div>
 
         <p className="text-3xl text-secondary self-center -mt-10">
-          {from ? "Modificar" : "Buscar"} Atleta
+          {from ? "Datos del" : "Buscar"} Atleta
         </p>
 
         {!from && (

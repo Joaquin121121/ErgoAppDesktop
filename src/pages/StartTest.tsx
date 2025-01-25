@@ -318,6 +318,7 @@ function StartTest({
         <TestInProgress
           setTestInProgress={setTestInProgress}
           onBlurChange={onBlurChange}
+          customNavigate={customNavigate}
         />
       )}
     </div>

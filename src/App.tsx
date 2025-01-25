@@ -28,7 +28,7 @@ const Layout = ({
   setIsExpanded: (isExpanded: boolean) => void;
   resetAnimations: () => void;
 }) => {
-  const options = ["studies", "athletes", "about"];
+  const options = ["studies", "athletes" /* "about" */];
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -205,6 +205,7 @@ function App() {
         isExpanded={isExpanded}
         animation={animations.athleteStudies}
         customNavigate={customNavigate}
+        onBlurChange={setIsBlurred}
       />
     ),
   } as const;

@@ -8,6 +8,7 @@ import { CompletedStudy, studyInfoLookup } from "../types/Studies";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
 import { useNavigate } from "react-router-dom";
+import { set } from "lodash";
 
 function TestInProgress({
   setTestInProgress,
@@ -34,15 +35,21 @@ function TestInProgress({
   const [jumpTimes, setJumpTimes] = useState<number[]>([]);
 
   const finishTest = () => {
-    setStatus("Finalizado");
     const avgTime =
       jumpTimes.reduce((acc, time) => acc + time, 0) / jumpTimes.length;
+
+    if (typeof avgTime !== "number") {
+      setStatus("Error");
+      return;
+    }
+    setStatus("Finalizado");
+
     setData({ avgTime: avgTime, height: ((9.81 * avgTime ** 2) / 8) * 100 });
   };
 
   const saveTest = async () => {
     const studyToSave: CompletedStudy = {
-      studyInfo: studyInfoLookup[study.name],
+      studyInfo: studyInfoLookup[study.name.toLowerCase()],
       date: new Date(),
       results: {
         flightTime: data.avgTime,
@@ -50,21 +57,21 @@ function TestInProgress({
       },
     };
 
-    setAthlete({
-      ...athlete,
-      completedStudies: [...athlete.completedStudies, studyToSave],
-    });
     try {
       const result = await saveJson(
         `${naturalToCamelCase(athlete.name)}.json`,
-        athlete,
+        {
+          ...athlete,
+          completedStudies: [...athlete.completedStudies, studyToSave],
+        },
         "athletes"
       );
       console.log(result.message);
-
-      customNavigate("back", "startTest", "testInProgress");
+      setTestInProgress(false);
+      onBlurChange(false);
+      customNavigate("back", "startTest", "studies");
       setTimeout(() => {
-        navigate("/startTest");
+        navigate("/studies");
       }, 300);
     } catch (error) {
       console.log(error);
@@ -72,7 +79,7 @@ function TestInProgress({
   };
 
   useEffect(() => {
-    startSerialListener("COM1", 9600);
+    startSerialListener("COM6", 9600);
   }, []);
 
   useEffect(() => {
@@ -108,12 +115,8 @@ function TestInProgress({
     }
   }, [logs]);
 
-  useEffect(() => {
-    console.log(jumpTimes);
-  }, [jumpTimes]);
-
   return (
-    <div className="bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-1/4 flex flex-col items-center px-16 py-8 h-1/2">
+    <div className="bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-1/4 flex flex-col items-center px-16 py-8 ">
       <div
         className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
         onClick={() => {
@@ -124,7 +127,7 @@ function TestInProgress({
         <img src="/close.png" className="h-6 w-6" alt="" />
       </div>
       <p className="self-center text-3xl text-secondary">{study.name}</p>
-      <p className="self-center mt-16 text-2xl text-black">
+      <p className="self-center my-16 text-2xl text-black">
         Estado: <span className="text-secondary font-medium">{status}</span>
       </p>
       {(status === "Listo para saltar" || status === "Saltando") && (
@@ -151,7 +154,7 @@ function TestInProgress({
               </span>
             </p>
           </div>
-          <div className="flex items-center justify-around w-full my-8">
+          <div className="flex items-center justify-around w-full my-20">
             <OutlinedButton
               title="Rehacer Test"
               icon="again"
@@ -161,6 +164,21 @@ function TestInProgress({
             />
             <TonalButton title="Guardar Test" icon="check" onClick={saveTest} />
           </div>
+        </>
+      )}
+      {status === "Error" && (
+        <>
+          <p className="text-2xl text-black self-center mt-8">
+            Ha ocurrido un error, por favor reinicie el test
+          </p>
+          <OutlinedButton
+            title="Rehacer Test"
+            icon="again"
+            onClick={() => {
+              setStatus("Súbase a la alfombra");
+            }}
+            containerStyles="self-center mt-20 mb-8"
+          />
         </>
       )}
     </div>
