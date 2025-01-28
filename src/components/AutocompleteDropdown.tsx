@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef, KeyboardEvent } from "react";
 import inputStyles from "../styles/inputStyles.module.css";
-import { init } from "i18next";
-import { set } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 interface AutocompleteDropdownProps<T> {
   data: T[];
@@ -163,7 +161,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`w-80 p-2 rounded-2xl bg-offWhite pr-10 ${
+          className={`w-80 p-2 rounded-2xl text-black bg-offWhite pr-10 ${
             inputStyles.input
           } ${error && inputStyles.focused}`}
           disabled={disabled}
@@ -201,7 +199,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
               className={`px-4 py-2 cursor-pointer transition-colors duration-150 rounded-2xl ${
                 index === selectedIndex
                   ? "bg-lightRed text-secondary"
-                  : "hover:bg-lightRed hover:text-secondary"
+                  : "text-black hover:bg-lightRed hover:text-secondary"
               }`}
             >
               {getDisplayValue(item)}

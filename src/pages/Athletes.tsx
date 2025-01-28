@@ -284,7 +284,7 @@ function Athletes({
         </div>
         {!loadedAthletes.length && (
           <>
-            <p className=" text-xl mt-16">No hay atletas cargados</p>
+            <p className=" text-xl mt-16 text-black">No hay atletas cargados</p>
             <TonalButton
               containerStyles=" mt-8"
               title="Nuevo Atleta"

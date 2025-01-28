@@ -68,7 +68,7 @@ function AthleteStudies({
         style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
       >
         <div className="self-end flex w-3/5 items-center">
-          <p className="text-3xl text-dark self-center my-10">
+          <p className="text-3xl text-dark self-center my-10 text-black">
             Estudios Realizados:{" "}
             <span className="text-secondary font-medium">{athlete.name}</span>
           </p>
@@ -101,7 +101,9 @@ function AthleteStudies({
             ))}
           </div>
         ) : (
-          <p className="text-xl my-16 self-center">No hay estudios cargados</p>
+          <p className="text-xl my-16 self-center text-black">
+            No hay estudios cargados
+          </p>
         )}
       </div>
       {studyToDelete && (

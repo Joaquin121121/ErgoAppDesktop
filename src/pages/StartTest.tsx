@@ -103,7 +103,7 @@ function StartTest({
       style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
     >
       <div
-        className={`w-[90%] bg-white shadow-sm rounded-2xl mt-8 flex flex-col px-16 ${
+        className={`w-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col px-16 ${
           (isBlurred || testInProgress) && "blur-md pointer-events-none"
         } transition-all 300 ease-in-out ${animation}`}
       >
@@ -267,20 +267,22 @@ function StartTest({
                   Tiempo
                 </button>
               </div>
-              <div className="flex items-center mt-8 relative w-full">
-                <p className="text-black w-36 text-end mr-12">
-                  {t(study.criteria)}
-                </p>
-                <input
-                  type="numeric"
-                  className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
-                  placeholder="20..."
-                  value={study.sensitivity}
-                  onChange={(e) => {
-                    handleInputChange("sensitivity", e.target.value);
-                  }}
-                />
-              </div>
+              {study.criteria !== "stiffness" && (
+                <div className="flex items-center mt-8 relative w-full">
+                  <p className="text-black w-36 text-end mr-12">
+                    {t(study.criteria)}
+                  </p>
+                  <input
+                    type="numeric"
+                    className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
+                    placeholder="20..."
+                    value={study.criteriaValue}
+                    onChange={(e) => {
+                      handleInputChange("criteriaValue", e.target.value);
+                    }}
+                  />
+                </div>
+              )}
             </>
           )}
           {study.type !== "bosco" && (

@@ -49,7 +49,7 @@ function CompletedStudyCard({
             <p className="text-lg text-darkGray mb-8">
               -{t(key)}:{" "}
               <span className="text-black font-medium">
-                {study.results[key].heightReached.toFixed(1)}{" "}
+                {study.results[key].heightReached?.toFixed(1)}{" "}
                 {units.heightReached}
               </span>
             </p>

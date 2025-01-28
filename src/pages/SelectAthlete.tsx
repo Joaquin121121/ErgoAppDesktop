@@ -103,6 +103,12 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     }
   };
 
+  const handleAthletePointer = (e, athlete) => {
+    // Handle all pointer types (mouse, touch, pen)
+    e.preventDefault();
+    handleAthleteSelect(athlete);
+  };
+
   const handleInputChange = (field: keyof Athlete, value: string | Date) => {
     const VALIDATION_LIMITS = {
       weight: {
@@ -434,10 +440,10 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
     >
       <div
-        className={`w-[90%] bg-white shadow-sm rounded-2xl mt-8 flex flex-col px-16 transition-all duration-300 ease-in-out ${animation}`}
+        className={`w-[95%] bg-white shadow-sm rounded-2xl mt-8 flex flex-col px-8 transition-all duration-300 ease-in-out ${animation}`}
       >
         <div
-          className="mt-4 -mr-10 self-end my-0 p-1 rounded-full bg-lightRed hover:opacity-70 flex justify-center cursor-pointer"
+          className="mt-4 -mr-4 self-end my-0 p-1 rounded-full bg-lightRed hover:opacity-70 flex justify-center cursor-pointer"
           onClick={onClose}
         >
           <img src="/close.png" className="h-10 w-10" alt="" />
@@ -524,7 +530,8 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                           ? "bg-lightRed text-secondary"
                           : "text-black hover:bg-lightRed hover:text-secondary"
                       }`}
-                      onClick={() => handleAthleteSelect(athlete)}
+                      onPointerDown={(e) => handleAthletePointer(e, athlete)}
+                      style={{ touchAction: "none" }} // Prevent default touch actions
                     >
                       {athlete.name}
                     </div>

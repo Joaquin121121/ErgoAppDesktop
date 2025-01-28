@@ -65,12 +65,11 @@ function TestInProgress({
         ...boscoResults,
         [tests[pointer]]: {
           avgTime: avgTime,
-          height: ((9.81 * avgTime ** 2) / 8) * 100,
+          heightReached: ((9.81 * avgTime ** 2) / 8) * 100,
         },
       });
-    } else {
-      setData({ avgTime: avgTime, height: ((9.81 * avgTime ** 2) / 8) * 100 });
     }
+    setData({ avgTime: avgTime, height: ((9.81 * avgTime ** 2) / 8) * 100 });
     setStatus("Finalizado");
   };
 
@@ -115,10 +114,6 @@ function TestInProgress({
   }, []);
 
   useEffect(() => {
-    setStatus("Listo para saltar");
-  }, []);
-
-  useEffect(() => {
     if (
       logs[logs.length - 1] &&
       logs[logs.length - 1].data &&
@@ -148,29 +143,41 @@ function TestInProgress({
         ...jumpTimes,
         getSecondsBetweenDates(startTime, new Date()),
       ]);
+      console.log(
+        study.type,
+        study.type === "multipleJumps" && study.criteriaValue
+      );
       if (
         study.type === "multipleJumps" &&
         study.criteria === "numberOfJumps"
       ) {
-        setCriteriaValue(criteriaValue + 1);
+        console.log("wehere, ", criteriaValue, study.criteriaValue);
         if (criteriaValue === study.criteriaValue) {
-          setStatus("Finalizado");
+          finishTest();
+        } else {
+          setCriteriaValue(criteriaValue + 1);
         }
       }
     }
   }, [logs]);
-
   useEffect(() => {
     if (study.type === "multipleJumps" && study.criteria === "time") {
       const intervalID = setInterval(() => {
-        setTimer(timer + 1);
+        setTimer((prev) => prev + 1); // Use functional update
       }, 1000);
-      setTimeout(() => {
-        setStatus("Finalizado");
+
+      const timeoutID = setTimeout(() => {
+        finishTest();
         clearInterval(intervalID);
       }, study.criteriaValue * 1000);
+
+      // Cleanup function
+      return () => {
+        clearInterval(intervalID);
+        clearTimeout(timeoutID);
+      };
     }
-  });
+  }, []); // Add necessary dependencies
 
   return (
     <div className="bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-1/4 flex flex-col items-center px-16 py-8 ">
@@ -190,19 +197,22 @@ function TestInProgress({
         </p>
       )}
 
-      <div>
-        <p className="self-center mt-16 text-2xl text-black">
+      <div className="w-3/5 flex flex-col self-center">
+        <p className="mt-16 text-2xl text-black">
           Estado: <span className="text-secondary font-medium">{status}</span>
         </p>
-        {study.type === "multipleJumps" && study.criteria === "time" && (
-          <p className="self-center mt-16 text-2xl text-black">
-            <span className="text-secondary font-medium">00:{timer}</span>{" "}
-            segundos
-          </p>
-        )}
         {study.type === "multipleJumps" &&
+          study.criteria === "time" &&
+          status !== "Finalizado" && (
+            <p className="self-center mt-16 text-2xl text-black">
+              <span className="text-secondary font-medium">00:{timer}</span>{" "}
+              segundos
+            </p>
+          )}
+        {study.type === "multipleJumps" &&
+          status !== "Finalizado" &&
           study.criteria === "numberOfJumps" && (
-            <p className="self-center mt-8 text-2xl text-black">
+            <p className="mt-8 text-2xl text-black">
               N° de saltos:{" "}
               <span className="text-secondary font-medium">
                 {criteriaValue} - {study.criteriaValue}

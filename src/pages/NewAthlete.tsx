@@ -363,10 +363,10 @@ function NewAthlete({
       style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
     >
       <div
-        className={`w-[90%] bg-white shadow-sm rounded-2xl mt-8 flex flex-col px-16 transition-all 300 ease-in-out ${animation}`}
+        className={`w-[95%] bg-white shadow-sm rounded-2xl mt-8 flex flex-col px-8 transition-all 300 ease-in-out ${animation}`}
       >
         <div
-          className="mt-4 -mr-10 self-end my-0 p-1 rounded-full bg-lightRed hover:opacity-70 flex justify-center cursor-pointer"
+          className="mt-4 -mr-4 self-end my-0 p-1 rounded-full bg-lightRed hover:opacity-70 flex justify-center cursor-pointer"
           onClick={onClose}
         >
           <img src="/close.png" className="h-10 w-10" alt="close" />
