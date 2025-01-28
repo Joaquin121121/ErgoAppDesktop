@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, KeyboardEvent } from "react";
 import inputStyles from "../styles/inputStyles.module.css";
 import { init } from "i18next";
 import { set } from "react-hook-form";
-
+import { useTranslation } from "react-i18next";
 interface AutocompleteDropdownProps<T> {
   data: T[];
   onSelect?: (value: T[keyof T] | T) => void;
@@ -38,6 +38,8 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const dropdownRef = useRef(null);
   const listRef = useRef(null);
+
+  const { t } = useTranslation();
 
   // Get display value for an item
   const getDisplayValue = (item) => {
@@ -153,7 +155,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
       <div className="relative flex flex-row items-center">
         <input
           type="text"
-          value={query}
+          value={t(query)}
           onChange={(e) => {
             setQuery(e.target.value);
             setIsOpen(true);
@@ -179,6 +181,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
             className="ml-4 hover:opacity-70 transition-all duration-200 h-7 w-7 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
             onClick={() => {
               setReset(true);
+              setQuery("");
             }}
           >
             <img src="/close.png" className="h-5 w-5" alt="" />

@@ -43,6 +43,8 @@ function TestInProgress({
     squatJump: { flightTime: 0, heightReached: 0 },
     abalakov: { flightTime: 0, heightReached: 0 },
   });
+  const [criteriaValue, setCriteriaValue] = useState(0);
+  const [timer, setTimer] = useState(0);
 
   const nextTest = () => {
     setJumpTimes([]);
@@ -73,8 +75,10 @@ function TestInProgress({
   };
 
   const saveTest = async () => {
+    console.log(naturalToCamelCase(study.name));
+    console.log(studyInfoLookup[naturalToCamelCase(study.name)]);
     const studyToSave: CompletedStudy = {
-      studyInfo: studyInfoLookup[study.name.toLowerCase()],
+      studyInfo: studyInfoLookup[naturalToCamelCase(study.name)],
       date: new Date(),
       results:
         study.type === "bosco"
@@ -111,7 +115,7 @@ function TestInProgress({
   }, []);
 
   useEffect(() => {
-    setStatus("Finalizado");
+    setStatus("Listo para saltar");
   }, []);
 
   useEffect(() => {
@@ -144,8 +148,29 @@ function TestInProgress({
         ...jumpTimes,
         getSecondsBetweenDates(startTime, new Date()),
       ]);
+      if (
+        study.type === "multipleJumps" &&
+        study.criteria === "numberOfJumps"
+      ) {
+        setCriteriaValue(criteriaValue + 1);
+        if (criteriaValue === study.criteriaValue) {
+          setStatus("Finalizado");
+        }
+      }
     }
   }, [logs]);
+
+  useEffect(() => {
+    if (study.type === "multipleJumps" && study.criteria === "time") {
+      const intervalID = setInterval(() => {
+        setTimer(timer + 1);
+      }, 1000);
+      setTimeout(() => {
+        setStatus("Finalizado");
+        clearInterval(intervalID);
+      }, study.criteriaValue * 1000);
+    }
+  });
 
   return (
     <div className="bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-1/4 flex flex-col items-center px-16 py-8 ">
@@ -169,6 +194,22 @@ function TestInProgress({
         <p className="self-center mt-16 text-2xl text-black">
           Estado: <span className="text-secondary font-medium">{status}</span>
         </p>
+        {study.type === "multipleJumps" && study.criteria === "time" && (
+          <p className="self-center mt-16 text-2xl text-black">
+            <span className="text-secondary font-medium">00:{timer}</span>{" "}
+            segundos
+          </p>
+        )}
+        {study.type === "multipleJumps" &&
+          study.criteria === "numberOfJumps" && (
+            <p className="self-center mt-8 text-2xl text-black">
+              N° de saltos:{" "}
+              <span className="text-secondary font-medium">
+                {criteriaValue} - {study.criteriaValue}
+              </span>{" "}
+            </p>
+          )}
+
         {status === "Finalizado" && (
           <>
             <p className="text-2xl text-black mt-4">

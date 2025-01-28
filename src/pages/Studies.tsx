@@ -12,6 +12,9 @@ import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
 import inputStyles from "../styles/inputStyles.module.css";
 import useSerialMonitor from "../hooks/useSerialMonitor";
+import { statsToMeasure, availableEquipment } from "../types/Studies";
+import ReusableFilter from "../components/ReusableFilter";
+
 function Studies({
   onBlurChange,
   isExpanded,
@@ -54,6 +57,24 @@ function Studies({
     ...Object.entries(availableStudies),
   ]);
   const [filteredStudies, setFilteredStudies] = useState(allStudies);
+
+  const filterSections = [
+    {
+      title: "Equipamiento",
+      options: availableEquipment.map((equipment) => ({
+        id: equipment,
+        label: equipment,
+      })),
+      selectedOptions: selectedEquipment,
+      onOptionSelect: (equipment: string) => {
+        setSelectedEquipment((prev) =>
+          prev.includes(equipment)
+            ? prev.filter((e) => e !== equipment)
+            : [...prev, equipment]
+        );
+      },
+    },
+  ];
 
   const loadCustomStudies = async () => {
     try {
@@ -203,16 +224,62 @@ function Studies({
         </div>
       </div>
       {isBlurred && (
-        <Filter
-          selectedEquipment={selectedEquipment}
-          setSelectedEquipment={setSelectedEquipment}
-          selectedStatsToMeasure={selectedStatsToMeasure}
-          setSelectedStatsToMeasure={setSelectedStatsToMeasure}
-          setFilteredStudies={setFilteredStudies}
-          setIsBlurred={setIsBlurred}
-          onBlurChange={onBlurChange}
-          top={overlayPosition.top}
-          right={overlayPosition.right}
+        <ReusableFilter
+          sections={filterSections}
+          position={overlayPosition}
+          onClose={() => {
+            setIsBlurred(false);
+            onBlurChange(false);
+          }}
+          onReset={() => {
+            setSelectedEquipment([]);
+            setSelectedStatsToMeasure([]);
+          }}
+          onApply={() => {
+            setFilteredStudies(
+              Object.entries(availableStudies).filter(([_, study]) => {
+                // If no filters are selected, show all studies
+                if (
+                  selectedEquipment.length === 0 &&
+                  selectedStatsToMeasure.length === 0
+                ) {
+                  return true;
+                }
+
+                // If only equipment filters are selected
+                if (
+                  selectedEquipment.length > 0 &&
+                  selectedStatsToMeasure.length === 0
+                ) {
+                  return study.preview.equipment.some((e: string) =>
+                    selectedEquipment.includes(e)
+                  );
+                }
+
+                // If only stats filters are selected
+                if (
+                  selectedEquipment.length === 0 &&
+                  selectedStatsToMeasure.length > 0
+                ) {
+                  return study.preview.statsToMeasure.some((e: string) =>
+                    selectedStatsToMeasure.includes(e)
+                  );
+                }
+
+                // If both filters are selected
+                return (
+                  study.preview.equipment.some((e: string) =>
+                    selectedEquipment.includes(e)
+                  ) &&
+                  study.preview.statsToMeasure.some((e: string) =>
+                    selectedStatsToMeasure.includes(e)
+                  )
+                );
+              }) as [keyof Studies, Study][]
+            );
+            setIsBlurred(false);
+            onBlurChange(false);
+          }}
         />
       )}
       {studyToDelete.length && (

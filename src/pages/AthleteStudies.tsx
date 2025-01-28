@@ -86,9 +86,7 @@ function AthleteStudies({
         </div>
 
         {studies.length ? (
-          <div
-            className={`grid grid-cols-3 gap-x-[5%] gap-y-16 w-full px-36 $`}
-          >
+          <div className={`grid grid-cols-3 gap-x-[5%] gap-y-16 w-full px-36 `}>
             {studies.map((study) => (
               <CompletedStudyCard
                 key={

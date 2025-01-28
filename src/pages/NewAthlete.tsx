@@ -9,7 +9,7 @@ import { Athlete, transformToAthlete, isAthlete } from "../types/Athletes";
 import inputStyles from "../styles/inputStyles.module.css";
 import AutocompleteDropdown from "../components/AutocompleteDropdown";
 import { Country, State } from "country-state-city";
-import { disciplines } from "../constants/data";
+import { formattedDisciplines } from "../constants/data";
 import { useSearchParams } from "react-router-dom";
 
 function NewAthlete({
@@ -592,8 +592,10 @@ function NewAthlete({
               </p>
               <AutocompleteDropdown
                 placeholder="Selecciona una disciplina"
-                data={disciplines}
+                data={formattedDisciplines}
                 error={errors.discipline}
+                valueKey="id"
+                displayKey="label"
                 onSelect={(e) => {
                   setAthlete({ ...athlete, discipline: e });
                 }}

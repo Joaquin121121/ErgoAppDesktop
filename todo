@@ -3,4 +3,9 @@ MVP
     Implementar autodeteccion de puerto
     Implementar registro, login, persistencia de sesión
     Implementar estudios en nube (boton de sincronizar ErgoSync, automatico si se detecta conexion a internet)
-    Constatar con Anibal
+    Diseñar e implementar seccion de info
+    Constatar con Anibal    
+    Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
+    Averiguar de personalizar menu de instalacion
+
+Implementar resumen BOSCO test pre-guardar (despues)

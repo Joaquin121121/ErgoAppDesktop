@@ -54,7 +54,7 @@ interface MultipleJumpsStudy extends BaseStudy {
   type: "multipleJumps";
   takeoffFoot: "right" | "left" | "both";
   criteria: "numberOfJumps" | "stiffness" | "time";
-  time: number;
+  criteriaValue: number | null;
   sensitivity: number;
   // MultipleJumps-specific properties
 }
@@ -148,11 +148,11 @@ const availableStudies: Studies = {
   },
   multipleJumps: {
     type: "multipleJumps",
-    name: "Saltos Múltiples",
+    name: "Multiple Jumps",
     description: "Saltos Repetidos Continuos",
     takeoffFoot: "both",
     criteria: "numberOfJumps",
-    time: 30,
+    criteriaValue: 30,
     sensitivity: 10,
     preview: {
       equipment: ["Alfombra de Contacto"],

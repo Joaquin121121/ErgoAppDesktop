@@ -54,7 +54,11 @@ const TonalButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
                 alt={`${icon} icon`}
               />
             )}
-            <span className={`font-medium ${large && "text-xl"} ${textStyles}`}>
+            <span
+              className={`font-medium truncate whitespace-nowrap ${
+                large && "text-xl"
+              } ${textStyles}`}
+            >
               {title}
             </span>
             {icon && !inverse && (

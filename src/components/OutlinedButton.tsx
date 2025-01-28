@@ -57,7 +57,7 @@ const OutlinedButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
               />
             )}
             <span
-              className={`text-secondary font-medium ${
+              className={`text-secondary font-medium truncate whitespace-nowrap ${
                 large && "text-xl"
               } ${textStyles}`}
             >

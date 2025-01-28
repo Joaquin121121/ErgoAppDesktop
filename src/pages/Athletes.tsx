@@ -2,12 +2,26 @@ import React, { useState, useRef, useEffect } from "react";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import inputStyles from "../styles/inputStyles.module.css";
-import { Athlete, isAthlete, transformToAthlete } from "../types/Athletes";
+import {
+  Athlete,
+  genders,
+  isAthlete,
+  transformToAthlete,
+} from "../types/Athletes";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import AthleteCard from "../components/AthleteCard";
 import { useStudyContext } from "../contexts/StudyContext";
 import { naturalToCamelCase } from "../utils/utils";
 import { useNavigate } from "react-router-dom";
+import AthleteFilter from "../components/AthleteFilter";
+import { athleteAgeRanges } from "../types/Athletes";
+
+// New interface for filter state
+interface FilterState {
+  age: string[];
+  gender: string[];
+  discipline: string[];
+}
 
 function Athletes({
   isExpanded,
@@ -27,6 +41,16 @@ function Athletes({
   const [isBlurred, setIsBlurred] = useState(false);
   const [searchBarFocus, setSearchBarFocus] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterTextPosition, setFilterTextPosition] = useState({
+    left: 0,
+    top: 0,
+  });
+  // Updated filter state to handle multiple criteria
+  const [selectedFilters, setSelectedFilters] = useState<FilterState>({
+    age: [],
+    gender: [],
+    discipline: [],
+  });
 
   const navigate = useNavigate();
 
@@ -42,11 +66,39 @@ function Athletes({
   const [athleteToDelete, setAthleteToDelete] = useState("");
 
   const { readDirectoryJsons, deleteJson } = useJsonFiles();
-
   const { resetAthlete, setAthlete } = useStudyContext();
-
   const filterButtonRef = useRef(null);
 
+  // Updated validation function to handle multiple criteria
+  const validateAthlete = (athlete: Athlete): boolean => {
+    const hasNoFilters = Object.values(selectedFilters).every(
+      (filters) => filters.length === 0
+    );
+    if (hasNoFilters) return true;
+
+    const validations = {
+      age: (): boolean => {
+        if (selectedFilters.age.length === 0) return true;
+        const age = Math.floor(
+          (new Date().getTime() - new Date(athlete.birthDate).getTime()) /
+            (365.25 * 24 * 60 * 60 * 1000)
+        );
+        return athleteAgeRanges
+          .filter((range) => selectedFilters.age.includes(range.id.toString()))
+          .some((range) => range.minAge <= age && range.maxAge >= age);
+      },
+      gender: (): boolean =>
+        selectedFilters.gender.length === 0 ||
+        selectedFilters.gender.includes(athlete.gender),
+      discipline: (): boolean =>
+        selectedFilters.discipline.length === 0 ||
+        selectedFilters.discipline.includes(athlete.discipline),
+    };
+
+    return Object.values(validations).every((validation) => validation());
+  };
+
+  // Load athletes
   const loadAthletes = async () => {
     try {
       const result = await readDirectoryJsons("athletes");
@@ -64,7 +116,11 @@ function Athletes({
     }
   };
 
-  const handleFilter = () => {};
+  // Other handlers
+  const handleFilter = () => {
+    setIsBlurred(true);
+    onBlurChange(true);
+  };
 
   const createAthlete = () => {
     customNavigate("forward", "athletes", "newAthlete");
@@ -100,6 +156,15 @@ function Athletes({
     }
   };
 
+  const resetFilters = () => {
+    setSelectedFilters({
+      age: [],
+      gender: [],
+      discipline: [],
+    });
+  };
+
+  // Effects
   useEffect(() => {
     loadAthletes();
     resetAthlete();
@@ -107,11 +172,13 @@ function Athletes({
 
   useEffect(() => {
     setFilteredAthletes(
-      loadedAthletes.filter(([_, athlete]) =>
-        athlete.name.toLowerCase().includes(searchTerm.toLowerCase())
+      loadedAthletes.filter(
+        ([_, athlete]) =>
+          athlete.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+          validateAthlete(athlete)
       )
     );
-  }, [loadedAthletes, searchTerm]);
+  }, [loadedAthletes, searchTerm, selectedFilters]);
 
   useEffect(() => {
     if (athleteToDelete.length) {
@@ -120,6 +187,23 @@ function Athletes({
     }
     onBlurChange(false);
   }, [athleteToDelete.length]);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      if (filterButtonRef.current) {
+        const rect = filterButtonRef.current.getBoundingClientRect();
+        setFilterTextPosition({
+          left: rect.left + rect.width / 2,
+          top: rect.bottom + 16, // 8px spacing below the button
+        });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+
+    return () => window.removeEventListener("resize", updatePosition);
+  }, [filterButtonRef.current]);
 
   return (
     <>
@@ -168,6 +252,23 @@ function Athletes({
             containerStyles="ml-8"
             icon="add"
           />
+          {Object.values(selectedFilters).some(
+            (value) => Array.isArray(value) && value.length > 0
+          ) && (
+            <div
+              className="fixed  flex items-center cursor-pointer transform -translate-x-1/2 "
+              style={{
+                left: `${filterTextPosition.left}px`,
+                top: `${filterTextPosition.top}px`,
+              }}
+              onClick={resetFilters}
+            >
+              <p className="text-secondary hover:text-lightRed transition-all duration-300 ease-in-out">
+                Restablecer Filtros
+              </p>
+              <img src="/reset.png" alt="" className="h-5 w-5 ml-4" />
+            </div>
+          )}
         </div>
         <div className="grid grid-cols-3 gap-x-[5%] gap-y-16 w-full  px-36">
           {filteredAthletes.map(([key, athlete]) => (
@@ -221,6 +322,17 @@ function Athletes({
             />
           </div>
         </div>
+      )}
+      {isBlurred && (
+        <AthleteFilter
+          onClose={() => {
+            setIsBlurred(false);
+            onBlurChange(false);
+          }}
+          selectedFilters={selectedFilters}
+          setSelectedFilters={setSelectedFilters}
+          resetFilters={resetFilters}
+        />
       )}
     </>
   );

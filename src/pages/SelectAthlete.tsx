@@ -10,7 +10,7 @@ import TonalButton from "../components/TonalButton";
 import { naturalToCamelCase } from "../utils/utils";
 import AutocompleteDropdown from "../components/AutocompleteDropdown";
 import { Country, State } from "country-state-city";
-import { disciplines } from "../constants/data";
+import { formattedDisciplines } from "../constants/data";
 import { getStateByCodeAndCountry } from "country-state-city/lib/state";
 import { useSearchParams } from "react-router-dom";
 import _ from "lodash";
@@ -777,8 +777,10 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                 <AutocompleteDropdown
                   initialQuery={athlete.discipline}
                   placeholder="Selecciona una disciplina"
-                  data={disciplines}
+                  data={formattedDisciplines}
                   error={errors.discipline}
+                  valueKey="id"
+                  displayKey="label"
                   onSelect={(e) => {
                     setAthlete({ ...athlete, discipline: e });
                   }}

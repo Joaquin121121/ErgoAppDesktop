@@ -7,6 +7,7 @@ import BoscoStudiesList from "../components/BoscoStudiesList";
 import inputStyles from "../styles/inputStyles.module.css";
 import { Studies } from "../types/Studies";
 import TestInProgress from "../components/TestInProgress";
+import { useTranslation } from "react-i18next";
 function StartTest({
   isExpanded,
   onBlurChange,
@@ -27,6 +28,8 @@ function StartTest({
   const [noAthlete, setNoAthlete] = useState(false);
 
   const navigate = useNavigate();
+
+  const { t } = useTranslation();
 
   const { study, setStudy, athlete, resetAthlete } = useStudyContext();
 
@@ -112,7 +115,7 @@ function StartTest({
         </div>
 
         <p className="text-5xl text-secondary self-center -mt-10">
-          {study["name"]}
+          {t(study["name"])}
         </p>
         <p className="text-4xl mt-8 text-black">Datos del Atleta</p>
         {athlete.name.length ? (
@@ -228,41 +231,57 @@ function StartTest({
             </div>
           )}
           {study.type === "multipleJumps" && (
-            <div className="flex items-center mt-8">
-              <p className="text-black mr-8 w-36 text-right">Criterio</p>
-              <button
-                key={`${study.criteria}-numberOfJumps`}
-                onClick={() =>
-                  setStudy({ ...study, criteria: "numberOfJumps" })
-                }
-                className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                  study.criteria === "numberOfJumps" &&
-                  "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
-                }`}
-              >
-                N° de saltos
-              </button>
-              <button
-                key={`${study.criteria}-stiffness`}
-                onClick={() => setStudy({ ...study, criteria: "stiffness" })}
-                className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                  study.criteria === "stiffness" &&
-                  "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
-                }`}
-              >
-                Stiffness
-              </button>
-              <button
-                key={`${study.type}-time`}
-                onClick={() => setStudy({ ...study, criteria: "time" })}
-                className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                  study.criteria === "time" &&
-                  "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
-                }`}
-              >
-                Tiempo
-              </button>
-            </div>
+            <>
+              <div className="flex items-center mt-8">
+                <p className="text-black mr-8 w-36 text-right">Criterio</p>
+                <button
+                  key={`${study.criteria}-numberOfJumps`}
+                  onClick={() =>
+                    setStudy({ ...study, criteria: "numberOfJumps" })
+                  }
+                  className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+                    study.criteria === "numberOfJumps" &&
+                    "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+                  }`}
+                >
+                  N° de saltos
+                </button>
+                <button
+                  key={`${study.criteria}-stiffness`}
+                  onClick={() => setStudy({ ...study, criteria: "stiffness" })}
+                  className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+                    study.criteria === "stiffness" &&
+                    "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+                  }`}
+                >
+                  Stiffness
+                </button>
+                <button
+                  key={`${study.type}-time`}
+                  onClick={() => setStudy({ ...study, criteria: "time" })}
+                  className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+                    study.criteria === "time" &&
+                    "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+                  }`}
+                >
+                  Tiempo
+                </button>
+              </div>
+              <div className="flex items-center mt-8 relative w-full">
+                <p className="text-black w-36 text-end mr-12">
+                  {t(study.criteria)}
+                </p>
+                <input
+                  type="numeric"
+                  className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
+                  placeholder="20..."
+                  value={study.sensitivity}
+                  onChange={(e) => {
+                    handleInputChange("sensitivity", e.target.value);
+                  }}
+                />
+              </div>
+            </>
           )}
           {study.type !== "bosco" && (
             <div className="flex items-center mt-8 relative w-full">

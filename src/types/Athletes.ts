@@ -159,3 +159,76 @@ export function transformToAthlete(data: unknown): Athlete | null {
     return null;
   }
 }
+
+export const genders = [
+  { label: "male", id: "M" },
+  { label: "female", id: "f" },
+  { label: "other", id: "O" },
+];
+
+export const athleteAgeRanges = [
+  {
+    id: 1,
+    name: "Pre-infantil",
+    label: "Pre-infantil (8-10)",
+    minAge: 8,
+    maxAge: 10,
+    description: "Iniciación deportiva",
+  },
+  {
+    id: 2,
+    label: "Infantil (11-13)",
+    minAge: 11,
+    maxAge: 13,
+    description: "Desarrollo básico",
+  },
+  {
+    id: 3,
+    label: "Cadete (14-15)",
+    minAge: 14,
+    maxAge: 15,
+    description: "Desarrollo intermedio",
+  },
+  {
+    id: 4,
+    label: "Juvenil (16-17)",
+    minAge: 16,
+    maxAge: 17,
+    description: "Desarrollo avanzado",
+  },
+  {
+    id: 5,
+    label: "Sub-23 (18-22)",
+    minAge: 18,
+    maxAge: 22,
+    description: "Alto rendimiento juvenil",
+  },
+  {
+    id: 6,
+    label: "Senior (23-39)",
+    minAge: 23,
+    maxAge: 39,
+    description: "Máximo rendimiento",
+  },
+  {
+    id: 7,
+    label: "+40",
+    minAge: 40,
+    maxAge: 49,
+    description: "Categoría máster primera década",
+  },
+  {
+    id: 8,
+    label: "+50",
+    minAge: 50,
+    maxAge: 59,
+    description: "Categoría máster segunda década",
+  },
+  {
+    id: 9,
+    label: "+60",
+    minAge: 60,
+    maxAge: 120,
+    description: "Categoría máster tercera década",
+  },
+];

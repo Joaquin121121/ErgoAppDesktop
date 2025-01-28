@@ -14,6 +14,8 @@ import { camelToNatural } from "./utils/utils";
 import NewAthlete from "./pages/NewAthlete";
 import SelectAthlete from "./pages/SelectAthlete";
 import AthleteStudies from "./pages/AthleteStudies";
+import OutlinedButton from "./components/OutlinedButton";
+import { Window } from "@tauri-apps/api/window";
 
 const Layout = ({
   children,
@@ -21,18 +23,20 @@ const Layout = ({
   isExpanded,
   setIsExpanded,
   resetAnimations,
+  selectedOption,
+  setSelectedOption,
 }: {
   children: React.ReactNode;
   isBlurred?: boolean;
   isExpanded: boolean;
   setIsExpanded: (isExpanded: boolean) => void;
   resetAnimations: () => void;
+  selectedOption: string;
+  setSelectedOption: (selectedOption: string) => void;
 }) => {
   const options = ["studies", "athletes" /* "about" */];
   const navigate = useNavigate();
   const { t } = useTranslation();
-
-  const [selectedOption, setSelectedOption] = useState("studies");
 
   return (
     <>
@@ -96,6 +100,9 @@ const Layout = ({
 function App() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isBlurred, setIsBlurred] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(true);
+  const [selectedOption, setSelectedOption] = useState("studies");
+  const appWindow = Window.getCurrent();
 
   const keys = [
     "studies",
@@ -210,27 +217,69 @@ function App() {
     ),
   } as const;
 
+  const expandScreen = async () => {
+    const result = await appWindow.maximize();
+    console.log(result);
+  };
+
+  useEffect(() => {
+    // Check initial maximized state
+    const checkMaximized = async () => {
+      const maximized = await appWindow.isMaximized();
+      setIsMaximized(maximized);
+    };
+
+    checkMaximized();
+
+    // Listen for window resize events which might indicate maximization
+    const unlisten = appWindow.onResized(async () => {
+      const maximized = await appWindow.isMaximized();
+      setIsMaximized(maximized);
+    });
+
+    // Cleanup listener on unmount
+    return () => {
+      unlisten.then((unsubscribe) => unsubscribe());
+    };
+  }, []);
+
   return (
     <HashRouter>
-      <Layout
-        isBlurred={isBlurred}
-        isExpanded={isExpanded}
-        setIsExpanded={setIsExpanded}
-        resetAnimations={resetAnimations}
-      >
-        <Routes>
-          <Route path="/" element={pages.studies} />
-          <Route path="/studies" element={pages.studies} />
-          <Route path="/athletes" element={pages.athletes} />
-          <Route path="/about" element={pages.about} />
-          <Route path="/startTest" element={pages.startTest} />
-          <Route path="/newTest" element={pages.newTest} />
-          <Route path="/selectAthlete" element={pages.selectAthlete} />
-          <Route path="/newAthlete" element={pages.newAthlete} />
-          <Route path="/athleteStudies" element={pages.athleteStudies} />
-          <Route path="*" element={pages.notFound} />
-        </Routes>
-      </Layout>
+      {isMaximized ? (
+        <Layout
+          isBlurred={isBlurred}
+          isExpanded={isExpanded}
+          setIsExpanded={setIsExpanded}
+          resetAnimations={resetAnimations}
+          selectedOption={selectedOption}
+          setSelectedOption={setSelectedOption}
+        >
+          <Routes>
+            <Route path="/" element={pages.studies} />
+            <Route path="/studies" element={pages.studies} />
+            <Route path="/athletes" element={pages.athletes} />
+            <Route path="/about" element={pages.about} />
+            <Route path="/startTest" element={pages.startTest} />
+            <Route path="/newTest" element={pages.newTest} />
+            <Route path="/selectAthlete" element={pages.selectAthlete} />
+            <Route path="/newAthlete" element={pages.newAthlete} />
+            <Route path="/athleteStudies" element={pages.athleteStudies} />
+            <Route path="*" element={pages.notFound} />
+          </Routes>
+        </Layout>
+      ) : (
+        <div className="w-[100vw] h-[100vh] flex flex-col items-center justify-center bg-secondary overflow-hidden">
+          <img className="w-1/2 h-1/2 object-contain" src="/splash.png" />
+          {/* <OutlinedButton
+            title="Maximizar Ventana"
+            onClick={expandScreen}
+            icon="expand"
+          /> */}
+          <p className="text-2xl text-offWhite mt-8">
+            Maximice la ventana para usar la app
+          </p>
+        </div>
+      )}
     </HashRouter>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Athlete } from "../types/Athletes";
+import { useTranslation } from "react-i18next";
 
 type AthleteCardProps = {
   athlete: Athlete;
@@ -16,6 +17,7 @@ function AthleteCard({
   width,
   onDelete,
 }: AthleteCardProps) {
+  const { t } = useTranslation();
   return (
     <div
       className={`bg-white rounded-2xl shadow-sm hover:shadow-xl flex relative flex-col hover:scale-105 hover:cursor-pointer transition-transform active:opacity-70 duration-300 ease-in-out px-4 pt-4 `}
@@ -37,7 +39,9 @@ function AthleteCard({
         <div>
           <p className="text-lg text-darkGray mt-8">
             -Disciplina:{" "}
-            <span className="text-black font-medium">{athlete.discipline}</span>
+            <span className="text-black font-medium">
+              {t(athlete.discipline)}
+            </span>
           </p>
           <p className="text-lg text-darkGray mt-4">
             -Categoría:{" "}
