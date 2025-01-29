@@ -16,6 +16,7 @@ function TestInProgress({
   onBlurChange,
   customNavigate,
   tests,
+  setSelectedOption,
 }: {
   setTestInProgress: (testInProgress: boolean) => void;
   onBlurChange: (isBlurred: boolean) => void;
@@ -25,6 +26,7 @@ function TestInProgress({
     nextPage: string
   ) => void;
   tests: string[];
+  setSelectedOption: (selectedOption: string) => void;
 }) {
   const [status, setStatus] = useState("Súbase a la alfombra");
   const [data, setData] = useState({ avgTime: 0, height: 0 });
@@ -53,6 +55,7 @@ function TestInProgress({
   };
 
   const finishTest = () => {
+    setIntervalID(null);
     const avgTime =
       jumpTimes.reduce((acc, time) => acc + time, 0) / jumpTimes.length;
 
@@ -98,9 +101,10 @@ function TestInProgress({
       console.log(result.message);
       setTestInProgress(false);
       onBlurChange(false);
-      customNavigate("back", "startTest", "studies");
+      customNavigate("back", "startTest", "athleteStudies");
+      setSelectedOption("athletes");
       setTimeout(() => {
-        navigate("/studies");
+        navigate("/athleteStudies");
       }, 300);
     } catch (error) {
       console.log(error);
@@ -119,6 +123,7 @@ function TestInProgress({
       status !== "Finalizado"
     ) {
       setStatus("Listo para saltar");
+      startTimer();
     }
 
     if (
@@ -155,7 +160,10 @@ function TestInProgress({
       }
     }
   }, [logs]);
-  useEffect(() => {
+  const startTimer = () => {
+    if (intervalID) {
+      return;
+    }
     if (study.type === "multipleJumps" && study.criteria === "time") {
       setIntervalID(
         setInterval(() => {
@@ -163,7 +171,7 @@ function TestInProgress({
         }, 1000)
       );
     }
-  }, []);
+  };
 
   useEffect(() => {
     if (

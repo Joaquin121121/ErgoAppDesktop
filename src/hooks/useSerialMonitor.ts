@@ -77,6 +77,10 @@ const useSerialMonitor = () => {
     setLogs([]);
   };
 
+  useEffect(() => {
+    console.log(logs);
+  }, [logs]);
+
   return {
     serialData,
     error,

@@ -13,6 +13,7 @@ function StartTest({
   onBlurChange,
   animation,
   customNavigate,
+  setSelectedOption,
 }: {
   isExpanded: boolean;
   onBlurChange: (isBlurred: boolean) => void;
@@ -22,6 +23,7 @@ function StartTest({
     page: string,
     nextPage: string
   ) => void;
+  setSelectedOption: (selectedOption: string) => void;
 }) {
   const [isBlurred, setIsBlurred] = useState(false);
   const [testInProgress, setTestInProgress] = useState(false);
@@ -348,6 +350,7 @@ function StartTest({
           onBlurChange={onBlurChange}
           customNavigate={customNavigate}
           tests={study.type === "bosco" ? study.studies : [study.type]}
+          setSelectedOption={setSelectedOption}
         />
       )}
     </div>

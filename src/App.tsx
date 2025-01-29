@@ -183,6 +183,7 @@ function App() {
         onBlurChange={setIsBlurred}
         animation={animations.startTest}
         customNavigate={customNavigate}
+        setSelectedOption={setSelectedOption}
       />
     ),
     newTest: (
