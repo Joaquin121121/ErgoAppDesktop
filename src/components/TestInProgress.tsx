@@ -112,8 +112,14 @@ function TestInProgress({
   };
 
   useEffect(() => {
-    startSerialListener("COM6", 9600);
+    startSerialListener(9600);
   }, []);
+
+  useEffect(() => {
+    if (error?.includes("No compatible device found")) {
+      setStatus("Error: No dispositivo encontrado");
+    }
+  }, [error]);
 
   useEffect(() => {
     if (
@@ -196,8 +202,9 @@ function TestInProgress({
       </div>
       <p className="self-center text-4xl text-secondary">{t(study.type)}</p>
       {tests.length > 1 && (
-        <p className="self-center text-3xl mt-12 text-secondary">
-          Test {pointer + 1}: {t(tests[pointer])}
+        <p className="self-center text-3xl mt-8 text-black">
+          Test {pointer + 1}:{" "}
+          <span className="text-secondary">{t(tests[pointer])}</span>
         </p>
       )}
 
@@ -258,6 +265,7 @@ function TestInProgress({
             title="Rehacer Test"
             icon="again"
             onClick={() => {
+              startSerialListener(9600);
               setStatus("Súbase a la alfombra");
               setCriteriaValue(0);
             }}

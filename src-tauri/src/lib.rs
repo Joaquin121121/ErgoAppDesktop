@@ -18,7 +18,8 @@ pub fn run() {
             commands::read_json,
             commands::read_directory_jsons,
             commands::delete_json,
-            commands::listen_serial
+            commands::listen_serial,
+            commands::list_serial_ports
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

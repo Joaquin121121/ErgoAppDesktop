@@ -25,6 +25,14 @@ pub struct FileData {
     name: String,
     content: serde_json::Value,
 }
+#[derive(Debug, Serialize)]
+pub struct SerialPortInfo {
+    port_name: String,
+    port_type: String,
+    manufacturer: Option<String>,
+    product: Option<String>,
+    serial_number: Option<String>,
+}
 
 // Note the #[tauri::command] attribute on each function
 #[tauri::command(async)]
@@ -174,60 +182,138 @@ pub async fn delete_json(
 }
 
 #[tauri::command]
-pub fn listen_serial(app_handle: tauri::AppHandle, port_name: String, baud_rate: u32) -> Result<(), String> {
-    // Ensure Manager is in scope for `get_webview_window`
-    let window = app_handle.get_webview_window("main").ok_or("Main window not found")?;
+pub async fn list_serial_ports() -> Result<Vec<SerialPortInfo>, String> {
+    let ports = serialport::available_ports()
+        .map_err(|e| format!("Error listing serial ports: {}", e))?;
 
-    // Wrap window in Arc<Mutex<>> to share across threads safely
+    println!("Found {} ports", ports.len());  // Debug print
+
+    let port_info: Vec<SerialPortInfo> = ports
+        .into_iter()
+        .map(|p| {
+            let port_type = match &p.port_type {
+                serialport::SerialPortType::UsbPort(info) => {
+                    println!("USB Port found: {}", p.port_name);  // Debug print
+                    println!("  Manufacturer: {:?}", info.manufacturer);
+                    println!("  Product: {:?}", info.product);
+                    println!("  Serial Number: {:?}", info.serial_number);
+                    
+                    SerialPortInfo {
+                        port_name: p.port_name,
+                        port_type: "USB".to_string(),
+                        manufacturer: info.manufacturer.clone(),
+                        product: info.product.clone(),
+                        serial_number: info.serial_number.clone(),
+                    }
+                }
+                _ => {
+                    println!("Non-USB Port found: {}", p.port_name);  // Debug print
+                    SerialPortInfo {
+                        port_name: p.port_name,
+                        port_type: "Unknown".to_string(),
+                        manufacturer: None,
+                        product: None,
+                        serial_number: None,
+                    }
+                }
+            };
+            port_type
+        })
+        .collect();
+
+    Ok(port_info)
+}
+
+#[tauri::command]
+pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Result<String, String> {
+    // First try to list all ports and find our target port
+    let ports = serialport::available_ports()
+        .map_err(|e| format!("Error listing serial ports: {}", e))?;
+
+    let port_name = match ports.into_iter().find(|p| {
+        if let serialport::SerialPortType::UsbPort(info) = &p.port_type {
+            let known_manufacturers = ["arduino", "ftdi", "silicon labs", "ch340", "wch.cn", "1a86"];
+            info.manufacturer.as_ref().map_or(false, |m| {
+                known_manufacturers.iter().any(|&km| m.to_lowercase().contains(km))
+            })
+        } else {
+            false
+        }
+    }) {
+        Some(p) => p.port_name,
+        None => return Err("No compatible device found".to_string()),
+    };
+
+    let thread_port_name = port_name.clone();
+    
+    // Create the port with a longer timeout and specific settings
+    let port_builder = serialport::new(&thread_port_name, baud_rate)
+        .timeout(std::time::Duration::from_millis(100))
+        .data_bits(serialport::DataBits::Eight)
+        .flow_control(serialport::FlowControl::None)
+        .parity(serialport::Parity::None)
+        .stop_bits(serialport::StopBits::One);
+
+    // Try to open the port
+    println!("Attempting to open port: {}", thread_port_name);
+    
+    let port = match port_builder.open() {
+        Ok(port) => port,
+        Err(e) => {
+            let error_msg = format!("Failed to open {}: {}", thread_port_name, e);
+            println!("{}", error_msg);
+            return Err(error_msg);
+        }
+    };
+
+    // If we successfully opened the port, set up the communication threads
+    let window = app_handle.get_webview_window("main").ok_or("Main window not found")?;
     let window = Arc::new(Mutex::new(window));
     
     let (tx, rx) = std::sync::mpsc::channel();
 
-    // Spawn a thread for serial communication
+    // Spawn the reader thread
     thread::spawn({
-        let window = Arc::clone(&window); // Clone the Arc to move it into the thread
+        let window = Arc::clone(&window);
         move || {
-            let port = serialport::new(&port_name, baud_rate)
-                .timeout(std::time::Duration::from_secs(2))
-                .open();
-
-            let mut port = match port {
-                Ok(p) => p,
-                Err(e) => {
-                    let _ = tx.send(format!("Error opening serial port: {}", e));
-                    return;
-                }
-            };
-
             let mut reader = io::BufReader::new(port);
+            let mut buffer = String::new();
 
             loop {
-                let mut buffer = String::new();
+                buffer.clear(); // Clear the buffer before each read
                 match reader.read_line(&mut buffer) {
+                    Ok(0) => {
+                        // End of stream
+                        break;
+                    }
                     Ok(_) => {
                         let trimmed = buffer.trim().to_string();
                         if !trimmed.is_empty() {
-                            // Lock the window and emit data
                             if let Ok(window) = window.lock() {
-                                let _ = window.emit("serial-data", trimmed);
+                                if let Err(e) = window.emit("serial-data", trimmed) {
+                                    println!("Error emitting data: {}", e);
+                                    break;
+                                }
                             }
                         }
                     }
                     Err(e) => {
-                        let _ = tx.send(format!("Error reading from serial port: {}", e));
-                        break;
+                        if e.kind() != io::ErrorKind::TimedOut {
+                            let _ = tx.send(format!("Error reading from port: {}", e));
+                            break;
+                        }
                     }
                 }
             }
+            println!("Reader thread finished");
         }
     });
 
-    // Log errors from the serial thread to the frontend
+    // Spawn the error handler thread
     thread::spawn({
-        let window = Arc::clone(&window); // Clone the Arc to move it into this thread
+        let window = Arc::clone(&window);
         move || {
             for err in rx {
-                // Lock the window and emit error messages
                 if let Ok(window) = window.lock() {
                     let _ = window.emit("serial-error", err);
                 }
@@ -235,5 +321,5 @@ pub fn listen_serial(app_handle: tauri::AppHandle, port_name: String, baud_rate:
         }
     });
 
-    Ok(())
+    Ok(port_name)
 }

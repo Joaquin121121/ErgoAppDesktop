@@ -287,7 +287,7 @@ function StartTest({
               )}
             </>
           )}
-          {study.type !== "bosco" && (
+          {/*  {study.type !== "bosco" && (
             <div className="flex items-center mt-8 relative w-full">
               <p className="text-black w-36 text-end mr-12">Sensibilidad</p>
               <input
@@ -307,7 +307,7 @@ function StartTest({
                 <p className="text-secondary ">Qué es la sensibilidad?</p>
               </div>
             </div>
-          )}
+          )} */}
           {study.type === "bosco" && (
             <BoscoStudiesList studies={study.studies} setStudy={setStudy} />
           )}
