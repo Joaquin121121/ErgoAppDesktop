@@ -44,7 +44,7 @@ function TestInProgress({
     abalakov: { flightTime: 0, heightReached: 0 },
   });
   const [criteriaValue, setCriteriaValue] = useState(0);
-  const [timer, setTimer] = useState(0);
+  const [intervalID, setIntervalID] = useState(null);
 
   const nextTest = () => {
     setJumpTimes([]);
@@ -74,8 +74,6 @@ function TestInProgress({
   };
 
   const saveTest = async () => {
-    console.log(naturalToCamelCase(study.name));
-    console.log(studyInfoLookup[naturalToCamelCase(study.name)]);
     const studyToSave: CompletedStudy = {
       studyInfo: studyInfoLookup[naturalToCamelCase(study.name)],
       date: new Date(),
@@ -143,16 +141,13 @@ function TestInProgress({
         ...jumpTimes,
         getSecondsBetweenDates(startTime, new Date()),
       ]);
-      console.log(
-        study.type,
-        study.type === "multipleJumps" && study.criteriaValue
-      );
+
       if (
         study.type === "multipleJumps" &&
         study.criteria === "numberOfJumps"
       ) {
-        console.log("wehere, ", criteriaValue, study.criteriaValue);
-        if (criteriaValue === study.criteriaValue) {
+        const nextValue = criteriaValue + 1;
+        if (nextValue >= study.criteriaValue) {
           finishTest();
         } else {
           setCriteriaValue(criteriaValue + 1);
@@ -162,22 +157,23 @@ function TestInProgress({
   }, [logs]);
   useEffect(() => {
     if (study.type === "multipleJumps" && study.criteria === "time") {
-      const intervalID = setInterval(() => {
-        setTimer((prev) => prev + 1); // Use functional update
-      }, 1000);
-
-      const timeoutID = setTimeout(() => {
-        finishTest();
-        clearInterval(intervalID);
-      }, study.criteriaValue * 1000);
-
-      // Cleanup function
-      return () => {
-        clearInterval(intervalID);
-        clearTimeout(timeoutID);
-      };
+      setIntervalID(
+        setInterval(() => {
+          setCriteriaValue((prev) => prev + 1); // Use functional update
+        }, 1000)
+      );
     }
-  }, []); // Add necessary dependencies
+  }, []);
+
+  useEffect(() => {
+    if (
+      study.type === "multipleJumps" &&
+      study.criteriaValue <= criteriaValue
+    ) {
+      finishTest();
+      clearInterval(intervalID);
+    }
+  }, [criteriaValue]);
 
   return (
     <div className="bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-1/4 flex flex-col items-center px-16 py-8 ">
@@ -205,7 +201,9 @@ function TestInProgress({
           study.criteria === "time" &&
           status !== "Finalizado" && (
             <p className="self-center mt-16 text-2xl text-black">
-              <span className="text-secondary font-medium">00:{timer}</span>{" "}
+              <span className="text-secondary font-medium">
+                00:{criteriaValue}
+              </span>{" "}
               segundos
             </p>
           )}
@@ -253,6 +251,7 @@ function TestInProgress({
             icon="again"
             onClick={() => {
               setStatus("Súbase a la alfombra");
+              setCriteriaValue(0);
             }}
           />
           <TonalButton
