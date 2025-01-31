@@ -13,6 +13,9 @@ import inputStyles from "../styles/inputStyles.module.css";
 import { availableEquipment } from "../types/Studies";
 import ReusableFilter from "../components/ReusableFilter";
 import { useUser } from "../contexts/UserContext";
+import HandleUpdate from "../components/HandleUpdate";
+import { check } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 
 function Studies({
   onBlurChange,
@@ -131,6 +134,17 @@ function Studies({
       console.log(result);
       setAllStudies(allStudies.filter((e) => e[1].name !== studyToDelete));
       setStudyToDelete("");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const checkForUpdates = async () => {
+    try {
+      const update = await check();
+      if (update) {
+        console.log(update);
+      }
     } catch (error) {
       console.log(error);
     }
