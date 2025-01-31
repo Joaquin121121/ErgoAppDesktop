@@ -1,17 +1,17 @@
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use serialport::SerialPort;
+use std::collections::HashMap;
 use std::fs;
-use tauri::AppHandle;
-use tauri::Manager;
 use std::io::{self, BufRead};
 use std::sync::{mpsc, Arc, Mutex}; // Add Arc and Mutex for thread-safe sharing
 use std::thread;
-use serialport::SerialPort;
+use tauri::AppHandle;
 use tauri::Emitter;
-use std::collections::HashMap;
-use lazy_static::lazy_static;
+use tauri::Manager;
 
 lazy_static! {
-    static ref ACTIVE_PORTS: Arc<Mutex<HashMap<String, Box<dyn SerialPort + Send>>>> = 
+    static ref ACTIVE_PORTS: Arc<Mutex<HashMap<String, Box<dyn SerialPort + Send>>>> =
         Arc::new(Mutex::new(HashMap::new()));
 }
 #[derive(Debug, Serialize, Deserialize)]
@@ -52,22 +52,20 @@ pub async fn save_json(
         .path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-    
+
     let mut final_path = app_dir;
     if let Some(dir) = directory {
         final_path = final_path.join(dir);
     }
-    
-    fs::create_dir_all(&final_path)
-        .map_err(|e| format!("Failed to create directory: {}", e))?;
-    
+
+    fs::create_dir_all(&final_path).map_err(|e| format!("Failed to create directory: {}", e))?;
+
     let file_path = final_path.join(filename);
     let json_string = serde_json::to_string_pretty(&content)
         .map_err(|e| format!("Failed to serialize JSON: {}", e))?;
-    
-    fs::write(&file_path, json_string)
-        .map_err(|e| format!("Failed to write file: {}", e))?;
-    
+
+    fs::write(&file_path, json_string).map_err(|e| format!("Failed to write file: {}", e))?;
+
     Ok(JsonResponse {
         message: format!("File saved successfully at {:?}", file_path),
         data: None,
@@ -84,20 +82,20 @@ pub async fn read_json(
         .path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-    
+
     let mut final_path = app_dir;
     if let Some(dir) = directory {
         final_path = final_path.join(dir);
     }
-    
+
     let file_path = final_path.join(filename);
-    
-    let content = fs::read_to_string(&file_path)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
-    
-    let json_data: serde_json::Value = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse JSON: {}", e))?;
-    
+
+    let content =
+        fs::read_to_string(&file_path).map_err(|e| format!("Failed to read file: {}", e))?;
+
+    let json_data: serde_json::Value =
+        serde_json::from_str(&content).map_err(|e| format!("Failed to parse JSON: {}", e))?;
+
     Ok(JsonResponse {
         message: format!("File read successfully from {:?}", file_path),
         data: Some(json_data),
@@ -113,9 +111,9 @@ pub async fn read_directory_jsons(
         .path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-    
+
     let dir_path = app_dir.join(&directory);
-    
+
     if !dir_path.exists() {
         return Ok(DirectoryJsonResponse {
             message: format!("Directory {:?} is empty or doesn't exist", dir_path),
@@ -125,8 +123,8 @@ pub async fn read_directory_jsons(
 
     let mut json_files = Vec::new();
 
-    let entries = fs::read_dir(&dir_path)
-        .map_err(|e| format!("Failed to read directory: {}", e))?;
+    let entries =
+        fs::read_dir(&dir_path).map_err(|e| format!("Failed to read directory: {}", e))?;
 
     for entry in entries {
         let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
@@ -135,12 +133,13 @@ pub async fn read_directory_jsons(
         if path.is_file() && path.extension().and_then(|ext| ext.to_str()) == Some("json") {
             let content = fs::read_to_string(&path)
                 .map_err(|e| format!("Failed to read file {:?}: {}", path, e))?;
-            
+
             let json_data: serde_json::Value = serde_json::from_str(&content)
                 .map_err(|e| format!("Failed to parse JSON in {:?}: {}", path, e))?;
 
             json_files.push(FileData {
-                name: path.file_name()
+                name: path
+                    .file_name()
                     .and_then(|name| name.to_str())
                     .unwrap_or("unknown")
                     .to_string(),
@@ -150,11 +149,14 @@ pub async fn read_directory_jsons(
     }
 
     Ok(DirectoryJsonResponse {
-        message: format!("Successfully read {} JSON files from {:?}", json_files.len(), dir_path),
+        message: format!(
+            "Successfully read {} JSON files from {:?}",
+            json_files.len(),
+            dir_path
+        ),
         files: json_files,
     })
 }
-
 
 #[tauri::command(async)]
 pub async fn delete_json(
@@ -166,21 +168,20 @@ pub async fn delete_json(
         .path()
         .app_data_dir()
         .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-    
+
     let mut final_path = app_dir;
     if let Some(dir) = directory {
         final_path = final_path.join(dir);
     }
-    
+
     let file_path = final_path.join(filename);
-    
+
     if !file_path.exists() {
         return Err(format!("File does not exist: {:?}", file_path));
     }
-    
-    fs::remove_file(&file_path)
-        .map_err(|e| format!("Failed to delete file: {}", e))?;
-    
+
+    fs::remove_file(&file_path).map_err(|e| format!("Failed to delete file: {}", e))?;
+
     Ok(JsonResponse {
         message: format!("File deleted successfully: {:?}", file_path),
         data: None,
@@ -189,21 +190,21 @@ pub async fn delete_json(
 
 #[tauri::command]
 pub async fn list_serial_ports() -> Result<Vec<SerialPortInfo>, String> {
-    let ports = serialport::available_ports()
-        .map_err(|e| format!("Error listing serial ports: {}", e))?;
+    let ports =
+        serialport::available_ports().map_err(|e| format!("Error listing serial ports: {}", e))?;
 
-    println!("Found {} ports", ports.len());  // Debug print
+    println!("Found {} ports", ports.len()); // Debug print
 
     let port_info: Vec<SerialPortInfo> = ports
         .into_iter()
         .map(|p| {
             let port_type = match &p.port_type {
                 serialport::SerialPortType::UsbPort(info) => {
-                    println!("USB Port found: {}", p.port_name);  // Debug print
+                    println!("USB Port found: {}", p.port_name); // Debug print
                     println!("  Manufacturer: {:?}", info.manufacturer);
                     println!("  Product: {:?}", info.product);
                     println!("  Serial Number: {:?}", info.serial_number);
-                    
+
                     SerialPortInfo {
                         port_name: p.port_name,
                         port_type: "USB".to_string(),
@@ -213,7 +214,7 @@ pub async fn list_serial_ports() -> Result<Vec<SerialPortInfo>, String> {
                     }
                 }
                 _ => {
-                    println!("Non-USB Port found: {}", p.port_name);  // Debug print
+                    println!("Non-USB Port found: {}", p.port_name); // Debug print
                     SerialPortInfo {
                         port_name: p.port_name,
                         port_type: "Unknown".to_string(),
@@ -230,18 +231,19 @@ pub async fn list_serial_ports() -> Result<Vec<SerialPortInfo>, String> {
     Ok(port_info)
 }
 
-
 #[tauri::command]
 pub async fn cleanup_serial_ports() -> Result<String, String> {
-    let mut ports = ACTIVE_PORTS.lock().map_err(|e| format!("Failed to lock ports: {}", e))?;
-    
+    let mut ports = ACTIVE_PORTS
+        .lock()
+        .map_err(|e| format!("Failed to lock ports: {}", e))?;
+
     // Close all active ports with explicit type annotation
     for (port_name, port) in ports.drain() {
         println!("Closing port: {}", port_name);
         // Explicitly drop the port to ensure it's closed
         drop(port);
     }
-    
+
     Ok("All ports closed successfully".to_string())
 }
 
@@ -249,16 +251,19 @@ pub async fn cleanup_serial_ports() -> Result<String, String> {
 pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Result<String, String> {
     // First cleanup existing ports
     cleanup_serial_ports().await?;
-    
+
     // List available ports
-    let ports = serialport::available_ports()
-        .map_err(|e| format!("Error listing serial ports: {}", e))?;
+    let ports =
+        serialport::available_ports().map_err(|e| format!("Error listing serial ports: {}", e))?;
 
     let port_name = match ports.into_iter().find(|p| {
         if let serialport::SerialPortType::UsbPort(info) = &p.port_type {
-            let known_manufacturers = ["arduino", "ftdi", "silicon labs", "ch340", "wch.cn", "1a86"];
+            let known_manufacturers =
+                ["arduino", "ftdi", "silicon labs", "ch340", "wch.cn", "1a86"];
             info.manufacturer.as_ref().map_or(false, |m| {
-                known_manufacturers.iter().any(|&km| m.to_lowercase().contains(km))
+                known_manufacturers
+                    .iter()
+                    .any(|&km| m.to_lowercase().contains(km))
             })
         } else {
             false
@@ -269,7 +274,7 @@ pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Resu
     };
 
     let thread_port_name = port_name.clone();
-    
+
     // Create the port with specific settings
     let port_builder = serialport::new(&thread_port_name, baud_rate)
         .timeout(std::time::Duration::from_millis(100))
@@ -279,7 +284,7 @@ pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Resu
         .stop_bits(serialport::StopBits::One);
 
     println!("Attempting to open port: {}", thread_port_name);
-    
+
     let port = match port_builder.open() {
         Ok(port) => port,
         Err(e) => {
@@ -291,13 +296,17 @@ pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Resu
 
     // Store the new port in our active ports map
     {
-        let mut ports = ACTIVE_PORTS.lock().map_err(|e| format!("Failed to lock ports: {}", e))?;
+        let mut ports = ACTIVE_PORTS
+            .lock()
+            .map_err(|e| format!("Failed to lock ports: {}", e))?;
         ports.insert(thread_port_name.clone(), port);
     }
 
-    let window = app_handle.get_webview_window("main").ok_or("Main window not found")?;
+    let window = app_handle
+        .get_webview_window("main")
+        .ok_or("Main window not found")?;
     let window = Arc::new(Mutex::new(window));
-    
+
     let (tx, rx) = std::sync::mpsc::channel();
 
     // Spawn the reader thread
@@ -305,18 +314,18 @@ pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Resu
         let window = Arc::clone(&window);
         let thread_port_name = thread_port_name.clone();
         let ports = ACTIVE_PORTS.clone();
-        
+
         move || {
             let mut buffer = [0u8; 1024];
             let mut line_buffer = String::new();
-            
+
             loop {
                 // Get a lock on the ports
                 let mut ports = match ports.lock() {
                     Ok(guard) => guard,
                     Err(_) => break,
                 };
-                
+
                 // Get a mutable reference to our port
                 if let Some(port) = ports.get_mut(&thread_port_name) {
                     match port.read(&mut buffer) {
@@ -325,7 +334,7 @@ pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Resu
                             // Convert bytes to string and process
                             if let Ok(data) = String::from_utf8(buffer[..n].to_vec()) {
                                 line_buffer.push_str(&data);
-                                
+
                                 // Process complete lines
                                 while let Some(pos) = line_buffer.find('\n') {
                                     let line = line_buffer[..pos].trim().to_string();
@@ -357,10 +366,10 @@ pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Resu
                 } else {
                     break;
                 }
-                
+
                 // Release the lock
                 drop(ports);
-                
+
                 // Small sleep to prevent tight loop
                 thread::sleep(std::time::Duration::from_millis(10));
             }
