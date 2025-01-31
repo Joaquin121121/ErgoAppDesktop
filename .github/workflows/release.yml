@@ -1,4 +1,5 @@
 name: Release
+
 on:
   push:
     tags:
@@ -8,31 +9,51 @@ jobs:
   release:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false # Don't cancel other OS builds if one fails
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4 # Updated to v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4 # Updated to v4
         with:
           node-version: "18"
+          cache: "npm" # Added npm caching
+
+      - name: Install system dependencies (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.0-dev \
+            libgtk-3-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libglib2.0-dev \
+            libglib2.0-0 \
+            pkg-config
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable # Updated to recommended action
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
         with:
-          toolchain: stable
+          workspaces: "./src-tauri -> target"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci # Using ci instead of install for more reliable builds
 
-      - name: Build Tauri
+      - name: Build Tauri (with debug)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          RUST_BACKTRACE: 1 # Added for better error reporting
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Release ${{ github.ref_name }}
