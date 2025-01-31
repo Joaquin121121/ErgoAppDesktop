@@ -151,11 +151,6 @@ function Studies({
     }
   };
 
-  const getVersion = async () => {
-    const version = await getVersion();
-    return "Version: " + version;
-  };
-
   useEffect(() => {
     setFilteredStudies(
       allStudies.filter(([_, study]) =>
@@ -168,7 +163,6 @@ function Studies({
     loadCustomStudies();
     resetAthlete();
     checkForUpdates();
-    console.log(getVersion());
   }, []);
 
   useEffect(() => {

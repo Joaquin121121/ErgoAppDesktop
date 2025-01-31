@@ -51,6 +51,8 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: ${{ github.ref_name }}
@@ -69,18 +71,21 @@ jobs:
             \"platforms\": {
               \"darwin-x86_64\": {
                 \"signature\": \"\",
-                \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoAppDesktop.app.tar.gz\"
+                \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoApp_Desktop.app.tar.gz\"
               },
               \"windows-x86_64\": {
                 \"signature\": \"\",
-                \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoAppDesktop.msi.zip\"
+                \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoApp_Desktop_${{ github.ref_name }}_x64_en-US.msi.zip\"
               }
             }
           }" > latest.json
 
-      - name: Upload latest.json
+      - name: Upload latest.json to release
         if: matrix.platform == 'macos-latest'
-        uses: actions/upload-artifact@v4 # Updated from v3 to v4
+        uses: svenstaro/upload-release-action@v2
         with:
-          name: latest.json
-          path: latest.json
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: latest.json
+          asset_name: latest.json
+          tag: ${{ github.ref }}
+          overwrite: true

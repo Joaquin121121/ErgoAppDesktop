@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "ErgoApp Desktop",
-  "version": "0.1.0",
-  "identifier": "ErgoApp",
+  "version": "0.1.4",
+  "identifier": "com.ergoapp.dev",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
@@ -46,7 +46,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc0QzU3NThFMzBGNDY3QjkKUldTNVovUXdqblhGZERBbWxMY200SXppWURlb0dGeEYvdW0yQ05ZNDZOVktyamRDRWdCV1VjZncK",
       "endpoints": [
-        "https://raw.githubusercontent.com/Joaquin121121/ErgoAppDesktop/main/latest.json"
+        "https://github.com/Joaquin121121/ErgoAppDesktop/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"
