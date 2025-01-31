@@ -37,12 +37,24 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
+      # Add this step before building
+      - name: Setup signing key
+        shell: bash
+        run: |
+          if [ "${{ matrix.platform }}" = "macos-latest" ]; then
+            echo "${{ secrets.TAURI_PRIVATE_KEY }}" > private_key.key
+            echo "TAURI_SIGNING_PRIVATE_KEY=$(cat private_key.key)" >> $GITHUB_ENV
+          else
+            echo "TAURI_SIGNING_PRIVATE_KEY=${{ secrets.TAURI_PRIVATE_KEY }}" >> $GITHUB_ENV
+          fi
+          if [ ! -z "${{ secrets.TAURI_KEY_PASSWORD }}" ]; then
+            echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=${{ secrets.TAURI_KEY_PASSWORD }}" >> $GITHUB_ENV
+          fi
+
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
           tagName: v__VERSION__
           releaseName: "v__VERSION__"
