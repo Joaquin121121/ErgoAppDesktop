@@ -9,9 +9,6 @@ jobs:
   release:
     permissions:
       contents: write
-      packages: write
-      issues: write
-      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -21,9 +18,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Node.js
         uses: actions/setup-node@v4
@@ -66,38 +60,25 @@ jobs:
           releaseDraft: true
           prerelease: false
 
-      # New step to capture signatures
-      - name: Capture release signatures
-        if: matrix.platform == 'macos-latest'
-        id: signatures
-        shell: bash
-        run: |
-          # Wait for artifacts to be available
-          sleep 10
-
-          # Get signatures using the Tauri CLI
-          MAC_SIG=$(tauri signer sign src-tauri/target/release/bundle/macos/ErgoApp_Desktop.app.tar.gz)
-          WIN_SIG=$(tauri signer sign src-tauri/target/release/bundle/msi/ErgoApp_Desktop_${{ github.ref_name }}_x64_en-US.msi.zip)
-
-          # Store signatures in env
-          echo "MAC_SIGNATURE=${MAC_SIG}" >> $GITHUB_ENV
-          echo "WIN_SIGNATURE=${WIN_SIG}" >> $GITHUB_ENV
-
       - name: Generate update manifest
         if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
+          # Get the signatures from the build outputs
+          MAC_SIGNATURE=$(cat src-tauri/target/release/bundle/macos/ErgoApp_Desktop.app.tar.gz.sig || echo "")
+          WIN_SIGNATURE=$(cat src-tauri/target/release/bundle/msi/ErgoApp_Desktop_${{ github.ref_name }}_x64_en-US.msi.zip.sig || echo "")
+
           echo "{
             \"version\": \"${GITHUB_REF_NAME#v}\",
             \"notes\": \"See the assets to download this version and install.\",
             \"pub_date\": \"$(date -u +%Y-%m-%d'T'%H:%M:%SZ)\",
             \"platforms\": {
               \"darwin-x86_64\": {
-                \"signature\": \"${{ env.MAC_SIGNATURE }}\",
+                \"signature\": \"${MAC_SIGNATURE}\",
                 \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoApp_Desktop.app.tar.gz\"
               },
               \"windows-x86_64\": {
-                \"signature\": \"${{ env.WIN_SIGNATURE }}\",
+                \"signature\": \"${WIN_SIGNATURE}\",
                 \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoApp_Desktop_${{ github.ref_name }}_x64_en-US.msi.zip\"
               }
             }
