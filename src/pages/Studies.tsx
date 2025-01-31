@@ -1,19 +1,18 @@
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef } from "react";
 import { useState } from "react";
 import availableStudies from "../types/Studies";
 import type { Studies, Study } from "../types/Studies";
 import StudyCard from "../components/StudyCard";
 import OutlinedButton from "../components/OutlinedButton";
-import Filter from "../components/Filter";
 import TonalButton from "../components/TonalButton";
 import { useStudyContext } from "../contexts/StudyContext";
 import { useNavigate } from "react-router-dom";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
 import inputStyles from "../styles/inputStyles.module.css";
-import useSerialMonitor from "../hooks/useSerialMonitor";
-import { statsToMeasure, availableEquipment } from "../types/Studies";
+import { availableEquipment } from "../types/Studies";
 import ReusableFilter from "../components/ReusableFilter";
+import { useUser } from "../contexts/UserContext";
 
 function Studies({
   onBlurChange,
@@ -30,14 +29,11 @@ function Studies({
     nextPage: string
   ) => void;
 }) {
-  const user = {
-    fullName: "Joaquin Berrini",
-    email: "",
-  };
-
   const { setStudy, resetAthlete } = useStudyContext();
 
   const { readDirectoryJsons, deleteJson } = useJsonFiles();
+
+  const { user } = useUser();
   const navigate = useNavigate();
 
   const filterButtonRef = useRef<HTMLButtonElement>(null);
@@ -154,28 +150,25 @@ function Studies({
   }, []);
 
   useEffect(() => {
-    if (studyToDelete.length) {
+    if (studyToDelete.length /* || !user.name.length */) {
       onBlurChange(true);
       return;
     }
     onBlurChange(false);
-  }, [studyToDelete.length]);
+  }, [studyToDelete.length, user]);
 
   return (
     <>
       <div
         className={`flex-1 relative flex flex-col items-center ${
-          (isBlurred || studyToDelete.length) && "blur-md pointer-events-none"
+          (isBlurred || studyToDelete.length) /* || !user.name.length */ &&
+          "blur-md pointer-events-none"
         } transition-all duration-300 ease-in-out ${animation}`}
         style={{ paddingLeft: isExpanded ? "100px" : "32px" }}
       >
         {/* <div className="absolute w-16 h-16 top-8 right-8 bg-gray rounded-full"></div> */}
         <div className="flex mt-12">
-          <h1 className="pt-2">
-            Bienvenido,{" "}
-            {user.fullName.split(" ")[0].charAt(0).toUpperCase() +
-              user.fullName.split(" ")[0].slice(1)}
-          </h1>
+          <h1 className="pt-2">Hola Profe!</h1>
           <img src="/hand.png" className="h-16 w-16 ml-12" />
         </div>
         <div className="self-end w-3/4 flex items-center">
@@ -310,6 +303,7 @@ function Studies({
           </div>
         </div>
       )}
+      {/* {!user.name.length && <Login />} */}
     </>
   );
 }

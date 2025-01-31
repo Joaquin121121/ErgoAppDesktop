@@ -31,7 +31,9 @@ function TestInProgress({
   const [status, setStatus] = useState("Súbase a la alfombra");
   const [data, setData] = useState({ avgTime: 0, height: 0 });
   const [pointer, setPointer] = useState(0);
-  const { serialData, error, startSerialListener, logs, clearLogs } =
+  const [errorTimeout, setErrorTimeout] = useState(null);
+  const [displayError, setDisplayError] = useState(false);
+  const { serialData, error, startSerialListener, logs, isConnected } =
     useSerialMonitor();
   const { study, setStudy, athlete, setAthlete } = useStudyContext();
   const { saveJson } = useJsonFiles();
@@ -101,6 +103,10 @@ function TestInProgress({
       console.log(result.message);
       setTestInProgress(false);
       onBlurChange(false);
+      setAthlete({
+        ...athlete,
+        completedStudies: [...athlete.completedStudies, studyToSave],
+      });
       customNavigate("back", "startTest", "athleteStudies");
       setSelectedOption("athletes");
       setTimeout(() => {
@@ -112,12 +118,35 @@ function TestInProgress({
   };
 
   useEffect(() => {
-    startSerialListener(9600);
+    const initializeDevice = async () => {
+      try {
+        await startSerialListener(9600);
+      } catch (err) {
+        setStatus("Error - Dispositivo no encontrado");
+      }
+    };
+    initializeDevice();
   }, []);
 
+  // Monitor connection status
   useEffect(() => {
-    if (error?.includes("No compatible device found")) {
-      setStatus("Error: No dispositivo encontrado");
+    if (status === "Finalizado") {
+      return;
+    }
+    if (isConnected) {
+      setStatus("Súbase a la alfombra");
+    } else if (error) {
+      setStatus("Error - Dispositivo no encontrado");
+    }
+  }, [isConnected, error]);
+
+  // Handle device errors
+  useEffect(() => {
+    if (
+      error?.includes("No compatible device found") ||
+      error?.includes("No serial ports available")
+    ) {
+      setStatus("Error: Dispositivo no encontrado");
     }
   }, [error]);
 
@@ -189,6 +218,18 @@ function TestInProgress({
     }
   }, [criteriaValue]);
 
+  useEffect(() => {
+    if (status.includes("Error")) {
+      const timeout = setTimeout(() => {
+        setDisplayError(true);
+      }, 200);
+      setErrorTimeout(timeout);
+    } else {
+      clearInterval(errorTimeout);
+      setDisplayError(false);
+    }
+  }, [status]);
+
   return (
     <div className="bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-1/4 flex flex-col items-center px-16 py-8 ">
       <div
@@ -209,9 +250,38 @@ function TestInProgress({
       )}
 
       <div className="w-3/5 flex flex-col self-center">
-        <p className="mt-16 text-2xl text-black">
-          Estado: <span className="text-secondary font-medium">{status}</span>
+        <p
+          className="mt-16 text-2xl text-black"
+          style={{ alignSelf: status !== "Finalizado" && "center" }}
+        >
+          Estado:{" "}
+          <span className="text-secondary font-medium">
+            {displayError
+              ? status
+              : status.includes("Error")
+              ? "Conectando..."
+              : status}
+          </span>
         </p>
+        {status.includes("Error") && displayError && (
+          <div className="mt-4 flex flex-col">
+            <p className="text-lg text-gray-600">Por favor:</p>
+            <ul className="list-disc ml-6 mt-2 text-gray-600">
+              <li>Verifique que la alfombra esté bien conectada</li>
+              <li>Asegúrese de que el cable USB está bien conectado</li>
+              <li>Intente reconectar la alfombra</li>
+            </ul>
+            <OutlinedButton
+              title="Reintentar conexión"
+              icon="again"
+              onClick={() => {
+                setStatus("Conectando dispositivo...");
+                startSerialListener(9600);
+              }}
+              containerStyles="mt-8 self-center"
+            />
+          </div>
+        )}
         {study.type === "multipleJumps" &&
           study.criteria === "time" &&
           status !== "Finalizado" && (

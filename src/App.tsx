@@ -16,6 +16,10 @@ import SelectAthlete from "./pages/SelectAthlete";
 import AthleteStudies from "./pages/AthleteStudies";
 import OutlinedButton from "./components/OutlinedButton";
 import { Window } from "@tauri-apps/api/window";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
+import { User } from "./types/User";
+import { UserProvider } from "./contexts/UserContext";
 
 const Layout = ({
   children,
@@ -102,6 +106,7 @@ function App() {
   const [isBlurred, setIsBlurred] = useState(false);
   const [isMaximized, setIsMaximized] = useState(true);
   const [selectedOption, setSelectedOption] = useState("studies");
+  const [user, setUser] = useState<User>({ name: "", email: "" });
   const appWindow = Window.getCurrent();
 
   const keys = [
@@ -245,43 +250,45 @@ function App() {
   }, []);
 
   return (
-    <HashRouter>
-      {isMaximized ? (
-        <Layout
-          isBlurred={isBlurred}
-          isExpanded={isExpanded}
-          setIsExpanded={setIsExpanded}
-          resetAnimations={resetAnimations}
-          selectedOption={selectedOption}
-          setSelectedOption={setSelectedOption}
-        >
-          <Routes>
-            <Route path="/" element={pages.studies} />
-            <Route path="/studies" element={pages.studies} />
-            <Route path="/athletes" element={pages.athletes} />
-            <Route path="/about" element={pages.about} />
-            <Route path="/startTest" element={pages.startTest} />
-            <Route path="/newTest" element={pages.newTest} />
-            <Route path="/selectAthlete" element={pages.selectAthlete} />
-            <Route path="/newAthlete" element={pages.newAthlete} />
-            <Route path="/athleteStudies" element={pages.athleteStudies} />
-            <Route path="*" element={pages.notFound} />
-          </Routes>
-        </Layout>
-      ) : (
-        <div className="w-[100vw] h-[100vh] flex flex-col items-center justify-center bg-secondary overflow-hidden">
-          <img className="w-1/2 h-1/2 object-contain" src="/splash.png" />
-          {/* <OutlinedButton
+    <UserProvider>
+      <HashRouter>
+        {isMaximized ? (
+          <Layout
+            isBlurred={isBlurred}
+            isExpanded={isExpanded}
+            setIsExpanded={setIsExpanded}
+            resetAnimations={resetAnimations}
+            selectedOption={selectedOption}
+            setSelectedOption={setSelectedOption}
+          >
+            <Routes>
+              <Route path="/" element={pages.studies} />
+              <Route path="/studies" element={pages.studies} />
+              <Route path="/athletes" element={pages.athletes} />
+              <Route path="/about" element={pages.about} />
+              <Route path="/startTest" element={pages.startTest} />
+              <Route path="/newTest" element={pages.newTest} />
+              <Route path="/selectAthlete" element={pages.selectAthlete} />
+              <Route path="/newAthlete" element={pages.newAthlete} />
+              <Route path="/athleteStudies" element={pages.athleteStudies} />
+              <Route path="*" element={pages.notFound} />
+            </Routes>
+          </Layout>
+        ) : (
+          <div className="w-[100vw] h-[100vh] flex flex-col items-center justify-center bg-secondary overflow-hidden">
+            <img className="w-1/2 h-1/2 object-contain" src="/splash.png" />
+            {/* <OutlinedButton
             title="Maximizar Ventana"
             onClick={expandScreen}
             icon="expand"
           /> */}
-          <p className="text-2xl text-offWhite mt-8">
-            Maximice la ventana para usar la app
-          </p>
-        </div>
-      )}
-    </HashRouter>
+            <p className="text-2xl text-offWhite mt-8">
+              Maximice la ventana para usar la app
+            </p>
+          </div>
+        )}
+      </HashRouter>
+    </UserProvider>
   );
 }
 

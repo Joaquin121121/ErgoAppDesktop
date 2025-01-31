@@ -1,10 +1,11 @@
 MVP
-    Implementar registro, login, persistencia de sesión
-    Implementar estudios en nube (boton de sincronizar ErgoSync, automatico si se detecta conexion a internet)
+    Setuppear pipeline para updates
     Diseñar e implementar seccion de info
     Constatar con Anibal    
     Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
-    Averiguar de personalizar menu de instalacion
     Testing de precision (implementar sensibilidad?)
 
 Implementar resumen BOSCO test pre-guardar (despues)
+Personalizar menu de instalacion
+Implementar registro, login, persistencia de sesión
+Implementar estudios en nube (boton de sincronizar ErgoSync, automatico si se detecta conexion a internet)

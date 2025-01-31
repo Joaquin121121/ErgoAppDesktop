@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Study, NewStudy, statsToMeasure } from "../types/Studies";
+import { NewStudy } from "../types/Studies";
 import TonalButton from "../components/TonalButton";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";

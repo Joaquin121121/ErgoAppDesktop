@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import TonalButton from "../components/TonalButton";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
-import { Athlete, transformToAthlete, isAthlete } from "../types/Athletes";
+import { Athlete, transformToAthlete } from "../types/Athletes";
 import inputStyles from "../styles/inputStyles.module.css";
 import AutocompleteDropdown from "../components/AutocompleteDropdown";
 import { Country, State } from "country-state-city";

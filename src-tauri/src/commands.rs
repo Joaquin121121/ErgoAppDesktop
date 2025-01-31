@@ -7,7 +7,13 @@ use std::sync::{mpsc, Arc, Mutex}; // Add Arc and Mutex for thread-safe sharing
 use std::thread;
 use serialport::SerialPort;
 use tauri::Emitter;
+use std::collections::HashMap;
+use lazy_static::lazy_static;
 
+lazy_static! {
+    static ref ACTIVE_PORTS: Arc<Mutex<HashMap<String, Box<dyn SerialPort + Send>>>> = 
+        Arc::new(Mutex::new(HashMap::new()));
+}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JsonResponse {
     message: String,
@@ -224,9 +230,27 @@ pub async fn list_serial_ports() -> Result<Vec<SerialPortInfo>, String> {
     Ok(port_info)
 }
 
+
+#[tauri::command]
+pub async fn cleanup_serial_ports() -> Result<String, String> {
+    let mut ports = ACTIVE_PORTS.lock().map_err(|e| format!("Failed to lock ports: {}", e))?;
+    
+    // Close all active ports with explicit type annotation
+    for (port_name, port) in ports.drain() {
+        println!("Closing port: {}", port_name);
+        // Explicitly drop the port to ensure it's closed
+        drop(port);
+    }
+    
+    Ok("All ports closed successfully".to_string())
+}
+
 #[tauri::command]
 pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Result<String, String> {
-    // First try to list all ports and find our target port
+    // First cleanup existing ports
+    cleanup_serial_ports().await?;
+    
+    // List available ports
     let ports = serialport::available_ports()
         .map_err(|e| format!("Error listing serial ports: {}", e))?;
 
@@ -246,7 +270,7 @@ pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Resu
 
     let thread_port_name = port_name.clone();
     
-    // Create the port with a longer timeout and specific settings
+    // Create the port with specific settings
     let port_builder = serialport::new(&thread_port_name, baud_rate)
         .timeout(std::time::Duration::from_millis(100))
         .data_bits(serialport::DataBits::Eight)
@@ -254,7 +278,6 @@ pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Resu
         .parity(serialport::Parity::None)
         .stop_bits(serialport::StopBits::One);
 
-    // Try to open the port
     println!("Attempting to open port: {}", thread_port_name);
     
     let port = match port_builder.open() {
@@ -266,7 +289,12 @@ pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Resu
         }
     };
 
-    // If we successfully opened the port, set up the communication threads
+    // Store the new port in our active ports map
+    {
+        let mut ports = ACTIVE_PORTS.lock().map_err(|e| format!("Failed to lock ports: {}", e))?;
+        ports.insert(thread_port_name.clone(), port);
+    }
+
     let window = app_handle.get_webview_window("main").ok_or("Main window not found")?;
     let window = Arc::new(Mutex::new(window));
     
@@ -275,37 +303,68 @@ pub async fn listen_serial(app_handle: tauri::AppHandle, baud_rate: u32) -> Resu
     // Spawn the reader thread
     thread::spawn({
         let window = Arc::clone(&window);
+        let thread_port_name = thread_port_name.clone();
+        let ports = ACTIVE_PORTS.clone();
+        
         move || {
-            let mut reader = io::BufReader::new(port);
-            let mut buffer = String::new();
-
+            let mut buffer = [0u8; 1024];
+            let mut line_buffer = String::new();
+            
             loop {
-                buffer.clear(); // Clear the buffer before each read
-                match reader.read_line(&mut buffer) {
-                    Ok(0) => {
-                        // End of stream
-                        break;
-                    }
-                    Ok(_) => {
-                        let trimmed = buffer.trim().to_string();
-                        if !trimmed.is_empty() {
-                            if let Ok(window) = window.lock() {
-                                if let Err(e) = window.emit("serial-data", trimmed) {
-                                    println!("Error emitting data: {}", e);
+                // Get a lock on the ports
+                let mut ports = match ports.lock() {
+                    Ok(guard) => guard,
+                    Err(_) => break,
+                };
+                
+                // Get a mutable reference to our port
+                if let Some(port) = ports.get_mut(&thread_port_name) {
+                    match port.read(&mut buffer) {
+                        Ok(0) => break, // EOF
+                        Ok(n) => {
+                            // Convert bytes to string and process
+                            if let Ok(data) = String::from_utf8(buffer[..n].to_vec()) {
+                                line_buffer.push_str(&data);
+                                
+                                // Process complete lines
+                                while let Some(pos) = line_buffer.find('\n') {
+                                    let line = line_buffer[..pos].trim().to_string();
+                                    if !line.is_empty() {
+                                        if let Ok(window) = window.lock() {
+                                            if let Err(e) = window.emit("serial-data", &line) {
+                                                println!("Error emitting data: {}", e);
+                                                return;
+                                            }
+                                        }
+                                    }
+                                    line_buffer = line_buffer[pos + 1..].to_string();
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            match e.kind() {
+                                io::ErrorKind::TimedOut => {
+                                    // Timeout is normal, continue reading
+                                    continue;
+                                }
+                                _ => {
+                                    let _ = tx.send(format!("Error reading from port: {}", e));
                                     break;
                                 }
                             }
                         }
                     }
-                    Err(e) => {
-                        if e.kind() != io::ErrorKind::TimedOut {
-                            let _ = tx.send(format!("Error reading from port: {}", e));
-                            break;
-                        }
-                    }
+                } else {
+                    break;
                 }
+                
+                // Release the lock
+                drop(ports);
+                
+                // Small sleep to prevent tight loop
+                thread::sleep(std::time::Duration::from_millis(10));
             }
-            println!("Reader thread finished");
+            println!("Reader thread finished for port: {}", thread_port_name);
         }
     });
 

@@ -5,7 +5,6 @@ import TonalButton from "../components/TonalButton";
 import { useStudyContext } from "../contexts/StudyContext";
 import BoscoStudiesList from "../components/BoscoStudiesList";
 import inputStyles from "../styles/inputStyles.module.css";
-import { Studies } from "../types/Studies";
 import TestInProgress from "../components/TestInProgress";
 import { useTranslation } from "react-i18next";
 function StartTest({

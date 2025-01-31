@@ -2,12 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import inputStyles from "../styles/inputStyles.module.css";
-import {
-  Athlete,
-  genders,
-  isAthlete,
-  transformToAthlete,
-} from "../types/Athletes";
+import { Athlete, transformToAthlete } from "../types/Athletes";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import AthleteCard from "../components/AthleteCard";
 import { useStudyContext } from "../contexts/StudyContext";
@@ -215,11 +210,7 @@ function Athletes({
       >
         {/* <div className="absolute w-16 h-16 top-8 right-8 bg-gray rounded-full"></div> */}
         <div className="flex mt-12">
-          <h1 className="pt-2">
-            Bienvenido,{" "}
-            {user.fullName.split(" ")[0].charAt(0).toUpperCase() +
-              user.fullName.split(" ")[0].slice(1)}
-          </h1>
+          <h1 className="pt-2">Hola Profe!</h1>
           <img src="/hand.png" className="h-16 w-16 ml-12" />
         </div>
         <div className="self-end w-3/4 flex items-center">
