@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, ubuntu-20.04, windows-latest]
+        platform: [macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
 
     steps:
@@ -28,13 +28,21 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install dependencies (ubuntu only)
+     - name: Install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-20.04'
         run: |
           sudo apt-get update
+          # Install pkg-config first
+          sudo apt-get install -y pkg-config
+          # Install glib-2.0 and related packages
           sudo apt-get install -y \
-            pkg-config \
+            libglib2.0-0 \
             libglib2.0-dev \
+            libglib2.0-bin \
+            libgirepository1.0-dev \
+            gir1.2-glib-2.0
+          # Install other required dependencies
+          sudo apt-get install -y \
             libgtk-3-dev \
             libwebkit2gtk-4.0-dev \
             libappindicator3-dev \
@@ -45,7 +53,19 @@ jobs:
             libxdo-dev \
             libxcb-shape0-dev \
             libxcb-xfixes0-dev
-
+          # Verify glib-2.0 installation
+          echo "Verifying glib-2.0 installation..."
+          pkg-config --modversion glib-2.0
+          echo "PKG_CONFIG_PATH before:" $PKG_CONFIG_PATH
+          # Set and export PKG_CONFIG_PATH
+          export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig
+          echo "PKG_CONFIG_PATH after:" $PKG_CONFIG_PATH
+          echo "Checking for glib-2.0.pc..."
+          find /usr -name "glib-2.0.pc" 2>/dev/null || echo "glib-2.0.pc not found"
+          # Add to GITHUB_ENV for subsequent steps
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
+          # Force pkg-config to update its cache
+          sudo ldconfig
       - name: Install frontend dependencies
         run: npm install
 
@@ -79,3 +99,31 @@ jobs:
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: false
+      - name: Generate update manifest
+    if: matrix.platform == 'ubuntu-20.04'  # Only need to generate this once
+    shell: bash
+    run: |
+      echo "{
+        \"version\": \"${{ github.ref_name }}\",
+        \"notes\": \"See the assets to download this version and install.\",
+        \"pub_date\": \"$(date -u +%Y-%m-%d'T'%H:%M:%SZ)\",
+        \"platforms\": {
+          \"darwin-x86_64\": {
+            \"signature\": \"\",
+            \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoAppDesktop.app.tar.gz\"
+          },
+          \"linux-x86_64\": {
+            \"signature\": \"\",
+            \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoAppDesktop.AppImage.tar.gz\"
+          },
+          \"windows-x86_64\": {
+            \"signature\": \"\",
+            \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoAppDesktop.msi.zip\"
+          }
+        }
+      }" > latest.json
+  - name: Upload latest.json
+    if: matrix.platform == 'ubuntu-20.04'
+    uses: actions/upload-artifact@v3
+    with:
+      name: latest.json

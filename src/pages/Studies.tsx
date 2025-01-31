@@ -16,6 +16,7 @@ import { useUser } from "../contexts/UserContext";
 import HandleUpdate from "../components/HandleUpdate";
 import { check } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
+import { getVersion } from "@tauri-apps/api/app";
 
 function Studies({
   onBlurChange,
@@ -150,6 +151,11 @@ function Studies({
     }
   };
 
+  const getVersion = async () => {
+    const version = await getVersion();
+    return "Version: " + version;
+  };
+
   useEffect(() => {
     setFilteredStudies(
       allStudies.filter(([_, study]) =>
@@ -162,6 +168,7 @@ function Studies({
     loadCustomStudies();
     resetAthlete();
     checkForUpdates();
+    console.log(getVersion());
   }, []);
 
   useEffect(() => {
