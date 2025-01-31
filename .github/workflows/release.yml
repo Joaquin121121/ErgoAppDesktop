@@ -8,7 +8,9 @@ on:
 jobs:
   release:
     permissions:
-      contents: write
+      contents: write # This is needed to create releases
+      issues: write # If you want to comment on issues
+      pull-requests: write # If you want to comment on PRs
     strategy:
       fail-fast: false
       matrix:
@@ -18,6 +20,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install Node.js
         uses: actions/setup-node@v4
