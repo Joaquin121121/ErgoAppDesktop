@@ -5,12 +5,15 @@ on:
       - "v*"
   workflow_dispatch:
 
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+  pages: write
+
 jobs:
   release:
-    permissions:
-      contents: write # This is needed to create releases
-      issues: write # If you want to comment on issues
-      pull-requests: write # If you want to comment on PRs
     strategy:
       fail-fast: false
       matrix:
@@ -32,13 +35,13 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install frontend dependencies
-        run: npm install # or yarn install
+        run: npm install
 
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "ErgoApp Desktop v__VERSION__"
