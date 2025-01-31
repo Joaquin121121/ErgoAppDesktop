@@ -21,6 +21,7 @@ import { auth } from "./firebase";
 import { User } from "./types/User";
 import { UserProvider } from "./contexts/UserContext";
 
+/* lALALA */
 const Layout = ({
   children,
   isBlurred = false,
