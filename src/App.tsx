@@ -107,7 +107,7 @@ function App() {
   const [isBlurred, setIsBlurred] = useState(false);
   const [isMaximized, setIsMaximized] = useState(true);
   const [selectedOption, setSelectedOption] = useState("studies");
-  const [user, setUser] = useState<User>({ name: "", email: "" });
+  const [user, setUser] = useState<User>({ email: "" });
   const appWindow = Window.getCurrent();
 
   const keys = [
