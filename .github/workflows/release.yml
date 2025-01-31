@@ -64,21 +64,17 @@ jobs:
         if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
-          # Get the signatures from the build outputs
-          MAC_SIGNATURE=$(cat src-tauri/target/release/bundle/macos/ErgoApp_Desktop.app.tar.gz.sig || echo "")
-          WIN_SIGNATURE=$(cat src-tauri/target/release/bundle/msi/ErgoApp_Desktop_${{ github.ref_name }}_x64_en-US.msi.zip.sig || echo "")
-
           echo "{
-            \"version\": \"${GITHUB_REF_NAME#v}\",
+            \"version\": \"${{ github.ref_name }}\",
             \"notes\": \"See the assets to download this version and install.\",
             \"pub_date\": \"$(date -u +%Y-%m-%d'T'%H:%M:%SZ)\",
             \"platforms\": {
               \"darwin-x86_64\": {
-                \"signature\": \"${MAC_SIGNATURE}\",
+                \"signature\": \"\",
                 \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoApp_Desktop.app.tar.gz\"
               },
               \"windows-x86_64\": {
-                \"signature\": \"${WIN_SIGNATURE}\",
+                \"signature\": \"\",
                 \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoApp_Desktop_${{ github.ref_name }}_x64_en-US.msi.zip\"
               }
             }
