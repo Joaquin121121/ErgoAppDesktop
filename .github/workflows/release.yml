@@ -60,21 +60,38 @@ jobs:
           releaseDraft: true
           prerelease: false
 
+      # New step to capture signatures
+      - name: Capture release signatures
+        if: matrix.platform == 'macos-latest'
+        id: signatures
+        shell: bash
+        run: |
+          # Wait for artifacts to be available
+          sleep 10
+
+          # Get signatures using the Tauri CLI
+          MAC_SIG=$(tauri signer sign src-tauri/target/release/bundle/macos/ErgoApp_Desktop.app.tar.gz)
+          WIN_SIG=$(tauri signer sign src-tauri/target/release/bundle/msi/ErgoApp_Desktop_${{ github.ref_name }}_x64_en-US.msi.zip)
+
+          # Store signatures
+          echo "MAC_SIGNATURE=${MAC_SIG}" >> $GITHUB_ENV
+          echo "WIN_SIGNATURE=${WIN_SIG}" >> $GITHUB_ENV
+
       - name: Generate update manifest
         if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
           echo "{
-            \"version\": \"${{ github.ref_name }}\",
+            \"version\": \"${GITHUB_REF_NAME#v}\",
             \"notes\": \"See the assets to download this version and install.\",
             \"pub_date\": \"$(date -u +%Y-%m-%d'T'%H:%M:%SZ)\",
             \"platforms\": {
               \"darwin-x86_64\": {
-                \"signature\": \"\",
+                \"signature\": \"${{ env.MAC_SIGNATURE }}\",
                 \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoApp_Desktop.app.tar.gz\"
               },
               \"windows-x86_64\": {
-                \"signature\": \"\",
+                \"signature\": \"${{ env.WIN_SIGNATURE }}\",
                 \"url\": \"https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/ErgoApp_Desktop_${{ github.ref_name }}_x64_en-US.msi.zip\"
               }
             }
