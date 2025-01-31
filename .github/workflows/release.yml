@@ -31,20 +31,17 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
-      # Modified signing key setup
       - name: Setup signing key
         shell: bash
         run: |
           if [ "${{ matrix.platform }}" = "macos-latest" ]; then
             echo "${{ secrets.TAURI_PRIVATE_KEY }}" > private_key.key
             echo "TAURI_SIGNING_PRIVATE_KEY=$(cat private_key.key)" >> $GITHUB_ENV
-            # Only set password if it's not empty
             if [ ! -z "${{ secrets.TAURI_KEY_PASSWORD }}" ] && [ "${{ secrets.TAURI_KEY_PASSWORD }}" != "null" ]; then
               echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=${{ secrets.TAURI_KEY_PASSWORD }}" >> $GITHUB_ENV
             fi
           else
             echo "TAURI_SIGNING_PRIVATE_KEY=${{ secrets.TAURI_PRIVATE_KEY }}" >> $GITHUB_ENV
-            # Only set password if it's not empty
             if [ ! -z "${{ secrets.TAURI_KEY_PASSWORD }}" ] && [ "${{ secrets.TAURI_KEY_PASSWORD }}" != "null" ]; then
               echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=${{ secrets.TAURI_KEY_PASSWORD }}" >> $GITHUB_ENV
             fi
@@ -61,9 +58,8 @@ jobs:
           releaseDraft: true
           prerelease: false
 
-      # Since we removed Ubuntu, we should generate the manifest on macOS
       - name: Generate update manifest
-        if: matrix.platform == 'macos-latest' # Changed from ubuntu-20.04
+        if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
           echo "{
@@ -83,8 +79,8 @@ jobs:
           }" > latest.json
 
       - name: Upload latest.json
-        if: matrix.platform == 'macos-latest' # Changed from ubuntu-20.04
-        uses: actions/upload-artifact@v3
+        if: matrix.platform == 'macos-latest'
+        uses: actions/upload-artifact@v4 # Updated from v3 to v4
         with:
           name: latest.json
           path: latest.json
