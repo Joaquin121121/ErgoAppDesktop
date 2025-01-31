@@ -161,6 +161,7 @@ function Studies({
   useEffect(() => {
     loadCustomStudies();
     resetAthlete();
+    checkForUpdates();
   }, []);
 
   useEffect(() => {
