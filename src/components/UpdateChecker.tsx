@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { check } from "@tauri-apps/plugin-updater";
 import { getVersion } from "@tauri-apps/api/app";
-
 export default function UpdateChecker() {
+  const [message, setMessage] = useState("");
   const checkForUpdates = async () => {
     try {
       // Get current version
@@ -11,24 +11,33 @@ export default function UpdateChecker() {
 
       // Check for updates
       const update = await check();
-      console.log("Update check result:", update);
+      setMessage("Update check result: " + update);
 
       if (update) {
-        console.log("Update available:", {
-          currentVersion,
-          newVersion: update.version,
-          availableUpdate: update,
-        });
+        setMessage("Update available:");
       } else {
-        console.log("No updates available");
+        setMessage("No updates available");
       }
     } catch (error) {
-      console.error("Update check failed:", error);
+      setMessage("Update check failed:" + error);
     }
   };
 
   useEffect(() => {
     checkForUpdates();
   }, []);
-  return <div></div>;
+
+  useEffect(() => {
+    fetch(
+      "https://github.com/Joaquin121121/ErgoAppDesktop/releases/latest/download/latest.json"
+    )
+      .then((response) => response.json())
+      .then((data) => console.log("Fetched JSON:", data))
+      .catch((error) => console.error("Fetch error:", error));
+  }, []);
+  return (
+    <div className="absolute right-20 top-20 z-50 bg-white h-100 w-100 text-black">
+      {}
+    </div>
+  );
 }
