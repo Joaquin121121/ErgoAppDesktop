@@ -127,6 +127,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     }
 
     if (
+      field === "height" &&
       athlete.heightUnit === "ft" &&
       typeof value === "string" &&
       value.length > 0
