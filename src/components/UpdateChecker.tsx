@@ -57,7 +57,7 @@ export default function UpdateChecker() {
 
   return (
     <div className="absolute right-20 top-20 z-50 bg-white h-100 w-100 text-black">
-      {"Message is of type" + typeof message + " and it is " + message}
+      {"Message is " + message}
     </div>
   );
 }
