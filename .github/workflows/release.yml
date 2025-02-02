@@ -14,7 +14,29 @@ jobs:
   create-draft:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate Timestamp
+        id: timestamp
+        run: echo "timestamp=$(date -u +'%Y-%m-%dT%H:%M:%S.%3NZ')" >> $GITHUB_OUTPUT
+
+      - name: Create latest.json
+        id: create_json
+        run: |
+          cat > latest.json << EOF
+          {
+            "version": "${{ github.event.inputs.version }}",
+            "notes": "See the assets to download and install this version.",
+            "pub_date": "${{ steps.timestamp.outputs.timestamp }}",
+            "platforms": {
+              "windows-x86_64": {
+                "signature": "SIGNATURE_PLACEHOLDER",
+                "url": "https://github.com/Joaquin121121/ErgoAppDesktop/releases/download/${{ github.event.inputs.version }}/ErgoApp_${{ github.event.inputs.version }}_x64.msi"
+              }
+            }
+          }
+          EOF
+
       - name: Create Release Draft
+        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -28,3 +50,22 @@ jobs:
 
             ## Installation
             Download and run the MSI installer for Windows.
+
+            ## Release Process
+            1. Build locally with: `cargo tauri build`
+            2. Find the .msi and .sig files in: `src-tauri/target/release/bundle/msi/`
+            3. Upload the .msi file to this release
+            4. Download latest.json from this release
+            5. Replace "SIGNATURE_PLACEHOLDER" with the content of your .sig file
+            6. Upload the updated latest.json back to this release
+            7. Publish the release
+
+      - name: Upload latest.json
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./latest.json
+          asset_name: latest.json
+          asset_content_type: application/json
