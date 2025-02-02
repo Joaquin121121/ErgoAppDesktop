@@ -38,14 +38,59 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
+      # Debug steps to verify build process
+      - name: Build frontend and verify directories
+        run: |
+          echo "Current working directory:"
+          pwd
+          echo "Directory contents before build:"
+          ls -la
+          npm run build
+          echo "Directory contents after build:"
+          ls -la
+          echo "Dist directory contents:"
+          ls -la dist
+          echo "Checking src-tauri directory:"
+          ls -la src-tauri
+        shell: bash
+
+      # Enable debug logging for Tauri
+      - name: Enable debug logging
+        run: |
+          echo "RUST_LOG=debug" >> $GITHUB_ENV
+          echo "RUST_BACKTRACE=1" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Install Tauri dependencies (macOS only)
+        if: matrix.platform == 'macos-latest'
+        run: |
+          rustup target add aarch64-apple-darwin
+          brew install create-dmg
+
+      - name: Install Tauri dependencies (Windows only)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          rustup target add x86_64-pc-windows-msvc
+
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          RUST_LOG: debug
+          RUST_BACKTRACE: 1
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "ErgoApp Desktop v__VERSION__"
           releaseBody: "See the assets to download and install this version."
           releaseDraft: true
           prerelease: false
+
+      # Additional debug step after build
+      - name: Check build artifacts
+        run: |
+          echo "Checking src-tauri/target directory:"
+          ls -la src-tauri/target || true
+          echo "Checking release artifacts:"
+          ls -la src-tauri/target/release || true
+        shell: bash
