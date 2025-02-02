@@ -1,17 +1,3 @@
-name: Release
-on:
-  push:
-    tags:
-      - "v*"
-  workflow_dispatch:
-
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
-  id-token: write
-  pages: write
-
 jobs:
   release:
     strategy:
@@ -45,7 +31,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "ErgoApp Desktop v__VERSION__"
+          releaseName: "ErgoApp Desktop vVERSION"
           releaseBody: "See the assets to download and install this version."
           releaseDraft: true
           prerelease: false
