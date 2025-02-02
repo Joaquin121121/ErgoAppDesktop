@@ -31,133 +31,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Setup debug logging
-        run: |
-          echo "RUST_LOG=debug" >> $GITHUB_ENV
-          echo "RUST_BACKTRACE=1" >> $GITHUB_ENV
-          echo "TAURI_BUILD_DEBUG=true" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Debug environment info
-        run: |
-          echo "Node version:"
-          node --version
-          echo "NPM version:"
-          npm --version
-          echo "Rust version:"
-          rustc --version
-          echo "Cargo version:"
-          cargo --version
-          echo "Operating System:"
-          uname -a || ver
-          echo "Directory structure:"
-          ls -la
-        shell: bash
-
       - name: Install frontend dependencies
-        run: |
-          npm install
-          npm list vite || echo "Vite not found"
-          npm list @vitejs/plugin-react || echo "@vitejs/plugin-react not found"
-          npm list @tauri-apps/cli || echo "@tauri-apps/cli not found"
-
-      - name: Clean previous builds
-        run: |
-          rm -rf dist || true
-          rm -rf src-tauri/target || true
-        shell: bash
-
-      - name: Build frontend
-        run: |
-          echo "Starting frontend build..."
-          npm run build
-          echo "Frontend build completed"
-
-      - name: Verify frontend build
-        run: |
-          echo "Checking dist directory structure:"
-          ls -la dist || echo "dist directory not found!"
-          echo "Checking dist/assets:"
-          ls -la dist/assets || echo "assets directory not found!"
-          echo "Checking index.html:"
-          cat dist/index.html || echo "index.html not found!"
-          echo "Checking for JS/CSS files:"
-          find dist -type f -name "*.js" || echo "No JS files found"
-          find dist -type f -name "*.css" || echo "No CSS files found"
-        shell: bash
-
-      - name: Install Tauri dependencies (macOS only)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          rustup target add aarch64-apple-darwin
-          brew install create-dmg
-
-      - name: Install Tauri dependencies (Windows only)
-        if: matrix.platform == 'windows-latest'
-        run: |
-          rustup target add x86_64-pc-windows-msvc
-
-      - name: Verify Tauri config
-        run: |
-          echo "Checking tauri.conf.json:"
-          cat src-tauri/tauri.conf.json
-          echo "Checking Cargo.toml:"
-          cat src-tauri/Cargo.toml
-        shell: bash
+        run: npm install
 
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          RUST_LOG: debug
-          RUST_BACKTRACE: 1
-          TAURI_BUILD_DEBUG: true
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "ErgoApp Desktop v__VERSION__"
-          releaseBody: |
-            See the assets to download and install this version.
-
-            Installation notes:
-            - Windows: Requires WebView2 Runtime
-            - macOS: Compatible with Intel and Apple Silicon
+          releaseBody: "See the assets to download and install this version."
           releaseDraft: true
           prerelease: false
-          args: --verbose
-
-      - name: Verify build artifacts
-        run: |
-          echo "Checking final build artifacts..."
-          echo "Src-tauri directory:"
-          ls -la src-tauri || true
-          echo "Target directory:"
-          ls -la src-tauri/target || true
-          echo "Release directory:"
-          ls -la src-tauri/target/release || true
-          echo "Package directory (Windows):"
-          ls -la "src-tauri/target/release/bundle/msi/" || true
-          echo "Package directory (macOS):"
-          ls -la "src-tauri/target/release/bundle/dmg/" || true
-          echo "Build logs:"
-          cat src-tauri/target/debug.log || echo "No debug log found"
-        shell: bash
-
-      - name: Archive build logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs-${{ matrix.platform }}
-          path: |
-            src-tauri/target/debug.log
-            src-tauri/target/release/bundle/*/
-            dist/
-          retention-days: 5
-          compression-level: 9
-          overwrite: true
