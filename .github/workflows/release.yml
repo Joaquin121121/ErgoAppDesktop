@@ -40,17 +40,14 @@ jobs:
 
       - name: Build frontend and verify directories
         run: |
-          echo "Current working directory:"
+          echo "📂 Verificando directorios antes de construir el frontend"
           pwd
-          echo "Directory contents before build:"
           ls -la
           npm run build
-          echo "Directory contents after build:"
+          echo "📂 Directorios después de construir el frontend"
           ls -la
-          echo "Dist directory contents:"
-          ls -la dist
-          echo "Checking src-tauri directory:"
-          ls -la src-tauri
+          echo "📂 Contenido de dist después de npm run build"
+          ls -la dist || echo "⚠️ ¡No existe la carpeta dist!"
         shell: bash
 
       - name: Enable debug logging
@@ -84,10 +81,11 @@ jobs:
           releaseDraft: true
           prerelease: false
 
-      - name: Check build artifacts
+      - name: Verify Tauri build output (Windows)
+        if: matrix.platform == 'windows-latest'
         run: |
-          echo "Checking src-tauri/target directory:"
-          ls -la src-tauri/target || true
-          echo "Checking release artifacts:"
-          ls -la src-tauri/target/release || true
+          echo "📦 Verificando artefactos generados"
+          ls -la src-tauri/target/release || echo "⚠️ ¡No hay archivos en src-tauri/target/release!"
+          echo "🔎 Buscando .msi generado..."
+          find src-tauri/target/release -name "*.msi" || echo "⚠️ ¡No se generó ningún archivo .msi!"
         shell: bash
