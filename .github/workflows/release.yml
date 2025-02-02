@@ -18,8 +18,14 @@ jobs:
         with:
           node-version: 20
 
+      - name: Log Node.js version
+        run: node -v
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Log Rust version
+        run: rustc --version
 
       - name: Install frontend dependencies
         run: npm install
@@ -35,3 +41,6 @@ jobs:
           releaseBody: "See the assets to download and install this version."
           releaseDraft: true
           prerelease: false
+
+      - name: List files after build
+        run: ls -R
