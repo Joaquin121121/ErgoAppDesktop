@@ -35,12 +35,31 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install WebView2 on Windows
+        if: matrix.platform == 'windows-latest'
+        run: |
+          choco install microsoft-edge-webview2-runtime
+
+      - name: Install Windows build tools
+        if: matrix.platform == 'windows-latest'
+        run: |
+          npm install --global windows-build-tools
+          rustup target add x86_64-pc-windows-msvc
+
       - name: Install frontend dependencies
         run: npm install
+
+      - name: Setup debug logging for Windows
+        if: matrix.platform == 'windows-latest'
+        run: |
+          echo "RUST_LOG=debug" >> $GITHUB_ENV
+          echo "RUST_BACKTRACE=1" >> $GITHUB_ENV
 
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
+          RUST_LOG: debug
+          RUST_BACKTRACE: 1
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
@@ -49,3 +68,9 @@ jobs:
           releaseBody: "See the assets to download and install this version."
           releaseDraft: true
           prerelease: false
+
+      - name: Verify Windows build artifacts
+        if: matrix.platform == 'windows-latest'
+        run: |
+          dir target\release
+          dir src-tauri\target\release
