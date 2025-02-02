@@ -50,8 +50,8 @@ jobs:
           ls -la
           echo "Dist directory contents:"
           ls -la dist
-          echo "Checking src-tauri directory:"
-          ls -la src-tauri
+          mkdir -p src-tauri/target/release/bundle/dist
+          cp -r dist/* src-tauri/target/release/bundle/dist/
         shell: bash
 
       # Enable debug logging for Tauri
