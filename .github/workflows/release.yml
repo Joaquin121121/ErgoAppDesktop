@@ -1,91 +1,48 @@
-name: Release
+name: Manual Release
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number (e.g., v1.0.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
-  id-token: write
-  pages: write
 
 jobs:
-  release:
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [macos-latest, windows-latest]
-    runs-on: ${{ matrix.platform }}
-
+  create-release:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install frontend dependencies
-        run: npm install
-
-      - name: Build frontend and verify directories
-        run: |
-          echo "Current working directory:"
-          pwd
-          echo "Directory contents before build:"
-          ls -la
-          npm run build
-          echo "Directory contents after build:"
-          ls -la
-          echo "Dist directory contents:"
-          ls -la dist
-          echo "Checking src-tauri directory:"
-          ls -la src-tauri
-        shell: bash
-
-      - name: Enable debug logging
-        run: |
-          echo "RUST_LOG=debug" >> $GITHUB_ENV
-          echo "RUST_BACKTRACE=1" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Install Tauri dependencies (macOS only)
-        if: matrix.platform == 'macos-latest'
-        run: |
-          rustup target add aarch64-apple-darwin
-          brew install create-dmg
-      - name: Install Tauri dependencies (Windows only)
-        if: matrix.platform == 'windows-latest'
-        run: |
-          rustup target add x86_64-pc-windows-msvc
-      - name: Build the app
-        uses: tauri-apps/tauri-action@v0
+      - name: Create Release
+        uses: actions/create-release@v1
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-          RUST_LOG: debug
-          RUST_BACKTRACE: 1
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "ErgoApp Desktop v${{ github.ref_name }}"
-          releaseBody: "See the assets to download and install this version."
-          releaseDraft: true
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: "ErgoApp Desktop ${{ github.event.inputs.version }}"
+          draft: true
           prerelease: false
+          body: "See the assets to download and install this version."
 
-      - name: Check build artifacts
-        run: |
-          echo "Checking src-tauri/target directory:"
-          ls -la src-tauri/target || true
-          echo "Checking release artifacts:"
-          ls -la src-tauri/target/release || true
-        shell: bash
+  upload-artifacts:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.3.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./src-tauri/target/release/bundle/msi/ergo-app_${{ github.event.inputs.version }}_x64_en-US.msi
+          asset_name: ErgoApp_${{ github.event.inputs.version }}_x64.msi
+          asset_content_type: application/x-msi
