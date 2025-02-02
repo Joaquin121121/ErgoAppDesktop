@@ -13,10 +13,14 @@ permissions:
   pull-requests: write
 
 jobs:
-  create-release:
+  create-and-upload:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Create Release
+        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -27,22 +31,12 @@ jobs:
           prerelease: false
           body: "See the assets to download and install this version."
 
-  upload-artifacts:
-    needs: create-release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.3.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./src-tauri/target/release/bundle/msi/ergo-app_${{ github.event.inputs.version }}_x64_en-US.msi
           asset_name: ErgoApp_${{ github.event.inputs.version }}_x64.msi
           asset_content_type: application/x-msi
