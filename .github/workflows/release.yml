@@ -40,14 +40,17 @@ jobs:
 
       - name: Build frontend and verify directories
         run: |
-          echo "📂 Verificando directorios antes de construir el frontend"
+          echo "Current working directory:"
           pwd
+          echo "Directory contents before build:"
           ls -la
           npm run build
-          echo "📂 Directorios después de construir el frontend"
+          echo "Directory contents after build:"
           ls -la
-          echo "📂 Contenido de dist después de npm run build"
-          ls -la dist || echo "⚠️ ¡No existe la carpeta dist!"
+          echo "Dist directory contents:"
+          ls -la dist
+          echo "Checking src-tauri directory:"
+          ls -la src-tauri
         shell: bash
 
       - name: Enable debug logging
@@ -61,12 +64,10 @@ jobs:
         run: |
           rustup target add aarch64-apple-darwin
           brew install create-dmg
-
       - name: Install Tauri dependencies (Windows only)
         if: matrix.platform == 'windows-latest'
         run: |
           rustup target add x86_64-pc-windows-msvc
-
       - name: Build the app
         uses: tauri-apps/tauri-action@v0
         env:
@@ -81,11 +82,10 @@ jobs:
           releaseDraft: true
           prerelease: false
 
-      - name: Verify Tauri build output (Windows)
-        if: matrix.platform == 'windows-latest'
+      - name: Check build artifacts
         run: |
-          echo "📦 Verificando artefactos generados"
-          ls -la src-tauri/target/release || echo "⚠️ ¡No hay archivos en src-tauri/target/release!"
-          echo "🔎 Buscando .msi generado..."
-          find src-tauri/target/release -name "*.msi" || echo "⚠️ ¡No se generó ningún archivo .msi!"
+          echo "Checking src-tauri/target directory:"
+          ls -la src-tauri/target || true
+          echo "Checking release artifacts:"
+          ls -la src-tauri/target/release || true
         shell: bash
