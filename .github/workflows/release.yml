@@ -1,4 +1,4 @@
-name: Manual Release
+name: Create Release Draft
 on:
   workflow_dispatch:
     inputs:
@@ -9,18 +9,12 @@ on:
 
 permissions:
   contents: write
-  issues: write
-  pull-requests: write
 
 jobs:
-  create-and-upload:
+  create-draft:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Create Release
-        id: create_release
+      - name: Create Release Draft
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -29,14 +23,8 @@ jobs:
           release_name: "ErgoApp Desktop ${{ github.event.inputs.version }}"
           draft: true
           prerelease: false
-          body: "See the assets to download and install this version."
+          body: |
+            ErgoApp Desktop version ${{ github.event.inputs.version }}
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/msi/ErgoApp.Desktop_${{ github.event.inputs.version }}_x64_en-US.msi
-          asset_name: ErgoApp.Desktop_${{ github.event.inputs.version }}_x64.msi
-          asset_content_type: application/x-msi
+            ## Installation
+            Download and run the MSI installer for Windows.
