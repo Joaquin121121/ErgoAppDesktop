@@ -44,7 +44,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc0QzU3NThFMzBGNDY3QjkKUldTNVovUXdqblhGZERBbWxMY200SXppWURlb0dGeEYvdW0yQ05ZNDZOVktyamRDRWdCV1VjZncK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDU5OTk0MUY1ODhEMEQwMkEKUldRcTBOQ0k5VUdaV2VsVWlaN1hlVjg5a0ZuU0ZZc21YZVFEaEw2blhNZ0xtVVM2K2ZtRDloaTkK",
       "endpoints": [
         "https://github.com/Joaquin121121/ErgoAppDesktop/releases/latest/download/latest.json"
       ],
