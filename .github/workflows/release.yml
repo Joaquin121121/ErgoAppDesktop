@@ -29,7 +29,7 @@ jobs:
             "platforms": {
               "windows-x86_64": {
                 "signature": "SIGNATURE_PLACEHOLDER",
-                "url": "https://github.com/Joaquin121121/ErgoAppDesktop/releases/download/${{ github.event.inputs.version }}/ErgoApp_${{ github.event.inputs.version }}_x64.msi"
+                "url": "https://github.com/Joaquin121121/ErgoAppDesktop/releases/download/${{ github.event.inputs.version }}/ErgoApp.Desktop_${{ github.event.inputs.version }}_x64_en-US.msi"
               }
             }
           }
