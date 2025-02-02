@@ -27,25 +27,25 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GH_TOKEN }}
 
-name: Install Node.js
-uses: actions/setup-node@v4
-with:
-  node-version: 20
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-name: Install Rust stable
-uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
 
-name: Install frontend dependencies
-run: npm install
+      - name: Install frontend dependencies
+        run: npm install
 
-name: Build the app
-uses: tauri-apps/tauri-action@v0
-env:
-  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-  GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-with:
-  tagName: ${{ github.ref_name }}
-  releaseName: "ErgoApp Desktop vVERSION"
-  releaseBody: "See the assets to download and install this version."
-  releaseDraft: true
-  prerelease: false
+      - name: Build the app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "ErgoApp Desktop v__VERSION__"
+          releaseBody: "See the assets to download and install this version."
+          releaseDraft: true
+          prerelease: false
