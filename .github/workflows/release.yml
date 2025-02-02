@@ -151,7 +151,7 @@ jobs:
 
       - name: Archive build logs
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-logs-${{ matrix.platform }}
           path: |
@@ -159,3 +159,5 @@ jobs:
             src-tauri/target/release/bundle/*/
             dist/
           retention-days: 5
+          compression-level: 9
+          overwrite: true
