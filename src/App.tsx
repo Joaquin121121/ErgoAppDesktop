@@ -15,13 +15,13 @@ import NewAthlete from "./pages/NewAthlete";
 import SelectAthlete from "./pages/SelectAthlete";
 import AthleteStudies from "./pages/AthleteStudies";
 import OutlinedButton from "./components/OutlinedButton";
+import UpdateChecker from "./components/UpdateChecker";
 import { Window } from "@tauri-apps/api/window";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import { User } from "./types/User";
 import { UserProvider } from "./contexts/UserContext";
 
-/* lALALA */
 const Layout = ({
   children,
   isBlurred = false,
@@ -39,7 +39,7 @@ const Layout = ({
   selectedOption: string;
   setSelectedOption: (selectedOption: string) => void;
 }) => {
-  const options = ["studies", "athletes" /* "about" */];
+  const options = ["studies", "athletes", "about"];
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -108,6 +108,7 @@ function App() {
   const [isMaximized, setIsMaximized] = useState(true);
   const [selectedOption, setSelectedOption] = useState("studies");
   const [user, setUser] = useState<User>({ email: "" });
+  const [showUpdate, setShowUpdate] = useState(false);
   const appWindow = Window.getCurrent();
 
   const keys = [
@@ -262,6 +263,10 @@ function App() {
             selectedOption={selectedOption}
             setSelectedOption={setSelectedOption}
           >
+            <UpdateChecker
+              showUpdate={showUpdate}
+              setShowUpdate={setShowUpdate}
+            />
             <Routes>
               <Route path="/" element={pages.studies} />
               <Route path="/studies" element={pages.studies} />

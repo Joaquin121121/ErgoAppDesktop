@@ -17,7 +17,6 @@ import HandleUpdate from "../components/HandleUpdate";
 import { check, Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { getVersion } from "@tauri-apps/api/app";
-import UpdateChecker from "../components/UpdateChecker";
 
 function Studies({
   onBlurChange,
@@ -176,7 +175,6 @@ function Studies({
 
   return (
     <>
-      <UpdateChecker />
       <div
         className={`flex-1 relative flex flex-col items-center ${
           (isBlurred || studyToDelete.length) /* || !user.name.length */ &&
