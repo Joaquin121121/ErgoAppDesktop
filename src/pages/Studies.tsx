@@ -140,17 +140,6 @@ function Studies({
     }
   };
 
-  const checkForUpdates = async () => {
-    try {
-      const update = await check();
-      if (update) {
-        console.log(update);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   useEffect(() => {
     setFilteredStudies(
       allStudies.filter(([_, study]) =>
@@ -162,7 +151,6 @@ function Studies({
   useEffect(() => {
     loadCustomStudies();
     resetAthlete();
-    checkForUpdates();
   }, []);
 
   useEffect(() => {

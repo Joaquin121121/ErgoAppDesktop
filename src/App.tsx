@@ -21,6 +21,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import { User } from "./types/User";
 import { UserProvider } from "./contexts/UserContext";
+import StudyInfo from "./pages/StudyInfo";
 
 const Layout = ({
   children,
@@ -121,6 +122,7 @@ function App() {
     "selectAthlete",
     "newAthlete",
     "athleteStudies",
+    "studyInfo",
   ] as const;
   const [animations, setAnimations] = useState(
     Object.fromEntries(keys.map((key) => [key, ""]))
@@ -172,6 +174,7 @@ function App() {
     ),
     about: (
       <About
+        onBlurChange={setIsBlurred}
         isExpanded={isExpanded}
         animation={animations.about}
         customNavigate={customNavigate}
@@ -223,12 +226,15 @@ function App() {
         onBlurChange={setIsBlurred}
       />
     ),
+    studyInfo: (
+      <StudyInfo
+        isExpanded={isExpanded}
+        animation={animations.studyInfo}
+        customNavigate={customNavigate}
+        onBlurChange={setIsBlurred}
+      />
+    ),
   } as const;
-
-  const expandScreen = async () => {
-    const result = await appWindow.maximize();
-    console.log(result);
-  };
 
   useEffect(() => {
     // Check initial maximized state
@@ -277,6 +283,7 @@ function App() {
               <Route path="/selectAthlete" element={pages.selectAthlete} />
               <Route path="/newAthlete" element={pages.newAthlete} />
               <Route path="/athleteStudies" element={pages.athleteStudies} />
+              <Route path="/studyInfo" element={pages.studyInfo} />
               <Route path="*" element={pages.notFound} />
             </Routes>
           </Layout>

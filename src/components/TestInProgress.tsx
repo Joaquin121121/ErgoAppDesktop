@@ -57,6 +57,7 @@ function TestInProgress({
   };
 
   const finishTest = () => {
+    clearInterval(intervalID);
     setIntervalID(null);
     const avgTime =
       jumpTimes.reduce((acc, time) => acc + time, 0) / jumpTimes.length;
@@ -284,7 +285,8 @@ function TestInProgress({
         )}
         {study.type === "multipleJumps" &&
           study.criteria === "time" &&
-          status !== "Finalizado" && (
+          status !== "Finalizado" &&
+          !status.includes("Error") && (
             <p className="self-center mt-16 text-2xl text-black">
               <span className="text-secondary font-medium">
                 00:{criteriaValue}
@@ -294,7 +296,8 @@ function TestInProgress({
           )}
         {study.type === "multipleJumps" &&
           status !== "Finalizado" &&
-          study.criteria === "numberOfJumps" && (
+          study.criteria === "numberOfJumps" &&
+          !status.includes("Error") && (
             <p className="mt-8 text-2xl text-black">
               N° de saltos:{" "}
               <span className="text-secondary font-medium">
