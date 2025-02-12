@@ -113,7 +113,7 @@ function About({
     customNavigate("forward", "about", "studyInfo");
     setTimeout(() => {
       navigate(`/studyInfo?study=${key}`);
-    }, 200);
+    }, 300);
   };
 
   const onDelete = async () => {

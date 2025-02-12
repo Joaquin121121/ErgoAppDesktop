@@ -651,7 +651,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                   placeholder={
                     statesList.length === 0
                       ? "No aplica"
-                      : "Selecciona un estado"
+                      : "Selecciona una provincia/estado"
                   }
                   data={statesList}
                   onSelect={(e) => {

@@ -251,3 +251,14 @@ export const studiesInfo = {
       "Los resultados ayudan a planificar el entrenamiento de resistencia anaeróbica láctica y aláctica. Un alto índice de fatiga indica necesidad de mejorar la capacidad anaeróbica",
   },
 };
+
+export const VALIDATION_LIMITS = {
+  weight: {
+    kgs: { max: 200 },
+    lbs: { max: 440 },
+  },
+  height: {
+    cm: { max: 230 },
+    ft: { max: 7 },
+  },
+};

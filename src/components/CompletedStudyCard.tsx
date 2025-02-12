@@ -21,6 +21,9 @@ function CompletedStudyCard({
 }: CompletedStudyCardProps) {
   const { t } = useTranslation();
 
+  const cmjDisplayKeys = ["avgFlightTime", "avgHeightReached", "takeoffFoot"];
+  const boscoDisplayKeys = ["cmj", "abalakov", "squatJump"];
+
   return (
     <div
       className={`bg-white rounded-2xl shadow-sm hover:shadow-xl flex relative flex-col items-center hover:scale-105 hover:cursor-pointer transition-transform active:opacity-70 duration-300 ease-in-out px-4 py-4 `}
@@ -43,29 +46,33 @@ function CompletedStudyCard({
         {study.studyInfo.name}
       </h6>
 
-      {study.studyInfo.name.toLowerCase() === "bosco" ? (
+      {study.results.type === "bosco" ? (
         <div>
-          {Object.keys(study.results).map((key) => (
+          {boscoDisplayKeys.map((key) => (
             <p className="text-lg text-darkGray mb-8">
               -{t(key)}:{" "}
               <span className="text-black font-medium">
-                {study.results[key].heightReached?.toFixed(1)}{" "}
+                {study.results[key].avgHeightReached?.toFixed(1)}{" "}
                 {units.heightReached}
               </span>
             </p>
           ))}
         </div>
       ) : (
-        Object.keys(study.results).map((key) => (
-          <div>
-            <p className="text-lg text-darkGray mb-8">
-              -{t(key)}:{" "}
-              <span className="text-black font-medium">
-                {study.results[key].toFixed(1)} {units[key]}
-              </span>
-            </p>
-          </div>
-        ))
+        <div>
+          {cmjDisplayKeys.map((key) => (
+            <div>
+              <p className="text-lg text-darkGray mb-8">
+                -{t(key)}:{" "}
+                <span className="text-black font-medium">
+                  {typeof study.results[key] === "number"
+                    ? study.results[key].toFixed(1) + " " + units[key]
+                    : t(study.results[key])}
+                </span>
+              </p>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

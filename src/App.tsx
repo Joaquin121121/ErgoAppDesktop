@@ -22,6 +22,7 @@ import { auth } from "./firebase";
 import { User } from "./types/User";
 import { UserProvider } from "./contexts/UserContext";
 import StudyInfo from "./pages/StudyInfo";
+import CompletedStudyInfo from "./pages/CompletedStudyInfo";
 
 const Layout = ({
   children,
@@ -109,6 +110,7 @@ function App() {
   const [isMaximized, setIsMaximized] = useState(true);
   const [selectedOption, setSelectedOption] = useState("studies");
   const [user, setUser] = useState<User>({ email: "" });
+  const [isBlockingClicks, setIsBlockingClicks] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
   const appWindow = Window.getCurrent();
 
@@ -123,6 +125,7 @@ function App() {
     "newAthlete",
     "athleteStudies",
     "studyInfo",
+    "completedStudyInfo",
   ] as const;
   const [animations, setAnimations] = useState(
     Object.fromEntries(keys.map((key) => [key, ""]))
@@ -138,21 +141,31 @@ function App() {
     page: Page,
     nextPage: Page
   ) => {
+    setIsBlockingClicks(true);
+    setTimeout(() => {
+      setIsBlockingClicks(false);
+    }, 450);
+    setTimeout(() => {
+      resetAnimations();
+    }, 600);
     if (direction === "back") {
       setAnimations({
         ...animations,
         [page]: styles.fadeOutRight,
-        [nextPage]: styles.fadeInLeft,
       });
+      setTimeout(() => {
+        setAnimations({ ...animations, [nextPage]: styles.fadeInLeft });
+      }, 300);
 
       return;
     }
     setAnimations({
       ...animations,
       [page]: styles.fadeOutLeft,
-      [nextPage]: styles.fadeInRight,
     });
-    setTimeout(() => {}, 600);
+    setTimeout(() => {
+      setAnimations({ ...animations, [nextPage]: styles.fadeInRight });
+    }, 300);
   };
 
   const pages = {
@@ -234,6 +247,14 @@ function App() {
         onBlurChange={setIsBlurred}
       />
     ),
+    completedStudyInfo: (
+      <CompletedStudyInfo
+        isExpanded={isExpanded}
+        onBlurChange={setIsBlurred}
+        animation={animations.completedStudyInfo}
+        customNavigate={customNavigate}
+      />
+    ),
   } as const;
 
   useEffect(() => {
@@ -273,6 +294,20 @@ function App() {
               showUpdate={showUpdate}
               setShowUpdate={setShowUpdate}
             />
+            {isBlockingClicks && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100vw",
+                  height: "100vh",
+                  background: "transparent",
+                  zIndex: 9999,
+                }}
+              />
+            )}
+
             <Routes>
               <Route path="/" element={pages.studies} />
               <Route path="/studies" element={pages.studies} />
@@ -284,6 +319,10 @@ function App() {
               <Route path="/newAthlete" element={pages.newAthlete} />
               <Route path="/athleteStudies" element={pages.athleteStudies} />
               <Route path="/studyInfo" element={pages.studyInfo} />
+              <Route
+                path="/completedStudyInfo"
+                element={pages.completedStudyInfo}
+              />
               <Route path="*" element={pages.notFound} />
             </Routes>
           </Layout>

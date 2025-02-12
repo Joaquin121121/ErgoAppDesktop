@@ -55,7 +55,7 @@ function NewTest({
     customNavigate("back", "newTest", "studies");
     setTimeout(() => {
       navigate("/");
-    }, 200);
+    }, 300);
   };
 
   const saveTest = async () => {

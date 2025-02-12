@@ -10,6 +10,7 @@ interface BaseStudy {
 }
 
 type LoadUnit = "kgs" | "lbs";
+type HeightUnit = "cm" | "ft";
 
 // Modify the interfaces that have load
 interface CMJStudy extends BaseStudy {
@@ -36,11 +37,11 @@ interface AbalakovStudy extends BaseStudy {
   sensitivity: number;
 }
 
-interface DropJumpStudy extends BaseStudy {
+export interface DropJumpStudy extends BaseStudy {
   type: "dropJump";
   takeoffFoot: "right" | "left" | "both";
-  load: number;
-  loadUnit: LoadUnit;
+  height: string;
+  heightUnit: HeightUnit;
   sensitivity: number;
 }
 
@@ -130,8 +131,8 @@ const availableStudies: Studies = {
     name: "Drop Jump",
     description: "Salto de Caída",
     takeoffFoot: "both",
-    load: 20,
-    loadUnit: "kgs",
+    height: "20",
+    heightUnit: "cm",
     sensitivity: 10,
     preview: {
       equipment: ["Alfombra de Contacto"],
@@ -172,25 +173,75 @@ export const statsToMeasure = [
   "Tren Superior",
 ] as const;
 
-export interface CMJResult {
-  flightTime: number;
-  heightReached: number;
+export interface JumpTime {
+  time: number;
+  deleted: boolean;
+}
+
+export interface BaseResult {
+  times: JumpTime[];
+  avgFlightTime: number;
+  avgHeightReached: number;
+  takeoffFoot: "right" | "left" | "both";
+  sensitivity: number;
+}
+
+export interface CMJResult extends BaseResult {
+  type: "cmj";
+  load: number;
+  loadUnit: LoadUnit;
+}
+export interface SquatJumpResult extends BaseResult {
+  type: "squatJump";
+  load: number;
+  loadUnit: LoadUnit;
+}
+export interface AbalakovResult extends BaseResult {
+  type: "abalakov";
+  load: number;
+  loadUnit: LoadUnit;
+}
+export interface CustomStudyResult extends BaseResult {
+  type: "custom";
+  load: number;
+  loadUnit: LoadUnit;
+}
+export interface MultipleJumpsResult extends BaseResult {
+  type: "multipleJumps";
+  criteria: "numberOfJumps" | "stiffness" | "time";
+  criteriaValue: number | null;
+}
+
+export interface DropJumpResult extends BaseResult {
+  type: "dropJump";
+  height: string;
+  heightUnit: "cm" | "ft";
 }
 
 export interface BoscoResult {
+  type: "bosco";
   cmj: CMJResult;
-  squatJump: CMJResult;
-  abalakov: CMJResult;
+  squatJump: SquatJumpResult;
+  abalakov: AbalakovResult;
 }
 
 export interface CompletedStudy {
   studyInfo: BaseStudy;
   date: Date;
-  results: CMJResult | BoscoResult;
+  results:
+    | CMJResult
+    | BoscoResult
+    | MultipleJumpsResult
+    | DropJumpResult
+    | AbalakovResult
+    | SquatJumpResult
+    | CustomStudyResult;
 }
 
 export const units = {
   flightTime: "s",
+  avgFlightTime: "s",
+  avgHeightReached: "cm",
   heightReached: "cm",
 };
 

@@ -7,6 +7,9 @@ import BoscoStudiesList from "../components/BoscoStudiesList";
 import inputStyles from "../styles/inputStyles.module.css";
 import TestInProgress from "../components/TestInProgress";
 import { useTranslation } from "react-i18next";
+import { DropJumpStudy } from "../types/Studies";
+import { VALIDATION_LIMITS } from "../constants/data";
+
 function StartTest({
   isExpanded,
   onBlurChange,
@@ -27,6 +30,8 @@ function StartTest({
   const [isBlurred, setIsBlurred] = useState(false);
   const [testInProgress, setTestInProgress] = useState(false);
   const [noAthlete, setNoAthlete] = useState(false);
+  const [prevHeight, setPrevHeight] = useState("");
+  const [prevHeightUnit, setPrevHeightUnit] = useState("");
 
   const navigate = useNavigate();
 
@@ -71,13 +76,84 @@ function StartTest({
 
   const handleInputChange = (field: string, value: string) => {
     // Allow empty string (to clear input) or only digits
-    if (field === "load" || field === "sensitivity") {
+    if (field === "load" || field === "sensitivity" || field === "height") {
       if (value === "" || /^\d+$/.test(value)) {
         setStudy({ ...study, [field]: value });
       }
       return;
     }
+    if (
+      field === "height" &&
+      athlete.heightUnit === "ft" &&
+      typeof value === "string" &&
+      value.length > 0
+    ) {
+      // Split the value into an array of characters
+      const chars = value.split("");
 
+      // If length is 4 (e.g., "5'11"), check if the second to last char is '1'
+      // and the last char is between '0' and '1'
+      if (value.length === 4) {
+        const secondToLast = chars[value.length - 2];
+        const last = chars[value.length - 1];
+
+        if (secondToLast !== "1" || (last !== "0" && last !== "1")) {
+          return;
+        }
+      }
+
+      // Don't allow inputs longer than 4 characters (e.g., "5'111")
+      if (value.length > 4) {
+        return;
+      }
+    }
+    if (
+      study.type === "dropJump" &&
+      field === "height" &&
+      value !== "" &&
+      !/^\d+$/.test(String(value)) &&
+      // Allow the feet/inches format (e.g., "5'11")
+      !(
+        field === "height" &&
+        study.heightUnit === "ft" &&
+        /^\d'?\d*$/.test(String(value))
+      )
+    ) {
+      return;
+    }
+    if (
+      study.type === "dropJump" &&
+      field === "height" &&
+      typeof value === "string" &&
+      value !== ""
+    ) {
+      if (study.heightUnit === "cm") {
+        const numValue = parseFloat(value);
+        if (numValue > VALIDATION_LIMITS.height.cm.max) {
+          return;
+        }
+      } else if (study.heightUnit === "ft") {
+        const [feet, inches = "0"] = value.split("'");
+        const feetNum = parseInt(feet);
+        const inchesNum = parseInt(inches);
+        if (!isNaN(feetNum) && !isNaN(inchesNum)) {
+          const newHeight = Math.round(feetNum * 30.48 + inchesNum * 2.54);
+          if (newHeight > VALIDATION_LIMITS.height.cm.max) {
+            return;
+          }
+        }
+        // Only validate the feet part when there's a single digit
+        if (
+          value.length === 1 &&
+          parseInt(value) > VALIDATION_LIMITS.height.ft.max
+        ) {
+          return;
+        }
+      }
+    }
+    if (study.type === "dropJump" && field === "heightUnit") {
+      setPrevHeightUnit(study.heightUnit);
+    }
     // For other fields, update normally
     setStudy({ ...study, [field]: value });
   };
@@ -86,7 +162,7 @@ function StartTest({
     customNavigate("back", "startTest", "studies");
     setTimeout(() => {
       navigate("/");
-    }, 200);
+    }, 300);
   };
 
   useEffect(() => {
@@ -98,6 +174,47 @@ function StartTest({
       console.log(study.studies);
     }
   }, [study]);
+
+  useEffect(() => {
+    if (study.type !== "dropJump") {
+      return;
+    }
+    if (
+      study.heightUnit === "ft" &&
+      study.height.length === 1 &&
+      prevHeight.length === 0
+    ) {
+      setStudy({ ...study, height: `${athlete.height}'` });
+    }
+    setPrevHeight(study.height);
+  }, [(study as DropJumpStudy).height]);
+
+  // Handle height unit conversion
+  useEffect(() => {
+    console.log("wehere");
+    if (study.type !== "dropJump") {
+      return;
+    }
+    if (study.heightUnit === "ft" && prevHeightUnit === "cm") {
+      const heightNum = parseFloat(study.height);
+      if (!isNaN(heightNum)) {
+        const feet = Math.floor(heightNum / 30.48);
+        const inches = Math.round((heightNum % 30.48) / 2.54);
+        setStudy({ ...study, height: `${feet}'${inches}` });
+      }
+    }
+    if (study.heightUnit === "cm" && prevHeightUnit === "ft") {
+      const [feet, inches = "0"] = study.height.split("'");
+      const feetNum = parseInt(feet);
+      const inchesNum = parseInt(inches);
+      if (!isNaN(feetNum) && !isNaN(inchesNum)) {
+        const newHeight = Math.round(
+          feetNum * 30.48 + inchesNum * 2.54
+        ).toString();
+        setStudy({ ...study, height: newHeight });
+      }
+    }
+  }, [(study as DropJumpStudy).heightUnit]);
   return (
     <div
       className={`flex-1  relative flex flex-col items-center transition-all duration-300 ease-in-out `}
@@ -199,36 +316,79 @@ function StartTest({
           )}
           {study.type !== "bosco" && study.type !== "multipleJumps" && (
             <div className="flex items-center mt-8">
-              <p className="text-black w-36 text-end mr-12">Carga</p>
-              <input
-                type="numeric"
-                className={`bg-offWhite border border-gray focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
-                placeholder="70..."
-                value={study.load}
-                onChange={(e) => {
-                  handleInputChange("load", e.target.value);
-                }}
-              />
-              <button
-                key={`${study.loadUnit}-right`}
-                onClick={() => setStudy({ ...study, loadUnit: "kgs" })}
-                className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-8 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                  study.loadUnit === "kgs" &&
-                  "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
-                }`}
-              >
-                Kgs
-              </button>
-              <button
-                key={`${study.type}-both`}
-                onClick={() => setStudy({ ...study, loadUnit: "lbs" })}
-                className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                  study.loadUnit === "lbs" &&
-                  "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
-                }`}
-              >
-                Lbs
-              </button>
+              {study.type === "dropJump" ? (
+                <>
+                  <p className="text-black w-36 text-end mr-12">
+                    Altura de Caída
+                  </p>
+
+                  <input
+                    type="numeric"
+                    className={`bg-offWhite border border-gray focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
+                    placeholder="70..."
+                    value={study.height}
+                    onChange={(e) => {
+                      handleInputChange("height", e.target.value);
+                    }}
+                  />
+                  <button
+                    key={`${study.heightUnit}-right`}
+                    onClick={() => setStudy({ ...study, heightUnit: "cm" })}
+                    className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-8 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+                      study.heightUnit === "cm" &&
+                      "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+                    }`}
+                  >
+                    Cm
+                  </button>
+                  <button
+                    key={`${study.type}-both`}
+                    onClick={() => setStudy({ ...study, heightUnit: "ft" })}
+                    className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+                      study.heightUnit === "ft" &&
+                      "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+                    }`}
+                  >
+                    Ft
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="text-black w-36 text-end mr-12">
+                    Carga añadida
+                  </p>
+
+                  <input
+                    type="numeric"
+                    className={`bg-offWhite border border-gray focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
+                    placeholder="70..."
+                    value={study.load}
+                    onChange={(e) => {
+                      handleInputChange("load", e.target.value);
+                    }}
+                  />
+                  <button
+                    key={`${study.loadUnit}-right`}
+                    onClick={() => setStudy({ ...study, loadUnit: "kgs" })}
+                    className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-8 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+                      study.loadUnit === "kgs" &&
+                      "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+                    }`}
+                  >
+                    Kgs
+                  </button>
+                  <button
+                    key={`${study.type}-both`}
+                    onClick={() => setStudy({ ...study, loadUnit: "lbs" })}
+                    className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+                      study.loadUnit === "lbs" &&
+                      "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+                    }`}
+                  >
+                    Lbs
+                  </button>
+                </>
+              )}
             </div>
           )}
           {study.type === "multipleJumps" && (

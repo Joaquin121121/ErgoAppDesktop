@@ -11,6 +11,7 @@ import AutocompleteDropdown from "../components/AutocompleteDropdown";
 import { Country, State } from "country-state-city";
 import { formattedDisciplines } from "../constants/data";
 import { useSearchParams } from "react-router-dom";
+import { VALIDATION_LIMITS } from "../constants/data";
 
 function NewAthlete({
   isExpanded,
@@ -102,17 +103,6 @@ function NewAthlete({
   }, [countryReset]);
 
   const handleInputChange = (field: keyof Athlete, value: string | Date) => {
-    const VALIDATION_LIMITS = {
-      weight: {
-        kgs: { max: 200 },
-        lbs: { max: 440 },
-      },
-      height: {
-        cm: { max: 230 },
-        ft: { max: 7 },
-      },
-    };
-
     if (field === "name" && typeof value === "string" && /\d/.test(value)) {
       setErrors({ ...errors, name: "numbers" });
       return;
@@ -461,12 +451,12 @@ function NewAthlete({
             </div>
             {/* State */}
             <div className="flex items-center my-4">
-              <p className="w-40 text-right mr-8 text-darkGray">
-                {t("state").charAt(0).toUpperCase() + t("state").slice(1)}
-              </p>
+              <p className="w-40 text-right mr-8 text-darkGray">{t("state")}</p>
               <AutocompleteDropdown
                 placeholder={
-                  statesList.length === 0 ? "No aplica" : "Selecciona un estado"
+                  statesList.length === 0
+                    ? "No aplica"
+                    : "Selecciona una provincia/estado"
                 }
                 data={statesList}
                 onSelect={(e) => {

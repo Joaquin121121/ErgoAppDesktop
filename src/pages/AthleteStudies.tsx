@@ -55,8 +55,16 @@ function AthleteStudies({
     }
   };
 
+  const handleStudySelection = (date: string) => {
+    customNavigate("forward", "athleteStudies", "completedStudyInfo");
+    setTimeout(() => {
+      navigate("/completedStudyInfo?date=" + date);
+    }, 300);
+  };
+
   useEffect(() => {
     onBlurChange(!!studyToDelete);
+    console.log(athlete.completedStudies);
   }, [studyToDelete]);
 
   return (
@@ -96,7 +104,13 @@ function AthleteStudies({
                 }
                 study={study}
                 onDelete={(date) => setStudyToDelete(date)}
-                onClick={() => {}}
+                onClick={() => {
+                  handleStudySelection(
+                    typeof study.date === "string"
+                      ? study.date
+                      : study.date.toISOString()
+                  );
+                }}
               />
             ))}
           </div>

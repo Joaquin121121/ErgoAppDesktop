@@ -123,7 +123,7 @@ function Studies({
     customNavigate("forward", "studies", "startTest");
     setTimeout(() => {
       navigate("/startTest");
-    }, 200);
+    }, 300);
   };
 
   const onDelete = async () => {
