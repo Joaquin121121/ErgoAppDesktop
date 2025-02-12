@@ -341,7 +341,7 @@ function TestInProgress({
   return (
     <>
       <div
-        className={`bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-1/4 flex flex-col items-center px-16 py-8 ${
+        className={`bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-20 flex flex-col items-center px-16 py-8 ${
           isBlurred && "blur-md pointer-events-none"
         }`}
       >

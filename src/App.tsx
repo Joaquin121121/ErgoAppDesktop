@@ -141,6 +141,8 @@ function App() {
     page: Page,
     nextPage: Page
   ) => {
+    resetAnimations();
+
     setIsBlockingClicks(true);
     setTimeout(() => {
       setIsBlockingClicks(false);
