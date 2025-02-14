@@ -81,7 +81,7 @@ function AthleteStudies({
             <span className="text-secondary font-medium">{athlete.name}</span>
           </p>
           <OutlinedButton
-            title="Ver Información del Atleta"
+            title="Ver Información"
             onClick={() => {
               customNavigate("forward", "athleteStudies", "selectAthlete");
               setTimeout(() => {
