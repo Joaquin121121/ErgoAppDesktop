@@ -48,6 +48,8 @@ function TestInProgress({
   const navigate = useNavigate();
 
   const [startTime, setStartTime] = useState(new Date());
+  const [flightTimes, setFlightTimes] = useState<number[]>([]);
+  const [floorTimes, setFloorTimes] = useState<number[]>([]);
   const [jumpTimes, setJumpTimes] = useState<JumpTime[]>([]);
   const [boscoResults, setBoscoResults] = useState<BoscoResult>({
     type: "bosco",
@@ -94,8 +96,19 @@ function TestInProgress({
   const finishTest = () => {
     clearInterval(intervalID);
     setIntervalID(null);
+    const processedFloorTimes =
+      floorTimes.length === flightTimes.length
+        ? floorTimes
+        : floorTimes.slice(0, -1);
+    const localJumpTimes = flightTimes.map((jump, i) => ({
+      deleted: false,
+      time: jump,
+      floorTime: processedFloorTimes[i],
+    }));
+    setJumpTimes(localJumpTimes);
     const avgTime =
-      jumpTimes.reduce((acc, time) => acc + time.time, 0) / jumpTimes.length;
+      localJumpTimes.reduce((acc, time) => acc + time.time, 0) /
+      localJumpTimes.length;
 
     if (typeof avgTime !== "number") {
       setStatus("Error");
@@ -207,6 +220,18 @@ function TestInProgress({
     setStatus("Súbase a la alfombra");
     setCriteriaValue(0);
   };
+  const startTimer = () => {
+    if (intervalID) {
+      return;
+    }
+    if (study.type === "multipleJumps" && study.criteria === "time") {
+      setIntervalID(
+        setInterval(() => {
+          setCriteriaValue((prev) => prev + 1); // Use functional update
+        }, 1000)
+      );
+    }
+  };
 
   useEffect(() => {
     const initializeDevice = async () => {
@@ -246,10 +271,12 @@ function TestInProgress({
       logs[logs.length - 1] &&
       logs[logs.length - 1].data &&
       logs[logs.length - 1].data === "Microswitch PRESIONADO" &&
-      status !== "Finalizado"
+      status === "Súbase a la alfombra"
     ) {
       setStatus("Listo para saltar");
       startTimer();
+      setStartTime(new Date());
+      return;
     }
 
     if (
@@ -259,6 +286,12 @@ function TestInProgress({
       logs[logs.length - 1].data === "Microswitch SUELTO"
     ) {
       setStatus("Saltando");
+      if (study.type === "multipleJumps") {
+        setFloorTimes((prevFloorTimes) => [
+          ...prevFloorTimes,
+          getSecondsBetweenDates(startTime, new Date()),
+        ]);
+      }
       setStartTime(new Date());
     }
 
@@ -268,13 +301,14 @@ function TestInProgress({
       logs[logs.length - 1].data === "Microswitch PRESIONADO"
     ) {
       setStatus("Listo para saltar");
-      setJumpTimes([
-        ...jumpTimes,
-        {
-          time: getSecondsBetweenDates(startTime, new Date()),
-          deleted: false,
-        },
+      setFlightTimes((prevFlightTimes) => [
+        ...prevFlightTimes,
+        getSecondsBetweenDates(startTime, new Date()),
       ]);
+
+      if (study.type === "multipleJumps") {
+        setStartTime(new Date());
+      }
 
       if (
         study.type === "multipleJumps" &&
@@ -289,18 +323,6 @@ function TestInProgress({
       }
     }
   }, [logs]);
-  const startTimer = () => {
-    if (intervalID) {
-      return;
-    }
-    if (study.type === "multipleJumps" && study.criteria === "time") {
-      setIntervalID(
-        setInterval(() => {
-          setCriteriaValue((prev) => prev + 1); // Use functional update
-        }, 1000)
-      );
-    }
-  };
 
   useEffect(() => {
     if (
@@ -325,18 +347,9 @@ function TestInProgress({
   }, [status]);
 
   useEffect(() => {
-    setJumpTimes([
-      { time: 0.5, deleted: false },
-      { time: 0.7, deleted: false },
-      { time: 0.8, deleted: false },
-      { time: 0.6, deleted: false },
-      { time: 0.9, deleted: false },
-    ]);
-  }, []);
-
-  useEffect(() => {
-    finishTest();
-  }, []);
+    console.log("Floor:", floorTimes);
+    console.log(flightTimes);
+  }, [jumpTimes, floorTimes, flightTimes]);
 
   return (
     <>

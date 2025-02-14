@@ -176,6 +176,7 @@ export const statsToMeasure = [
 export interface JumpTime {
   time: number;
   deleted: boolean;
+  floorTime?: number;
 }
 
 export interface BaseResult {
