@@ -141,10 +141,6 @@ function App() {
     page: Page,
     nextPage: Page
   ) => {
-    setIsBlockingClicks(true);
-    setTimeout(() => {
-      setIsBlockingClicks(false);
-    }, 450);
     setTimeout(() => {
       resetAnimations();
     }, 600);
@@ -152,20 +148,16 @@ function App() {
       setAnimations({
         ...animations,
         [page]: styles.fadeOutRight,
+        [nextPage]: styles.fadeInLeft,
       });
-      setTimeout(() => {
-        setAnimations({ ...animations, [nextPage]: styles.fadeInLeft });
-      }, 300);
 
       return;
     }
     setAnimations({
       ...animations,
       [page]: styles.fadeOutLeft,
+      [nextPage]: styles.fadeInRight,
     });
-    setTimeout(() => {
-      setAnimations({ ...animations, [nextPage]: styles.fadeInRight });
-    }, 300);
   };
 
   const pages = {

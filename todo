@@ -1,5 +1,5 @@
 MVP
-    Reduccion de rendimiento por fatiga
+    Reduccion de rendimiento por fatiga:
     Stifness 
     Mostrar detalle de Tests
     Carga rapida
@@ -16,7 +16,7 @@ MVP
     Sacar instrumentos de medicion por ahora
     Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
     Testing de precision (implementar sensibilidad?)
-
+    
 Implementar resumen BOSCO test pre-guardar (despues)
 Personalizar menu de instalacion
 Implementar registro, login, persistencia de sesión
