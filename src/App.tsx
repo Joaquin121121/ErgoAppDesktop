@@ -23,7 +23,7 @@ import { User } from "./types/User";
 import { UserProvider } from "./contexts/UserContext";
 import StudyInfo from "./pages/StudyInfo";
 import CompletedStudyInfo from "./pages/CompletedStudyInfo";
-
+import CompareStudies from "./pages/CompareStudies";
 const Layout = ({
   children,
   isBlurred = false,
@@ -126,6 +126,7 @@ function App() {
     "athleteStudies",
     "studyInfo",
     "completedStudyInfo",
+    "compareStudies",
   ] as const;
   const [animations, setAnimations] = useState(
     Object.fromEntries(keys.map((key) => [key, ""]))
@@ -247,6 +248,14 @@ function App() {
         customNavigate={customNavigate}
       />
     ),
+    compareStudies: (
+      <CompareStudies
+        isExpanded={isExpanded}
+        animation={animations.compareStudies}
+        customNavigate={customNavigate}
+        onBlurChange={setIsBlurred}
+      />
+    ),
   } as const;
 
   useEffect(() => {
@@ -315,6 +324,7 @@ function App() {
                 path="/completedStudyInfo"
                 element={pages.completedStudyInfo}
               />
+              <Route path="/compareStudies" element={pages.compareStudies} />
               <Route path="*" element={pages.notFound} />
             </Routes>
           </Layout>

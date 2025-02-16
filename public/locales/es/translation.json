@@ -6,7 +6,7 @@
   "birthDate": "fecha de nacimiento",
   "country": "país",
   "state": "Provincia/Estado",
-  "height": "altura",
+  "height": "Altura",
   "heightUnit": "unidad de altura",
   "weight": "peso",
   "weightUnit": "unidad de peso",
@@ -63,10 +63,13 @@
   "numberOfJumps": "N° de saltos",
   "stiffness": "Stiffness",
   "time": "Tiempo (s)",
-  "avgFlightTime": "Tiempo de Vuelo Promedio",
+  "load": "Carga",
+  "avgFlightTime": "Vuelo Promedio",
   "avgHeightReached": "Altura Promedio",
   "takeoffFoot": "Pie de Despegue",
   "both": "Ambos",
   "right": "Derecho",
-  "left": "Izquierdo"
+  "left": "Izquierdo",
+  "avgStiffness": "Stiffness Promedio",
+  "avgPerformance": "Rendimiento Promedio"
 }

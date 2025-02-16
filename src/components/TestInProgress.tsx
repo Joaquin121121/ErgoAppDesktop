@@ -4,18 +4,22 @@ import TonalButton from "./TonalButton";
 import useSerialMonitor from "../hooks/useSerialMonitor";
 import { getSecondsBetweenDates } from "../utils/utils";
 import OutlinedButton from "./OutlinedButton";
+import scrollBarStyles from "../styles/scrollbar.module.css";
 import {
   CompletedStudy,
   studyInfoLookup,
   BoscoResult,
   JumpTime,
+  StudyData,
 } from "../types/Studies";
 import { useJsonFiles } from "../hooks/useJsonFiles";
-import { naturalToCamelCase } from "../utils/utils";
+import { naturalToCamelCase, getPerformanceDrop } from "../utils/utils";
 import { useNavigate } from "react-router-dom";
-import { useTransition } from "react";
 import { useTranslation } from "react-i18next";
 import ErrorDisplay from "./ErrorDisplay";
+import styles from "../styles/animations.module.css";
+import ChartDisplay from "./MultipleJumpsChartDisplay";
+import navAnimations from "../styles/animations.module.css";
 
 function TestInProgress({
   setTestInProgress,
@@ -36,7 +40,10 @@ function TestInProgress({
 }) {
   const [isBlurred, setIsBlurred] = useState(false);
   const [status, setStatus] = useState("Súbase a la alfombra");
-  const [data, setData] = useState({ avgTime: 0, height: 0 });
+  const [data, setData] = useState<StudyData>({
+    avgFlightTime: 0,
+    avgHeightReached: 0,
+  });
   const [pointer, setPointer] = useState(0);
   const [errorTimeout, setErrorTimeout] = useState(null);
   const [displayError, setDisplayError] = useState(false);
@@ -50,7 +57,14 @@ function TestInProgress({
   const [startTime, setStartTime] = useState(new Date());
   const [flightTimes, setFlightTimes] = useState<number[]>([]);
   const [floorTimes, setFloorTimes] = useState<number[]>([]);
+  const [performance, setPerformance] = useState<number[]>([]);
+  const [stiffness, setStiffness] = useState<number[]>([]);
   const [jumpTimes, setJumpTimes] = useState<JumpTime[]>([]);
+  const [showTable, setShowTable] = useState(false);
+  const [showChart, setShowChart] = useState(false);
+  const [tableAnimation, setTableAnimation] = useState("");
+  const [chartAnimation, setChartAnimation] = useState("");
+  const [performanceDrop, setPerformanceDrop] = useState(0);
   const [boscoResults, setBoscoResults] = useState<BoscoResult>({
     type: "bosco",
     cmj: {
@@ -87,6 +101,153 @@ function TestInProgress({
   const [criteriaValue, setCriteriaValue] = useState(0);
   const [intervalID, setIntervalID] = useState(null);
 
+  const tableJSX = (
+    <table className="w-full mt-8">
+      <thead className="w-full">
+        <tr className="flex justify-around items-center w-full">
+          <th className="text-2xl w-20 font-normal text-black">Saltos</th>
+          <th className="text-2xl w-52 font-normal text-black">
+            Tiempo de Vuelo
+          </th>
+          {study.type === "multipleJumps" && (
+            <th className="text-2xl w-52 font-normal text-black">
+              Tiempo de Piso
+            </th>
+          )}
+          <th className="text-2xl w-36 font-normal text-black">Altura</th>
+          {study.type === "multipleJumps" && (
+            <>
+              <th className="text-2xl w-36 font-normal text-black">
+                Stiffness
+              </th>
+              <th className="text-2xl w-36 font-normal text-black">
+                Rendimiento
+              </th>
+            </>
+          )}
+          <th className="text-2xl w-24 font-normal text-black">Eliminar</th>
+        </tr>
+      </thead>
+      <tbody
+        className={`w-full block ${scrollBarStyles.customScrollbar}`}
+        style={{
+          maxHeight: showTable ? "600px" : "200px",
+          overflowY: "auto",
+        }}
+      >
+        {jumpTimes?.map((e, i) => (
+          <tr
+            key={i}
+            className="text-tertiary border border-transparent text-xl flex rounded-2xl justify-around items-center w-full hover:text-secondary hover:bg-lightRed  hover:border-secondary transition-all 300s ease-linear"
+          >
+            <td
+              className="text-inherit w-20 flex items-center justify-center"
+              style={{
+                opacity: e.deleted && "60%",
+                color: e.deleted && "#9E9E9E",
+              }}
+            >
+              {i + 1}
+            </td>
+            <td
+              className="text-inherit w-52 flex items-center justify-center"
+              style={{ opacity: e.deleted && "60%" }}
+            >
+              {e.time ? `${e.time.toFixed(1)} s` : "-"}
+            </td>
+            {study.type === "multipleJumps" && (
+              <td
+                className="text-inherit w-52 flex items-center justify-center"
+                style={{ opacity: e.deleted && "60%" }}
+              >
+                {e.floorTime ? `${e.floorTime.toFixed(1)} s` : "-"}
+              </td>
+            )}
+            <td
+              className="text-inherit opacity w-36 flex items-center justify-center"
+              style={{ opacity: e.deleted && "60%" }}
+            >
+              {e.time
+                ? `${(((9.81 * e.time ** 2) / 8) * 100).toFixed(1)} cm`
+                : "-"}
+            </td>
+            {study.type === "multipleJumps" && (
+              <>
+                <td
+                  className="text-inherit opacity w-36 flex items-center justify-center"
+                  style={{ opacity: e.deleted && "60%" }}
+                >
+                  {stiffness?.[i] ? `${stiffness[i].toFixed(1)} N/m` : "-"}
+                </td>
+                <td
+                  className="text-inherit opacity w-36 flex items-center justify-center"
+                  style={{ opacity: e.deleted && "60%" }}
+                >
+                  {performance?.[i] ? `${performance[i].toFixed(1)}%` : "-"}
+                </td>
+              </>
+            )}
+            <td className="w-24 flex items-center justify-center ">
+              <img
+                src={`/${e.deleted ? "undo" : "close"}.png`}
+                className="h-6 w-6 hover:opacity-70 transition-all cursor-pointer duration-200"
+                alt=""
+                onClick={() => {
+                  handleDelete(i);
+                }}
+              />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot className="w-full block">
+        <tr className="text-darkGray border border-transparent text-xl flex rounded-2xl justify-around items-center w-full hover:text-secondary hover:bg-lightRed hover:border-secondary transition-all 300ms linear">
+          <td className="text-secondary w-20 flex items-center justify-center">
+            Promedios
+          </td>
+          <td className="text-secondary w-52 flex items-center justify-center">
+            {data?.avgFlightTime && !Number.isNaN(data.avgFlightTime)
+              ? `${data.avgFlightTime.toFixed(1)} s`
+              : "-"}
+          </td>
+          {study.type === "multipleJumps" && (
+            <td className="text-secondary w-52 flex items-center justify-center">
+              {data?.avgFloorTime && !Number.isNaN(data.avgFloorTime)
+                ? `${data.avgFloorTime.toFixed(1)} s`
+                : "-"}
+            </td>
+          )}
+          <td className="text-secondary w-36 flex items-center justify-center">
+            {data?.avgHeightReached && !Number.isNaN(data.avgHeightReached)
+              ? `${data.avgHeightReached.toFixed(1)} cm`
+              : "-"}
+          </td>
+          {study.type === "multipleJumps" && (
+            <>
+              <td className="text-secondary w-36 flex items-center justify-center">
+                {data?.avgStiffness && !Number.isNaN(data.avgStiffness)
+                  ? `${data.avgStiffness.toFixed(1)} N/m`
+                  : "-"}
+              </td>
+              <td className="text-secondary w-36 flex items-center justify-center">
+                {data?.avgPerformance && !Number.isNaN(data.avgPerformance)
+                  ? `${data.avgPerformance.toFixed(1)} %`
+                  : "-"}
+              </td>
+            </>
+          )}
+          <td className="w-24 opacity-0 flex items-center justify-center">
+            <img
+              src="/close.png"
+              className="h-6 w-6 hover:opacity-70 transition-all duration-200"
+              alt=""
+            />
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  );
+
   const nextTest = () => {
     setJumpTimes([]);
     setPointer(pointer + 1);
@@ -100,17 +261,19 @@ function TestInProgress({
       floorTimes.length === flightTimes.length
         ? floorTimes
         : floorTimes.slice(0, -1);
+    console.log(processedFloorTimes);
     const localJumpTimes = flightTimes.map((jump, i) => ({
       deleted: false,
       time: jump,
       floorTime: processedFloorTimes[i],
     }));
+    console.log(localJumpTimes);
     setJumpTimes(localJumpTimes);
-    const avgTime =
+    const avgFlightTime =
       localJumpTimes.reduce((acc, time) => acc + time.time, 0) /
       localJumpTimes.length;
 
-    if (typeof avgTime !== "number") {
+    if (typeof avgFlightTime !== "number") {
       setStatus("Error");
       return;
     }
@@ -118,17 +281,53 @@ function TestInProgress({
       setBoscoResults({
         ...boscoResults,
         [tests[pointer]]: {
-          avgTime: avgTime,
-          heightReached: ((9.81 * avgTime ** 2) / 8) * 100,
+          avgFlightTime: avgFlightTime,
+          heightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
         },
       });
     }
-    setData({ avgTime: avgTime, height: ((9.81 * avgTime ** 2) / 8) * 100 });
+    if (study.type === "multipleJumps") {
+      const max = Math.max(...flightTimes);
+      const performances = flightTimes.map((e) =>
+        Number(((e / max) * 100).toFixed(1))
+      );
+      setPerformance(performances);
+      const stiffnesses = localJumpTimes.map((e) =>
+        Number(
+          (Math.PI * (e.time + e.floorTime)) /
+            (e.floorTime * e.floorTime * (e.time / e.floorTime + Math.PI / 4))
+        )
+      );
+      setStiffness(stiffnesses);
+
+      const avgFloorTime =
+        localJumpTimes.reduce((acc, time) => acc + time.floorTime, 0) /
+        localJumpTimes.length;
+      const avgPerformance =
+        performances.reduce((acc, time) => acc + time, 0) / performances.length;
+      const avgStiffness =
+        stiffnesses.reduce((acc, time) => acc + time, 0) / stiffnesses.length;
+      setData({
+        avgFlightTime: avgFlightTime,
+        avgHeightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
+        avgFloorTime: avgFloorTime,
+        avgPerformance: avgPerformance,
+        avgStiffness: avgStiffness,
+      });
+      setPerformanceDrop(getPerformanceDrop(performances));
+      setStatus("Finalizado");
+
+      return;
+    }
+    setData({
+      avgFlightTime: avgFlightTime,
+      avgHeightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
+    });
     setStatus("Finalizado");
   };
 
   const saveTest = async () => {
-    if (!jumpTimes.length || Number.isNaN(data.avgTime)) {
+    if (!jumpTimes.length || Number.isNaN(data.avgFlightTime)) {
       setIsBlurred(true);
       return;
     }
@@ -140,19 +339,24 @@ function TestInProgress({
           ? boscoResults
           : study.type === "multipleJumps"
           ? {
-              avgFlightTime: data.avgTime,
-              avgHeightReached: data.height,
+              avgFlightTime: data.avgFlightTime,
+              avgHeightReached: data.avgHeightReached,
               times: jumpTimes,
               type: study.type,
               takeoffFoot: study.takeoffFoot,
               sensitivity: study.sensitivity,
               criteria: study.criteria,
               criteriaValue: study.criteriaValue,
+              stiffness: stiffness,
+              performance: performance,
+              avgStiffness: data.avgStiffness,
+              avgPerformance: data.avgPerformance,
+              avgFloorTime: data.avgFloorTime,
             }
           : study.type === "dropJump"
           ? {
-              avgFlightTime: data.avgTime,
-              avgHeightReached: data.height,
+              avgFlightTime: data.avgFlightTime,
+              avgHeightReached: data.avgHeightReached,
               times: jumpTimes,
               type: study.type,
               takeoffFoot: study.takeoffFoot,
@@ -161,8 +365,8 @@ function TestInProgress({
               heightUnit: study.heightUnit,
             }
           : {
-              avgFlightTime: data.avgTime,
-              avgHeightReached: data.height,
+              avgFlightTime: data.avgFlightTime,
+              avgHeightReached: data.avgHeightReached,
               times: jumpTimes,
               type: study.type,
               takeoffFoot: study.takeoffFoot,
@@ -172,6 +376,7 @@ function TestInProgress({
             },
     };
 
+    console.log(studyToSave);
     try {
       const result = await saveJson(
         `${naturalToCamelCase(athlete.name)}.json`,
@@ -202,12 +407,48 @@ function TestInProgress({
     const updatedJumpTimes = jumpTimes.map((jump, i) =>
       i === index ? { ...jump, deleted: !jumpTimes[i].deleted } : jump
     );
+
     const validJumpTimes = updatedJumpTimes.filter((e) => !e.deleted);
     setJumpTimes(updatedJumpTimes);
-    const avgTime =
+    const avgFlightTime =
       validJumpTimes.reduce((acc, time) => acc + time.time, 0) /
       validJumpTimes.length;
-    setData({ avgTime: avgTime, height: ((9.81 * avgTime ** 2) / 8) * 100 });
+    if (study.type === "multipleJumps") {
+      const validFlightTimes = validJumpTimes.map((e) => e.time);
+
+      const max = Math.max(...validFlightTimes);
+      const validPerformances = validFlightTimes.map((e) =>
+        Number(((e / max) * 100).toFixed(1))
+      );
+      const validStiffnesses = validJumpTimes.map((e) =>
+        Number(
+          (Math.PI * (e.time + e.floorTime)) /
+            (e.floorTime * e.floorTime * (e.time / e.floorTime + Math.PI / 4))
+        )
+      );
+      const avgFloorTime =
+        validJumpTimes.reduce((acc, time) => acc + time.floorTime, 0) /
+        validJumpTimes.length;
+      const avgPerformance =
+        validPerformances.reduce((acc, time) => acc + time, 0) /
+        validPerformances.length;
+      const avgStiffness =
+        validStiffnesses.reduce((acc, time) => acc + time, 0) /
+        validStiffnesses.length;
+      setData({
+        avgFlightTime: avgFlightTime,
+        avgHeightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
+        avgFloorTime: avgFloorTime,
+        avgPerformance: avgPerformance,
+        avgStiffness: avgStiffness,
+      });
+      setPerformanceDrop(getPerformanceDrop(validPerformances));
+      return;
+    }
+    setData({
+      avgFlightTime: avgFlightTime,
+      avgHeightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
+    });
   };
 
   const onClose = () => {
@@ -216,6 +457,11 @@ function TestInProgress({
   };
 
   const redoTest = () => {
+    setJumpTimes([]);
+    setPerformance([]);
+    setStiffness([]);
+    setFloorTimes([]);
+    setFlightTimes([]);
     startSerialListener(9600);
     setStatus("Súbase a la alfombra");
     setCriteriaValue(0);
@@ -231,6 +477,36 @@ function TestInProgress({
         }, 1000)
       );
     }
+  };
+
+  const displayTable = () => {
+    setTableAnimation(navAnimations.popupFadeInTop);
+    setShowTable(true);
+  };
+
+  const displayChart = () => {
+    setChartAnimation(navAnimations.popupFadeInTop);
+    setShowChart(true);
+  };
+
+  const onCloseTable = () => {
+    if (tableAnimation !== navAnimations.popupFadeInTop) {
+      return;
+    }
+    setTableAnimation(navAnimations.popupFadeOutTop);
+    setTimeout(() => {
+      setShowTable(false);
+    }, 200);
+  };
+
+  const onCloseChart = () => {
+    if (chartAnimation !== navAnimations.popupFadeInTop) {
+      return;
+    }
+    setChartAnimation(navAnimations.popupFadeOutTop);
+    setTimeout(() => {
+      setShowChart(false);
+    }, 200);
   };
 
   useEffect(() => {
@@ -347,16 +623,27 @@ function TestInProgress({
   }, [status]);
 
   useEffect(() => {
-    console.log("Floor:", floorTimes);
-    console.log(flightTimes);
-  }, [jumpTimes, floorTimes, flightTimes]);
+    setFlightTimes([0.45, 0.43, 0.44, 0.46, 0.42]);
+    setFloorTimes([0.22, 0.24, 0.23, 0.21, 0.25]);
+  }, []);
+
+  useEffect(() => {
+    if (floorTimes.length) {
+      finishTest();
+    }
+  }, [floorTimes]);
 
   return (
     <>
       <div
-        className={`bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-20 flex flex-col items-center px-16 py-8 ${
-          isBlurred && "blur-md pointer-events-none"
+        className={`bg-white shadow-lg rounded-2xl transition-all duration-300 ease-linear fixed  top-20 flex flex-col items-center px-16 py-8 ${
+          (isBlurred || showTable || showChart) && "blur-md pointer-events-none"
         }`}
+        style={
+          study.type === "multipleJumps"
+            ? { width: "1400px", left: "15%" }
+            : { width: "50%", left: "25%" }
+        }
       >
         <div
           className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
@@ -430,87 +717,7 @@ function TestInProgress({
               </p>
             )}
 
-          {status === "Finalizado" && (
-            <div className="mt-4">
-              <table className="w-full mt-8">
-                <thead className="w-full">
-                  <tr className="flex justify-around items-center w-full">
-                    <th className="text-2xl w-20 font-normal text-black">
-                      Saltos
-                    </th>
-                    <th className="text-2xl w-52 font-normal text-black">
-                      Tiempo de Vuelo
-                    </th>
-                    <th className="text-2xl w-36 font-normal text-black">
-                      Altura
-                    </th>
-                    <th className="text-2xl w-24 font-normal text-black">
-                      Eliminar
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="w-full">
-                  {jumpTimes.map((e, i) => (
-                    <tr className="text-tertiary border border-transparent text-xl flex rounded-2xl justify-around items-center w-full hover:text-secondary hover:bg-lightRed  hover:border-secondary transition-all 300s ease-linear">
-                      <td
-                        className="text-inherit w-20 flex items-center justify-center"
-                        style={{
-                          opacity: e.deleted && "60%",
-                          color: e.deleted && "#9E9E9E",
-                        }}
-                      >
-                        {i + 1}
-                      </td>
-                      <td
-                        className="text-inherit w-52 flex items-center justify-center"
-                        style={{ opacity: e.deleted && "60%" }}
-                      >
-                        {e.time.toFixed(1)} s
-                      </td>
-                      <td
-                        className="text-inherit opacity w-36 flex items-center justify-center"
-                        style={{ opacity: e.deleted && "60%" }}
-                      >
-                        {(((9.81 * e.time ** 2) / 8) * 100).toFixed(1)} cm
-                      </td>
-                      <td className="w-24 flex items-center justify-center ">
-                        <img
-                          src={`/${e.deleted ? "undo" : "close"}.png`}
-                          className="h-6 w-6 hover:opacity-70 transition-all cursor-pointer duration-200"
-                          alt=""
-                          onClick={() => {
-                            handleDelete(i);
-                          }}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="text-darkGray border border-transparent text-lg flex rounded-2xl justify-around items-center w-full hover:text-secondary hover:bg-lightRed hover:border-secondary transition-all 300ms linear">
-                    <td className="text-secondary w-20 flex items-center justify-center">
-                      Promedio
-                    </td>
-                    <td className="text-secondary w-52 flex items-center justify-center">
-                      {Number.isNaN(data.avgTime)
-                        ? "Error"
-                        : data.avgTime.toFixed(1) + " s"}
-                    </td>
-                    <td className="text-secondary w-36 flex items-center justify-center">
-                      {Number.isNaN(data.height)
-                        ? "Error"
-                        : data.height.toFixed(1) + " cm"}
-                    </td>
-                    <td className="w-24 opacity-0 flex items-center justify-center">
-                      <img
-                        src="/close.png"
-                        className="h-6 w-6 hover:opacity-70 transition-all duration-200"
-                        alt=""
-                      />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
+          {status === "Finalizado" && <div className="mt-4">{tableJSX}</div>}
         </div>
 
         {(status === "Listo para saltar" || status === "Saltando") && (
@@ -522,20 +729,47 @@ function TestInProgress({
           />
         )}
         {status === "Finalizado" && (
-          <div className="flex items-center justify-around w-full my-20">
-            <OutlinedButton
-              title="Rehacer Test"
-              icon="again"
-              onClick={redoTest}
-            />
-            <TonalButton
-              title={
-                pointer === tests.length - 1 ? "Guardar Test" : "Siguiente Test"
-              }
-              icon="check"
-              onClick={pointer === tests.length - 1 ? saveTest : nextTest}
-            />
-          </div>
+          <>
+            {study.type === "multipleJumps" && (
+              <>
+                <div className="w-full mt-12 flex items-center justify-center gap-x-8">
+                  <OutlinedButton
+                    title="Ver Tabla"
+                    icon="tableRed"
+                    onClick={displayTable}
+                  />
+                  <TonalButton
+                    title="Ver Gráfico"
+                    icon="studies"
+                    onClick={displayChart}
+                  />
+                </div>
+
+                <p className="self-center text-xl mt-12 text-black">
+                  Caída de Rendimiento por Fatiga:{" "}
+                  <span className="text-secondary font-medium">
+                    {performanceDrop?.toFixed(1)}%
+                  </span>
+                </p>
+              </>
+            )}
+            <div className="flex items-center justify-around w-full mt-16 mb-8">
+              <OutlinedButton
+                title="Rehacer Test"
+                icon="again"
+                onClick={redoTest}
+              />
+              <TonalButton
+                title={
+                  pointer === tests.length - 1
+                    ? "Guardar Test"
+                    : "Siguiente Test"
+                }
+                icon="check"
+                onClick={pointer === tests.length - 1 ? saveTest : nextTest}
+              />
+            </div>
+          </>
         )}
         {status === "Error" && (
           <>
@@ -558,6 +792,46 @@ function TestInProgress({
           setIsBlurred={setIsBlurred}
           redoTest={redoTest}
         ></ErrorDisplay>
+      )}
+      {showTable && (
+        <div
+          className={`bg-white shadow-sm border border-gray fixed z-50 rounded-2xl py-2 px-8 w-[1400px]
+             top-8 left-1/2 -translate-x-1/2 flex flex-col items-center pt-12 transition-all duration-300 ease-linear ${tableAnimation}`}
+        >
+          <div
+            className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
+            onClick={onCloseTable}
+          >
+            <img src="/close.png" className="h-6 w-6" alt="Close" />
+          </div>
+          <p className="text-3xl text-secondary self-center">
+            Tabla de Resultados
+          </p>
+          {tableJSX}
+          <div className="w-full flex justify-center gap-x-16 mt-12 mb-8 items-center">
+            <OutlinedButton
+              title="Volver"
+              icon="back"
+              onClick={onCloseTable}
+              inverse
+            />
+            <TonalButton
+              title="Ver Gráfico"
+              icon="studies"
+              onClick={displayChart}
+            />
+          </div>
+        </div>
+      )}
+      {showChart && (
+        <ChartDisplay
+          setShowChart={setShowChart}
+          jumpTimes={jumpTimes}
+          setShowTable={setShowTable}
+          onClose={onCloseChart}
+          displayTable={displayTable}
+          chartAnimation={chartAnimation}
+        />
       )}
     </>
   );

@@ -27,17 +27,19 @@ function StartTest({
   ) => void;
   setSelectedOption: (selectedOption: string) => void;
 }) {
+  const { study, setStudy, athlete, resetAthlete } = useStudyContext();
+
   const [isBlurred, setIsBlurred] = useState(false);
   const [testInProgress, setTestInProgress] = useState(false);
   const [noAthlete, setNoAthlete] = useState(false);
   const [prevHeight, setPrevHeight] = useState("");
-  const [prevHeightUnit, setPrevHeightUnit] = useState("");
+  const [prevHeightUnit, setPrevHeightUnit] = useState(
+    study.type === "dropJump" ? study.heightUnit : ""
+  );
 
   const navigate = useNavigate();
 
   const { t } = useTranslation();
-
-  const { study, setStudy, athlete, resetAthlete } = useStudyContext();
 
   const searchAthlete = () => {
     customNavigate("forward", "startTest", "selectAthlete");
@@ -75,86 +77,69 @@ function StartTest({
   };
 
   const handleInputChange = (field: string, value: string) => {
-    // Allow empty string (to clear input) or only digits
-    if (field === "load" || field === "sensitivity" || field === "height") {
+    // Handle empty string or numeric validation for load/sensitivity
+    if (field === "load" || field === "sensitivity") {
       if (value === "" || /^\d+$/.test(value)) {
         setStudy({ ...study, [field]: value });
       }
       return;
     }
-    if (
-      field === "height" &&
-      athlete.heightUnit === "ft" &&
-      typeof value === "string" &&
-      value.length > 0
-    ) {
-      // Split the value into an array of characters
-      const chars = value.split("");
 
-      // If length is 4 (e.g., "5'11"), check if the second to last char is '1'
-      // and the last char is between '0' and '1'
-      if (value.length === 4) {
-        const secondToLast = chars[value.length - 2];
-        const last = chars[value.length - 1];
-
-        if (secondToLast !== "1" || (last !== "0" && last !== "1")) {
-          return;
-        }
-      }
-
-      // Don't allow inputs longer than 4 characters (e.g., "5'111")
-      if (value.length > 4) {
+    // Height validation for feet/inches format
+    if (field === "height") {
+      if (!/^[0-9']*$/.test(value)) {
         return;
       }
-    }
-    if (
-      study.type === "dropJump" &&
-      field === "height" &&
-      value !== "" &&
-      !/^\d+$/.test(String(value)) &&
-      // Allow the feet/inches format (e.g., "5'11")
-      !(
-        field === "height" &&
-        study.heightUnit === "ft" &&
-        /^\d'?\d*$/.test(String(value))
-      )
-    ) {
-      return;
-    }
-    if (
-      study.type === "dropJump" &&
-      field === "height" &&
-      typeof value === "string" &&
-      value !== ""
-    ) {
-      if (study.heightUnit === "cm") {
-        const numValue = parseFloat(value);
-        if (numValue > VALIDATION_LIMITS.height.cm.max) {
-          return;
-        }
-      } else if (study.heightUnit === "ft") {
-        const [feet, inches = "0"] = value.split("'");
-        const feetNum = parseInt(feet);
-        const inchesNum = parseInt(inches);
-        if (!isNaN(feetNum) && !isNaN(inchesNum)) {
-          const newHeight = Math.round(feetNum * 30.48 + inchesNum * 2.54);
-          if (newHeight > VALIDATION_LIMITS.height.cm.max) {
+
+      if (athlete.heightUnit === "ft" && value.length > 0) {
+        // Don't allow inputs longer than 4 characters (e.g., "5'111")
+        if (value.length > 4) return;
+
+        // Validate format for 4 character inputs (e.g., "5'11")
+        if (value.length === 4) {
+          const chars = value.split("");
+          const secondToLast = chars[2];
+          const last = chars[3];
+          if (secondToLast !== "1" || (last !== "0" && last !== "1")) {
             return;
           }
         }
-        // Only validate the feet part when there's a single digit
-        if (
-          value.length === 1 &&
-          parseInt(value) > VALIDATION_LIMITS.height.ft.max
-        ) {
-          return;
+      }
+
+      // Additional height validation for drop jump studies
+      if (study.type === "dropJump" && value !== "") {
+        if (study.heightUnit === "cm") {
+          const numValue = parseFloat(value);
+          if (numValue > VALIDATION_LIMITS.height.cm.max) {
+            return;
+          }
+        } else if (study.heightUnit === "ft") {
+          const [feet, inches = "0"] = value.split("'");
+          const feetNum = parseInt(feet);
+
+          // Validate feet only input
+          if (value.length === 1 && feetNum > VALIDATION_LIMITS.height.ft.max) {
+            return;
+          }
+
+          // Validate complete feet/inches input
+          const inchesNum = parseInt(inches);
+          if (!isNaN(feetNum) && !isNaN(inchesNum)) {
+            const heightInCm = Math.round(feetNum * 30.48 + inchesNum * 2.54);
+            if (heightInCm > VALIDATION_LIMITS.height.cm.max) {
+              return;
+            }
+          }
         }
       }
     }
+
+    // Store previous height unit for drop jump studies
     if (study.type === "dropJump" && field === "heightUnit") {
       setPrevHeightUnit(study.heightUnit);
     }
-    // For other fields, update normally
+
+    // Update study with new value
     setStudy({ ...study, [field]: value });
   };
 
@@ -170,12 +155,6 @@ function StartTest({
   }, [athlete]);
 
   useEffect(() => {
-    if (study.type === "bosco") {
-      console.log(study.studies);
-    }
-  }, [study]);
-
-  useEffect(() => {
     if (study.type !== "dropJump") {
       return;
     }
@@ -184,22 +163,26 @@ function StartTest({
       study.height.length === 1 &&
       prevHeight.length === 0
     ) {
-      setStudy({ ...study, height: `${athlete.height}'` });
+      setStudy({ ...study, height: `${study.height}'` });
     }
     setPrevHeight(study.height);
   }, [(study as DropJumpStudy).height]);
 
   // Handle height unit conversion
   useEffect(() => {
-    console.log("wehere");
     if (study.type !== "dropJump") {
       return;
     }
+
     if (study.heightUnit === "ft" && prevHeightUnit === "cm") {
       const heightNum = parseFloat(study.height);
+
       if (!isNaN(heightNum)) {
-        const feet = Math.floor(heightNum / 30.48);
-        const inches = Math.round((heightNum % 30.48) / 2.54);
+        // Convert total cm to inches first
+        const totalInches = Math.round(heightNum / 2.54);
+        // Then convert to feet and inches
+        const feet = Math.floor(totalInches / 12);
+        const inches = totalInches % 12;
         setStudy({ ...study, height: `${feet}'${inches}` });
       }
     }
@@ -214,6 +197,7 @@ function StartTest({
         setStudy({ ...study, height: newHeight });
       }
     }
+    setPrevHeightUnit(study.heightUnit);
   }, [(study as DropJumpStudy).heightUnit]);
   return (
     <div

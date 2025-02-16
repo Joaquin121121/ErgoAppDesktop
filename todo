@@ -1,11 +1,7 @@
 MVP
-    Arreglar ft --> cm
-    Reduccion de rendimiento por fatiga
-    Stifness 
-    Mostrar detalle de Tests
     Carga rapida
+    Ver que los toFixed sean consistentes
     Boton de comparar
-    Grafico de barras
     CMJ comparar con y sin carga dentro del mismo ejercicio
     MJ --> % rendimiento los 3 mas altos (graficos)
     Cuando se baja x% de altura de salto, cortar salto. 
@@ -14,9 +10,11 @@ MVP
     Que la mina salude cuando la apretes
     Que el logo sea animado
     Tests en vez de Estudios
+    Perfil Fuerza Velocidad
     Sacar instrumentos de medicion por ahora
     Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
     Testing de precision (implementar sensibilidad?)
+
     
 Implementar resumen BOSCO test pre-guardar (despues)
 Personalizar menu de instalacion

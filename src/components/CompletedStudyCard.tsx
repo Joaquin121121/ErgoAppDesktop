@@ -10,6 +10,8 @@ type CompletedStudyCardProps = {
   height?: number;
   width?: number;
   onDelete: (date: Date) => void;
+  cardStyles?: string;
+  disabled?: boolean;
 };
 
 function CompletedStudyCard({
@@ -18,15 +20,27 @@ function CompletedStudyCard({
   height,
   width,
   onDelete,
+  cardStyles,
+  disabled,
 }: CompletedStudyCardProps) {
   const { t } = useTranslation();
 
-  const cmjDisplayKeys = ["avgFlightTime", "avgHeightReached", "takeoffFoot"];
+  const cmjDisplayKeys = ["load", "avgHeightReached", "takeoffFoot"];
+  const dropJumpDisplayKeys = ["height", "avgHeightReached", "takeoffFoot"];
+  const multipleJumpsDisplayKeys = [
+    "avgStiffness",
+    "avgHeightReached",
+    "takeoffFoot",
+  ];
+
   const boscoDisplayKeys = ["cmj", "abalakov", "squatJump"];
 
   return (
     <div
-      className={`bg-white rounded-2xl shadow-sm hover:shadow-xl flex relative flex-col items-center hover:scale-105 hover:cursor-pointer transition-transform active:opacity-70 duration-300 ease-in-out px-4 py-4 `}
+      className={`bg-white border rounded-2xl shadow-sm hover:shadow-xl flex relative flex-col items-center hover:scale-105 hover:cursor-pointer transition-transform active:opacity-70 duration-300 ease-in-out px-4 py-4 
+        ${disabled ? "opacity-50 pointer-events-none" : ""} ${
+        cardStyles && cardStyles.length ? cardStyles : "border-transparent"
+      } `}
       style={{ width: width || "auto", height: height || "auto" }}
       onClick={onClick}
     >
@@ -49,7 +63,7 @@ function CompletedStudyCard({
       {study.results.type === "bosco" ? (
         <div>
           {boscoDisplayKeys.map((key) => (
-            <p className="text-lg text-darkGray mb-8">
+            <p key={key} className="text-lg text-darkGray mb-8">
               -{t(key)}:{" "}
               <span className="text-black font-medium">
                 {study.results[key].avgHeightReached?.toFixed(1)}{" "}
@@ -60,18 +74,60 @@ function CompletedStudyCard({
         </div>
       ) : (
         <div>
-          {cmjDisplayKeys.map((key) => (
-            <div>
-              <p className="text-lg text-darkGray mb-8">
-                -{t(key)}:{" "}
-                <span className="text-black font-medium">
-                  {typeof study.results[key] === "number"
-                    ? study.results[key].toFixed(1) + " " + units[key]
-                    : t(study.results[key])}
-                </span>
-              </p>
-            </div>
-          ))}
+          {study.results.type === "multipleJumps"
+            ? multipleJumpsDisplayKeys.map((key) => (
+                <div key={key}>
+                  <p className="text-lg text-darkGray mb-8">
+                    -{t(key)}:{" "}
+                    <span className="text-black font-medium">
+                      {typeof study.results[key] === "number"
+                        ? study.results[key].toFixed(1) +
+                          " " +
+                          (study.results[`${key}Unit`]
+                            ? study.results[`${key}Unit`]
+                            : units[key])
+                        : t(study.results[key])}
+                    </span>
+                  </p>
+                </div>
+              ))
+            : study.results.type === "dropJump"
+            ? dropJumpDisplayKeys.map((key) => (
+                <div key={key}>
+                  <p className="text-lg text-darkGray mb-8">
+                    -{t(key)}:{" "}
+                    <span className="text-black font-medium">
+                      {key === "height" && study.results.type === "dropJump"
+                        ? `${study.results.height} ${study.results.heightUnit}`
+                        : typeof study.results[key] === "number"
+                        ? study.results[key].toFixed(1) +
+                          " " +
+                          (study.results[`${key}Unit`]
+                            ? study.results[`${key}Unit`]
+                            : units[key])
+                        : t(study.results[key])}
+                    </span>
+                  </p>
+                </div>
+              ))
+            : cmjDisplayKeys.map((key) => (
+                <div key={key}>
+                  <p className="text-lg text-darkGray mb-8">
+                    -{t(key)}:{" "}
+                    <span className="text-black font-medium">
+                      {typeof study.results[key] === "number"
+                        ? (study.results[key] === 0
+                            ? 0
+                            : study.results[key].toFixed(1)) +
+                          " " +
+                          (study.results[`${key}Unit`]
+                            ? study.results[`${key}Unit`]
+                            : units[key])
+                        : t(study.results[key])}
+                    </span>
+                  </p>
+                </div>
+              ))}
         </div>
       )}
     </div>

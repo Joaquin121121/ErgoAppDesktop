@@ -72,3 +72,32 @@ export function formatDate(dateString) {
 
   return `${day}/${month}/${year}`;
 }
+
+export const getPerformanceDrop = (validPerformances: number[]) => {
+  const sortedPerformances = [...validPerformances].sort((a, b) => b - a);
+
+  const highestTwo = sortedPerformances.slice(0, 2);
+  const lowestTwo = sortedPerformances.slice(-2);
+
+  const avgHighest = (highestTwo[0] + highestTwo[1]) / 2;
+  const avgLowest = (lowestTwo[0] + lowestTwo[1]) / 2;
+
+  const decline = ((avgHighest - avgLowest) / avgHighest) * 100;
+  return decline;
+};
+
+export function ftToCm(heightStr: string): number {
+  const [feet, inches = "0"] = heightStr.split("'");
+  const feetNum = parseInt(feet);
+  const inchesNum = parseInt(inches);
+
+  if (isNaN(feetNum) || isNaN(inchesNum)) {
+    return 0;
+  }
+
+  // Convert feet to cm (1 foot = 30.48 cm)
+  // Convert inches to cm (1 inch = 2.54 cm)
+  const totalCm = Math.round(feetNum * 30.48 + inchesNum * 2.54);
+
+  return totalCm;
+}

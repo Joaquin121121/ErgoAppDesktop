@@ -179,6 +179,14 @@ export interface JumpTime {
   floorTime?: number;
 }
 
+export interface StudyData {
+  avgFlightTime: number;
+  avgHeightReached: number;
+  avgFloorTime?: number;
+  avgPerformance?: number;
+  avgStiffness?: number;
+}
+
 export interface BaseResult {
   times: JumpTime[];
   avgFlightTime: number;
@@ -211,6 +219,11 @@ export interface MultipleJumpsResult extends BaseResult {
   type: "multipleJumps";
   criteria: "numberOfJumps" | "stiffness" | "time";
   criteriaValue: number | null;
+  avgFloorTime: number;
+  stiffness: number[];
+  performance: number[];
+  avgStiffness: number;
+  avgPerformance: number;
 }
 
 export interface DropJumpResult extends BaseResult {
@@ -244,6 +257,10 @@ export const units = {
   avgFlightTime: "s",
   avgHeightReached: "cm",
   heightReached: "cm",
+  avgStiffness: "N/m",
+  stiffness: "N/m",
+  avgPerformance: "%",
+  performance: "%",
 };
 
 export const studyInfoLookup = {
@@ -290,5 +307,30 @@ export const studyInfoLookup = {
     },
   },
 } satisfies Record<keyof Studies, BaseStudy>;
+
+const criterion1 = ["takeoffFoot", "load", "avgFlightTime", "avgHeightReached"];
+const criterion2 = [
+  "takeoffFoot",
+  "height",
+  "avgFlightTime",
+  "avgHeightReached",
+];
+
+export const criterionLookup = {
+  cmj: criterion1,
+  squatJump: criterion1,
+  abalakov: criterion1,
+  dropJump: criterion2,
+  bosco: criterion1,
+  multipleJumps: criterion1,
+} satisfies Record<keyof Studies, string[]>;
+
+export const validComparisons = {
+  cmj: ["cmj", "squatJump", "abalakov"],
+  squatJump: ["cmj", "squatJump", "abalakov"],
+  abalakov: ["cmj", "squatJump", "abalakov"],
+  dropJump: ["dropJump"],
+  multipleJumps: ["multipleJumps"],
+};
 
 export default availableStudies;

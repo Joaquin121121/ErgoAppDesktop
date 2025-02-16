@@ -51,7 +51,7 @@ const OutlinedButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
           <>
             {icon && inverse && (
               <img
-                className={`${large ? "h-12 w-12" : "mr-4  -8 w-8"}`}
+                className={`mr-4 ${large ? "h-12 w-12" : "h-6 w-6"}`}
                 src={`/${icon}.png`}
                 alt={`${icon} icon`}
               />
@@ -65,7 +65,7 @@ const OutlinedButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
             </span>
             {icon && !inverse && (
               <img
-                className="ml-4 h-6 w-6"
+                className={`ml-4 ${large ? "h-12 w-12" : "h-6 w-6"}`}
                 src={`/${icon}.png`}
                 alt={`${icon} icon`}
               />
