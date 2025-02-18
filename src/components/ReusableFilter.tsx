@@ -54,7 +54,7 @@ function ReusableFilter({
 
       {sections.map(({ title, options, selectedOptions, onOptionSelect }) => (
         <div key={title}>
-          <p className="text-xl text-black ml-2 mt-8 mb-4">{title}</p>
+          <p className="text-xl text-tertiary ml-2 mt-8 mb-4">{title}</p>
           {chunkArray(options).map((chunk, rowIndex) => (
             <div key={rowIndex} className="flex mb-4">
               {chunk.map(({ id, label }) => (

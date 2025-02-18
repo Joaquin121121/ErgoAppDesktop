@@ -14,6 +14,10 @@ interface AutocompleteDropdownProps<T> {
   setReset: (reset: boolean) => void;
   error: string;
   setError: (error: string) => void;
+  fastload?: boolean;
+  lockedFields?: string[];
+  setLockedFields?: (lockedFields: string[]) => void;
+  field: string;
 }
 
 const AutocompleteDropdown = <T extends string | Record<string, any>>({
@@ -29,6 +33,10 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
   setReset = (boolean) => {},
   error = "",
   setError = (error: string) => {},
+  fastload = false,
+  lockedFields = [],
+  setLockedFields = (lockedFields: string[]) => {},
+  field,
 }) => {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -161,9 +169,11 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`w-80 p-2 rounded-2xl text-black bg-offWhite pr-10 ${
+          className={`w-80 p-2 rounded-2xl text-tertiary border border-transparent bg-offWhite pr-10 ${
             inputStyles.input
-          } ${error && inputStyles.focused}`}
+          } ${error && inputStyles.focused} ${
+            fastload && lockedFields.includes(field) && "border-lightRed"
+          }`}
           disabled={disabled}
         />
         {!disabled && (
@@ -174,6 +184,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
             onClick={() => setIsOpen(!isOpen)}
           />
         )}
+
         {query.length > 0 && (
           <div
             className="ml-4 hover:opacity-70 transition-all duration-200 h-7 w-7 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
@@ -184,6 +195,18 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
           >
             <img src="/close.png" className="h-5 w-5" alt="" />
           </div>
+        )}
+        {fastload && (
+          <img
+            src={`/${!lockedFields.includes(field) ? "un" : ""}lock.png`}
+            alt=""
+            className="ml-4 h-7 w-7 cursor-pointer"
+            onClick={() => {
+              lockedFields.includes(field)
+                ? setLockedFields(lockedFields.filter((e) => e !== field))
+                : setLockedFields([...lockedFields, field]);
+            }}
+          />
         )}
       </div>
 
@@ -199,7 +222,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
               className={`px-4 py-2 cursor-pointer transition-colors duration-150 rounded-2xl ${
                 index === selectedIndex
                   ? "bg-lightRed text-secondary"
-                  : "text-black hover:bg-lightRed hover:text-secondary"
+                  : "text-tertiary hover:bg-lightRed hover:text-secondary"
               }`}
             >
               {getDisplayValue(item)}

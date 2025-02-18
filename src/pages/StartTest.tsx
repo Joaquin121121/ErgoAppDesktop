@@ -219,7 +219,7 @@ function StartTest({
         <p className="text-5xl text-secondary self-center -mt-10">
           {t(study["name"])}
         </p>
-        <p className="text-4xl mt-8 text-black">Datos del Atleta</p>
+        <p className="text-4xl mt-8 text-tertiary">Datos del Atleta</p>
         {athlete.name.length ? (
           <div className="w-full self-center mt-12 flex items-center justify-center gap-x-16">
             <p className="text-2xl">
@@ -259,13 +259,15 @@ function StartTest({
           </p>
         )}
 
-        <p className="text-4xl mt-16 text-black">
+        <p className="text-4xl mt-16 text-tertiary">
           {study.type === "bosco" ? "Tests a Realizar" : "Datos del Test"}
         </p>
         <div className="px-8 mt-8">
           {study.type !== "bosco" && (
             <div className="flex items-center">
-              <p className="text-black mr-8 w-36 text-right">Pie de Despegue</p>
+              <p className="text-tertiary mr-8 w-36 text-right">
+                Pie de Despegue
+              </p>
               <button
                 key={`${study.type}-left`}
                 onClick={() => setStudy({ ...study, takeoffFoot: "left" })}
@@ -302,13 +304,13 @@ function StartTest({
             <div className="flex items-center mt-8">
               {study.type === "dropJump" ? (
                 <>
-                  <p className="text-black w-36 text-end mr-12">
+                  <p className="text-tertiary w-36 text-end mr-12">
                     Altura de Caída
                   </p>
 
                   <input
                     type="numeric"
-                    className={`bg-offWhite border border-gray focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
+                    className={`bg-offWhite border border-gray focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${inputStyles.input}`}
                     placeholder="70..."
                     value={study.height}
                     onChange={(e) => {
@@ -338,13 +340,13 @@ function StartTest({
                 </>
               ) : (
                 <>
-                  <p className="text-black w-36 text-end mr-12">
+                  <p className="text-tertiary w-36 text-end mr-12">
                     Carga añadida
                   </p>
 
                   <input
                     type="numeric"
-                    className={`bg-offWhite border border-gray focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
+                    className={`bg-offWhite border border-gray focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${inputStyles.input}`}
                     placeholder="70..."
                     value={study.load}
                     onChange={(e) => {
@@ -378,7 +380,7 @@ function StartTest({
           {study.type === "multipleJumps" && (
             <>
               <div className="flex items-center mt-8">
-                <p className="text-black mr-8 w-36 text-right">Criterio</p>
+                <p className="text-tertiary mr-8 w-36 text-right">Criterio</p>
                 <button
                   key={`${study.criteria}-numberOfJumps`}
                   onClick={() =>
@@ -414,12 +416,12 @@ function StartTest({
               </div>
               {study.criteria !== "stiffness" && (
                 <div className="flex items-center mt-8 relative w-full">
-                  <p className="text-black w-36 text-end mr-12">
+                  <p className="text-tertiary w-36 text-end mr-12">
                     {t(study.criteria)}
                   </p>
                   <input
                     type="numeric"
-                    className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
+                    className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${inputStyles.input}`}
                     placeholder="20..."
                     value={study.criteriaValue}
                     onChange={(e) => {
@@ -432,10 +434,10 @@ function StartTest({
           )}
           {/*  {study.type !== "bosco" && (
             <div className="flex items-center mt-8 relative w-full">
-              <p className="text-black w-36 text-end mr-12">Sensibilidad</p>
+              <p className="text-tertiary w-36 text-end mr-12">Sensibilidad</p>
               <input
                 type="numeric"
-                className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-black ${inputStyles.input}`}
+                className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${inputStyles.input}`}
                 placeholder="20..."
                 value={study.sensitivity}
                 onChange={(e) => {

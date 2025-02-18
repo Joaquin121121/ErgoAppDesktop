@@ -38,7 +38,7 @@ function StudyCard({
         </div>
       )}
       <h6 className="text-secondary mb-2 text-2xl">{study.name}</h6>
-      <p className="text-xl mb-8 text-black">
+      <p className="text-xl mb-8 text-tertiary">
         {study.description.length <= 26
           ? study.description
           : "Test Personalizado"}

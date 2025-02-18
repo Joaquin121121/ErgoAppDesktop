@@ -1,7 +1,7 @@
 import TonalButton from "../components/TonalButton";
 import OutlinedButton from "../components/OutlinedButton";
 import { useStudyContext } from "../contexts/StudyContext";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useJsonFiles } from "../hooks/useJsonFiles";
@@ -75,27 +75,27 @@ function CompletedStudyInfo({
     <table className="w-full mt-8">
       <thead className="w-full">
         <tr className="flex justify-around items-center w-full">
-          <th className="text-2xl w-20 font-normal text-black">Saltos</th>
-          <th className="text-2xl w-52 font-normal text-black">
+          <th className="text-2xl w-20 font-normal text-tertiary">Saltos</th>
+          <th className="text-2xl w-52 font-normal text-tertiary">
             Tiempo de Vuelo
           </th>
           {study.results && study.results.type === "multipleJumps" && (
-            <th className="text-2xl w-52 font-normal text-black">
+            <th className="text-2xl w-52 font-normal text-tertiary">
               Tiempo de Piso
             </th>
           )}
-          <th className="text-2xl w-36 font-normal text-black">Altura</th>
+          <th className="text-2xl w-36 font-normal text-tertiary">Altura</th>
           {study.results && study.results.type === "multipleJumps" && (
             <>
-              <th className="text-2xl w-36 font-normal text-black">
+              <th className="text-2xl w-36 font-normal text-tertiary">
                 Stiffness
               </th>
-              <th className="text-2xl w-36 font-normal text-black">
+              <th className="text-2xl w-36 font-normal text-tertiary">
                 Rendimiento
               </th>
             </>
           )}
-          <th className="text-2xl w-24 font-normal text-black">Eliminar</th>
+          <th className="text-2xl w-24 font-normal text-tertiary">Eliminar</th>
         </tr>
       </thead>
       <tbody
@@ -393,6 +393,17 @@ function CompletedStudyInfo({
     }, 600);
   };
 
+  const compare = () => {
+    if (studyInfo.results.type !== "bosco") {
+      return;
+    }
+    setNavAnimation(navAnimations.fadeOutLeft);
+    customNavigate("forward", "completedStudyInfo", "compareThreeStudies");
+    setTimeout(() => {
+      navigate("/compareThreeStudies?date=" + studyInfo.date);
+    }, 300);
+  };
+
   useEffect(() => {
     if (!jumpTimes || !jumpTimes.length) {
       return;
@@ -474,13 +485,19 @@ function CompletedStudyInfo({
         }`}
         style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
       >
-        <div className="w-full flex justify-center items-center">
-          <p className="text-3xl text-dark self-center my-10 text-black">
+        <div className="w-full flex justify-center gap-x-16 items-center">
+          {studyInfo.results.type === "bosco" && !boscoStudy && (
+            <div className="w-[158px]"></div>
+          )}
+          <p className="text-3xl text-dark self-center my-10 text-tertiary">
             Resultados del{" "}
             <span className="text-secondary">
-              {t(boscoStudy ? boscoStudy : study.studyInfo.name)} Test
+              {t(boscoStudy ? boscoStudy : study.studyInfo.name)}
             </span>
           </p>
+          {studyInfo.results.type === "bosco" && !boscoStudy && (
+            <TonalButton icon="compare" title="Comparar" onClick={compare} />
+          )}
           {deletedElements && (
             <OutlinedButton
               title={showDeleted ? "Esconder Eliminados" : "Mostrar Eliminados"}
@@ -527,7 +544,7 @@ function CompletedStudyInfo({
             {tableJSX}
             <div className="self-center">
               {study.results && study.results.type !== "multipleJumps" && (
-                <p className="mt-16 text-xl text-black">
+                <p className="mt-16 text-xl text-tertiary">
                   {(study.results && study.results.type === "dropJump") ||
                   boscoStudy === "dropJump" ? (
                     <>
@@ -562,7 +579,7 @@ function CompletedStudyInfo({
                     />
                   </div>
 
-                  <p className="self-center text-xl mt-12 text-black">
+                  <p className="self-center text-xl mt-12 text-tertiary">
                     Caída de Rendimiento por Fatiga:{" "}
                     <span className="text-secondary font-medium">
                       {performanceDrop?.toFixed(1)}%
@@ -570,7 +587,7 @@ function CompletedStudyInfo({
                   </p>
                 </>
               )}
-              <p className="mt-4 text-black text-xl">
+              <p className="mt-4 text-tertiary text-xl">
                 Pie de Despegue:{" "}
                 <span className="text-secondary">
                   {t(

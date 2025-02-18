@@ -140,10 +140,10 @@ function NewTest({
         </div>
         <p className="text-5xl text-secondary self-center mb-4">Nuevo Test</p>
         <div className="flex items-center mt-8">
-          <p className="text-black w-36 text-end mr-12">Nombre</p>
+          <p className="text-tertiary w-36 text-end mr-12">Nombre</p>
           <input
             type="text"
-            className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${inputStyles.input}`}
+            className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-tertiary ${inputStyles.input}`}
             placeholder="Ingrese el nombre del test..."
             onChange={(e) => {
               setNewStudy({ ...newStudy, name: e.target.value });
@@ -159,10 +159,10 @@ function NewTest({
           )}
         </div>
         {/*  <div className="flex items-center mt-8">
-          <p className="text-black w-36 text-end mr-12">Duración Estimada</p>
+          <p className="text-tertiary w-36 text-end mr-12">Duración Estimada</p>
           <input
             type="numeric"
-            className="bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-black"
+            className="bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary"
             placeholder="0"
             onChange={(e) => {
               setNewStudy({
@@ -182,7 +182,7 @@ function NewTest({
         </div> */}
 
         <div className="flex items-center mt-8">
-          <p className="text-black mr-8 w-36 text-right">Tipos de Salto</p>
+          <p className="text-tertiary mr-8 w-36 text-right">Tipos de Salto</p>
           <button
             onClick={() => setNewStudy({ ...newStudy, jumpTypes: "simple" })}
             className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
@@ -203,7 +203,7 @@ function NewTest({
           </button>
         </div>
         <div className="flex items-center mt-8">
-          <p className="text-black mr-8 w-36 text-right">
+          <p className="text-tertiary mr-8 w-36 text-right">
             Instrumentos de Medición
           </p>
           <button
@@ -308,7 +308,7 @@ function NewTest({
         </div>
 
         {/*  <div className="flex items-center mt-8">
-          <p className="text-black mr-8 w-36 text-right">Objetos de Medición</p>
+          <p className="text-tertiary mr-8 w-36 text-right">Objetos de Medición</p>
           {statsToMeasure.map((newStatToMeasure) => (
             <button
               onClick={() =>
@@ -346,10 +346,10 @@ function NewTest({
           ))}
         </div> */}
         <div className="flex items-center mt-8">
-          <p className="text-black mr-8 w-36 text-right">Descripción</p>
+          <p className="text-tertiary mr-8 w-36 text-right">Descripción</p>
           <textarea
             name=""
-            className={`bg-offWhite shadow-sm text-black  focus:outline-secondary ml-4 h-28 p-4 w-3/5 rounded-2xl ${inputStyles.input}`}
+            className={`bg-offWhite shadow-sm text-tertiary  focus:outline-secondary ml-4 h-28 p-4 w-3/5 rounded-2xl ${inputStyles.input}`}
             id=""
             placeholder="Qué busca medir este test?"
             onChange={(e) => {

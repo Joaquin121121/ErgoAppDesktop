@@ -8,7 +8,7 @@ function ErrorDisplay({ setIsBlurred, redoTest }) {
              top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center"
     >
       <p className="text-secondary text-2xl my-8">Error</p>
-      <p className="text-black text-lg mb-12">
+      <p className="text-tertiary text-lg mb-12">
         No hay saltos registrados en este test. Qué desea hacer?
       </p>
       <div className="flex justify-around w-full mb-8">

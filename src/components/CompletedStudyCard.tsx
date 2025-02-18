@@ -65,7 +65,7 @@ function CompletedStudyCard({
           {boscoDisplayKeys.map((key) => (
             <p key={key} className="text-lg text-darkGray mb-8">
               -{t(key)}:{" "}
-              <span className="text-black font-medium">
+              <span className="text-tertiary font-medium">
                 {study.results[key].avgHeightReached?.toFixed(1)}{" "}
                 {units.heightReached}
               </span>
@@ -79,7 +79,7 @@ function CompletedStudyCard({
                 <div key={key}>
                   <p className="text-lg text-darkGray mb-8">
                     -{t(key)}:{" "}
-                    <span className="text-black font-medium">
+                    <span className="text-tertiary font-medium">
                       {typeof study.results[key] === "number"
                         ? study.results[key].toFixed(1) +
                           " " +
@@ -96,7 +96,7 @@ function CompletedStudyCard({
                 <div key={key}>
                   <p className="text-lg text-darkGray mb-8">
                     -{t(key)}:{" "}
-                    <span className="text-black font-medium">
+                    <span className="text-tertiary font-medium">
                       {key === "height" && study.results.type === "dropJump"
                         ? `${study.results.height} ${study.results.heightUnit}`
                         : typeof study.results[key] === "number"
@@ -114,7 +114,7 @@ function CompletedStudyCard({
                 <div key={key}>
                   <p className="text-lg text-darkGray mb-8">
                     -{t(key)}:{" "}
-                    <span className="text-black font-medium">
+                    <span className="text-tertiary font-medium">
                       {typeof study.results[key] === "number"
                         ? (study.results[key] === 0
                             ? 0

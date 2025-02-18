@@ -109,7 +109,7 @@ const BoscoStudiesList = ({ studies, setStudy }) => {
 
   return (
     <div className="flex flex-col px-8 relative">
-      <p className="text-black text-xl absolute left-[320px] top-[70px]">
+      <p className="text-tertiary text-xl absolute left-[320px] top-[70px]">
         Arrastre un test para cambiarlo de orden
       </p>
       <DndContext

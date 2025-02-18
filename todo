@@ -1,15 +1,14 @@
 MVP
     Carga rapida
+    Preview en seleccionar atletas
+    Comparar atletas    
     Ver que los toFixed sean consistentes
-    Boton de comparar
-    CMJ comparar con y sin carga dentro del mismo ejercicio
     MJ --> % rendimiento los 3 mas altos (graficos)
     Cuando se baja x% de altura de salto, cortar salto. 
     Mostrar grafico en tiempo real y elegir que queres que se muestre (stifness, altura de salto, tiempo de piso)
     Boton de ver video en seccion info
     Que la mina salude cuando la apretes
     Que el logo sea animado
-    Tests en vez de Estudios
     Perfil Fuerza Velocidad
     Sacar instrumentos de medicion por ahora
     Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena

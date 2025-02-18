@@ -8,6 +8,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  Line,
 } from "recharts";
 import TonalButton from "./TonalButton";
 import OutlinedButton from "./OutlinedButton";
@@ -18,23 +19,40 @@ function ComparisonChartDisplay({
   setShowChart,
   jumpTimesA,
   jumpTimesB,
+  jumpTimesC,
+  stiffnessA,
+  stiffnessB,
+  stiffnessC,
   chartAnimation,
   onClose,
   type1,
   type2,
+  type3,
+  showStiffness = false,
 }: {
   setShowChart: (show: boolean) => void;
   jumpTimesA: JumpTime[];
   jumpTimesB: JumpTime[];
+  jumpTimesC?: JumpTime[];
+  stiffnessA?: number[];
+  stiffnessB?: number[];
+  stiffnessC?: number[];
   chartAnimation: string;
   onClose: () => void;
   type1: string;
   type2: string;
+  type3?: string;
+  showStiffness?: boolean;
 }) {
   const validJumpTimesA = jumpTimesA.filter((e) => !e.deleted);
   const validJumpTimesB = jumpTimesB.filter((e) => !e.deleted);
+  const validJumpTimesC = jumpTimesC?.filter((e) => !e.deleted) || [];
 
-  const maxLength = Math.max(validJumpTimesA.length, validJumpTimesB.length);
+  const maxLength = Math.max(
+    validJumpTimesA.length,
+    validJumpTimesB.length,
+    validJumpTimesC.length
+  );
 
   const timesData = Array.from({ length: maxLength }, (_, i) => ({
     index: i,
@@ -44,6 +62,12 @@ function ComparisonChartDisplay({
     timeB: validJumpTimesB[i]
       ? Number(validJumpTimesB[i].time.toFixed(2))
       : null,
+    timeC: validJumpTimesC[i]
+      ? Number(validJumpTimesC[i].time.toFixed(2))
+      : null,
+    stiffnessA: stiffnessA?.[i] || null,
+    stiffnessB: stiffnessB?.[i] || null,
+    stiffnessC: stiffnessC?.[i] || null,
   }));
 
   const heightData = Array.from({ length: maxLength }, (_, i) => ({
@@ -54,6 +78,12 @@ function ComparisonChartDisplay({
     heightB: validJumpTimesB[i]
       ? Number((((9.81 * validJumpTimesB[i].time ** 2) / 8) * 100).toFixed(1))
       : null,
+    heightC: validJumpTimesC[i]
+      ? Number((((9.81 * validJumpTimesC[i].time ** 2) / 8) * 100).toFixed(1))
+      : null,
+    stiffnessA: stiffnessA?.[i] || null,
+    stiffnessB: stiffnessB?.[i] || null,
+    stiffnessC: stiffnessC?.[i] || null,
   }));
 
   const [buttonText, setButtonText] = useState("Alturas");
@@ -114,6 +144,17 @@ function ComparisonChartDisplay({
                 position: "insideLeft",
               }}
             />
+            {showStiffness && (
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                label={{
+                  value: "Stiffness",
+                  angle: 90,
+                  position: "insideRight",
+                }}
+              />
+            )}
             <Tooltip
               contentStyle={{
                 borderRadius: "16px",
@@ -139,30 +180,136 @@ function ComparisonChartDisplay({
                 <Bar
                   dataKey="timeA"
                   fill="#e81d23"
-                  name={`${t(type1)} ${type1 === type2 ? "A" : ""}`}
+                  name={`${t(type1)} ${
+                    type1 === type2 || type1 === type3 ? "A" : ""
+                  }`}
                   barSize={20}
                 />
                 <Bar
                   dataKey="timeB"
                   fill="#FFC1C1"
-                  name={`${t(type2)} ${type1 === type2 ? "B" : ""}`}
+                  name={`${t(type2)} ${
+                    type1 === type2 || type2 === type3 ? "B" : ""
+                  }`}
                   barSize={20}
                 />
+                {jumpTimesC && (
+                  <Bar
+                    dataKey="timeC"
+                    fill="#FF7F7F"
+                    name={`${t(type3!)} ${
+                      type1 === type3 || type2 === type3 ? "C" : ""
+                    }`}
+                    barSize={20}
+                  />
+                )}
+                {showStiffness && (
+                  <>
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="stiffnessA"
+                      stroke="#FF9501"
+                      strokeWidth={2}
+                      dot={{ fill: "#FF9501" }}
+                      name={`Stiffness ${t(type1)} ${
+                        type1 === type2 || type1 === type3 ? "A" : ""
+                      }`}
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="stiffnessB"
+                      stroke="#FFD700"
+                      strokeWidth={2}
+                      dot={{ fill: "#FFD700" }}
+                      name={`Stiffness ${t(type2)} ${
+                        type1 === type2 || type2 === type3 ? "B" : ""
+                      }`}
+                    />
+                    {jumpTimesC && (
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="stiffnessC"
+                        stroke="#FFF2B2"
+                        strokeWidth={2}
+                        dot={{ fill: "#FFF2B2" }}
+                        name={`Stiffness ${t(type3!)} ${
+                          type1 === type3 || type2 === type3 ? "C" : ""
+                        }`}
+                      />
+                    )}
+                  </>
+                )}
               </>
             ) : (
               <>
                 <Bar
                   dataKey="heightA"
                   fill="#e81d23"
-                  name={`${t(type1)} ${type1 === type2 ? "A" : ""}`}
+                  name={`${t(type1)} ${
+                    type1 === type2 || type1 === type3 ? "A" : ""
+                  }`}
                   barSize={20}
                 />
                 <Bar
                   dataKey="heightB"
                   fill="#FFC1C1"
-                  name={`${t(type2)} ${type1 === type2 ? "B" : ""}`}
+                  name={`${t(type2)} ${
+                    type1 === type2 || type2 === type3 ? "B" : ""
+                  }`}
                   barSize={20}
                 />
+                {jumpTimesC && (
+                  <Bar
+                    dataKey="heightC"
+                    fill="#FF7F7F"
+                    name={`${t(type3!)} ${
+                      type1 === type3 || type2 === type3 ? "C" : ""
+                    }`}
+                    barSize={20}
+                  />
+                )}
+                {showStiffness && (
+                  <>
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="stiffnessA"
+                      stroke="#FF9501"
+                      strokeWidth={2}
+                      dot={{ fill: "#FF9501" }}
+                      name={`Stiffness ${t(type1)} ${
+                        type1 === type2 || type1 === type3 ? "A" : ""
+                      }`}
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="stiffnessB"
+                      stroke="#FFD700"
+                      strokeWidth={2}
+                      dot={{ fill: "#FFD700" }}
+                      name={`Stiffness ${t(type2)} ${
+                        type1 === type2 || type2 === type3 ? "B" : ""
+                      }`}
+                    />
+                    {jumpTimesC && (
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="stiffnessC"
+                        stroke="#FFF2B2"
+                        strokeWidth={2}
+                        dot={{ fill: "#FFF2B2" }}
+                        name={`Stiffness ${t(type3!)} ${
+                          type1 === type3 || type2 === type3 ? "C" : ""
+                        }`}
+                      />
+                    )}
+                  </>
+                )}
               </>
             )}
           </ComposedChart>

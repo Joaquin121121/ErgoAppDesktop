@@ -140,7 +140,7 @@ const availableStudies: Studies = {
   },
   bosco: {
     type: "bosco",
-    name: "BOSCO",
+    name: "BOSCO Test",
     description: "Combinación de Tests",
     studies: ["cmj", "squatJump", "abalakov"],
     preview: {
@@ -293,7 +293,7 @@ export const studyInfoLookup = {
     },
   },
   bosco: {
-    name: "BOSCO",
+    name: "BOSCO Test",
     description: "Combinación de Tests",
     preview: {
       equipment: ["Alfombra de Contacto"],
@@ -316,13 +316,20 @@ const criterion2 = [
   "avgHeightReached",
 ];
 
+const criterion3 = [
+  "takeoffFoot",
+  "avgHeightReached",
+  "avgPerformance",
+  "avgStiffness",
+];
+
 export const criterionLookup = {
   cmj: criterion1,
   squatJump: criterion1,
   abalakov: criterion1,
   dropJump: criterion2,
   bosco: criterion1,
-  multipleJumps: criterion1,
+  multipleJumps: criterion3,
 } satisfies Record<keyof Studies, string[]>;
 
 export const validComparisons = {

@@ -496,7 +496,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                       break;
                   }
                 }}
-                className="flex-1 h-full focus:outline-none text-lg bg-offWhite text-black"
+                className="flex-1 h-full focus:outline-none text-lg bg-offWhite text-tertiary"
                 onFocus={() => {
                   setSearchBarFocus(true);
                   setShowDropdown(true);
@@ -529,7 +529,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                       className={`px-4 py-2 cursor-pointer ${
                         selectedIndex === index
                           ? "bg-lightRed text-secondary"
-                          : "text-black hover:bg-lightRed hover:text-secondary"
+                          : "text-tertiary hover:bg-lightRed hover:text-secondary"
                       }`}
                       onPointerDown={(e) => handleAthletePointer(e, athlete)}
                       style={{ touchAction: "none" }} // Prevent default touch actions
@@ -549,7 +549,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
 
         {selectedAthleteName.length > 0 && !from && (
           <div className="flex mt-8 items-center self-center">
-            <p className="text-lg text-black ">
+            <p className="text-lg text-tertiary ">
               Atleta seleccionado:{" "}
               <span className="text-secondary">{selectedAthleteName}</span>
             </p>
@@ -575,7 +575,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                 <input
                   type="text"
                   disabled={selectedAthleteName.length === 0}
-                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
+                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-tertiary ${
                     inputStyles.input
                   } ${errors.name && inputStyles.focused}`}
                   placeholder={
@@ -595,14 +595,14 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                     t("birthDate").slice(1)}
                 </p>
                 <div
-                  className={`bg-offWhite y rounded-2xl flex items-center justify-between w-48 shadow-sm pl-2 pr-1 h-10 text-black ${
+                  className={`bg-offWhite y rounded-2xl flex items-center justify-between w-48 shadow-sm pl-2 pr-1 h-10 text-tertiary ${
                     inputStyles.input
                   } ${errors.birthDate && inputStyles.focused}`}
                 >
                   <input
                     type="date"
                     ref={inputRef}
-                    className={`w-3/5 h-full bg-inherit focus:outline-none  text-black [&::-webkit-calendar-picker-indicator]:hidden`}
+                    className={`w-3/5 h-full bg-inherit focus:outline-none  text-tertiary [&::-webkit-calendar-picker-indicator]:hidden`}
                     value={
                       athlete.birthDate instanceof Date
                         ? athlete.birthDate.toISOString().split("T")[0]
@@ -699,7 +699,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                   <input
                     type="numeric"
                     disabled={selectedAthleteName.length === 0}
-                    className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-28 h-10 text-black mr-4 ${
+                    className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-28 h-10 text-tertiary mr-4 ${
                       inputStyles.input
                     } ${errors.height && inputStyles.focused}`}
                     placeholder={
@@ -742,7 +742,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                   <input
                     type="numeric"
                     disabled={selectedAthleteName.length === 0}
-                    className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-28 h-10 text-black mr-4 ${
+                    className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-28 h-10 text-tertiary mr-4 ${
                       inputStyles.input
                     } ${errors.weight && inputStyles.focused}`}
                     placeholder={
@@ -809,7 +809,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                 <input
                   type="text"
                   disabled={selectedAthleteName.length === 0}
-                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
+                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-tertiary ${
                     inputStyles.input
                   } ${errors.category && inputStyles.focused}`}
                   placeholder={
@@ -833,7 +833,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                 <input
                   type="text"
                   disabled={selectedAthleteName.length === 0}
-                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
+                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-tertiary ${
                     inputStyles.input
                   } ${errors.institution && inputStyles.focused}`}
                   placeholder={
@@ -862,7 +862,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
 
         {from && (
           <OutlinedButton
-            title="Ver Estudios"
+            title="Ver Tests"
             onClick={() => {
               customNavigate("back", "selectAthlete", "athleteStudies");
               setTimeout(() => {

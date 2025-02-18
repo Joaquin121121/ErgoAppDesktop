@@ -275,7 +275,9 @@ function Athletes({
         </div>
         {!loadedAthletes.length && (
           <>
-            <p className=" text-xl mt-16 text-black">No hay atletas cargados</p>
+            <p className=" text-xl mt-16 text-tertiary">
+              No hay atletas cargados
+            </p>
             <TonalButton
               containerStyles=" mt-8"
               title="Nuevo Atleta"
@@ -293,7 +295,7 @@ function Athletes({
         >
           <p className="text-darkGray text-lg my-8">
             Está seguro que desea eliminar a{" "}
-            <span className="text-black">{athleteToDelete}</span>?
+            <span className="text-tertiary">{athleteToDelete}</span>?
           </p>
           <div className="flex justify-around w-full mb-8">
             <OutlinedButton

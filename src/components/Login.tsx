@@ -136,7 +136,7 @@ function Login() {
             <p className="text-xl text-darkGray mb-2">Nombre</p>
             <input
               type="text"
-              className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-full h-10 text-black ${
+              className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-full h-10 text-tertiary ${
                 inputStyles.input
               } ${errors.email && inputStyles.focused}`}
               value={loginQuery.email}
@@ -150,7 +150,7 @@ function Login() {
         <p className="text-xl text-darkGray mb-2">Email</p>
         <input
           type="text"
-          className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-full h-10 text-black ${
+          className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-full h-10 text-tertiary ${
             inputStyles.input
           } ${errors.email && inputStyles.focused}`}
           value={loginQuery.email}
@@ -162,7 +162,7 @@ function Login() {
         <p className="text-xl text-darkGray mt-8 mb-2">Contraseña</p>
         <input
           type="text"
-          className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-full h-10 text-black ${
+          className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-full h-10 text-tertiary ${
             inputStyles.input
           } ${errors.password && inputStyles.focused}`}
           value={loginQuery.password}

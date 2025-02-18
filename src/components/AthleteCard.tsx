@@ -39,17 +39,19 @@ function AthleteCard({
         <div>
           <p className="text-lg text-darkGray mt-8">
             -Disciplina:{" "}
-            <span className="text-black font-medium">
+            <span className="text-tertiary font-medium">
               {t(athlete.discipline)}
             </span>
           </p>
           <p className="text-lg text-darkGray mt-4">
             -Categoría:{" "}
-            <span className="text-black font-medium">{athlete.category}</span>
+            <span className="text-tertiary font-medium">
+              {athlete.category}
+            </span>
           </p>
           <p className="text-lg text-darkGray mt-4">
             -Institución:{" "}
-            <span className="text-black font-medium">
+            <span className="text-tertiary font-medium">
               {athlete.institution}
             </span>
           </p>

@@ -154,7 +154,7 @@ function About({
       >
         {/* <div className="absolute w-16 h-16 top-8 right-8 bg-gray rounded-full"></div> */}
         <div className="flex mt-12">
-          <h1 className="pt-2">Info sobre Estudios</h1>
+          <h1 className="pt-2">Info sobre Tests</h1>
           <img src="/books.png" className="h-16 w-16 ml-12" />
         </div>
         <div className="self-end w-3/4 flex items-center">
@@ -171,7 +171,7 @@ function About({
               className="flex-1 h-full focus:outline-none text-lg bg-white text-darkGray"
               onFocus={() => setSearchBarFocus(true)}
               onBlur={() => setSearchBarFocus(false)}
-              placeholder="Buscar estudios..."
+              placeholder="Buscar tests..."
             />
           </div>
           <OutlinedButton
@@ -262,7 +262,7 @@ function About({
         >
           <p className="text-darkGray text-lg my-8">
             Está seguro que desea eliminar el test{" "}
-            <span className="text-black">{studyToDelete}</span>?
+            <span className="text-tertiary">{studyToDelete}</span>?
           </p>
           <div className="flex justify-around w-full mb-8">
             <OutlinedButton

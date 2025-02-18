@@ -20,13 +20,13 @@ function BoscoStudyCard({
     >
       <h6 className="text-secondary mt-4 mb-4 text-2xl">{t(studyName)}</h6>
       <div>
-        <p className="text-xl text-black mt-8">
+        <p className="text-xl text-tertiary mt-8">
           Altura Promedio:{" "}
           <span className="text-secondary">
             {study.avgHeightReached.toFixed(1)} cm
           </span>
         </p>
-        <p className="text-xl text-black mt-4">
+        <p className="text-xl text-tertiary mt-4">
           Vuelo Promedio:{" "}
           <span className="text-secondary">
             {study.avgFlightTime.toFixed(1)} s

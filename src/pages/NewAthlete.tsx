@@ -12,11 +12,13 @@ import { Country, State } from "country-state-city";
 import { formattedDisciplines } from "../constants/data";
 import { useSearchParams } from "react-router-dom";
 import { VALIDATION_LIMITS } from "../constants/data";
-
+import navAnimation from "../styles/animations.module.css";
+import OutlinedButton from "../components/OutlinedButton";
 function NewAthlete({
   isExpanded,
   animation,
   customNavigate,
+  onBlurChange,
 }: {
   isExpanded: boolean;
   animation: string;
@@ -25,6 +27,7 @@ function NewAthlete({
     page: string,
     nextPage: string
   ) => void;
+  onBlurChange: (showInfo: boolean) => void;
 }) {
   const { t } = useTranslation();
 
@@ -63,6 +66,12 @@ function NewAthlete({
   const [stateReset, setStateReset] = useState(false);
   const [genderReset, setGenderReset] = useState(false);
   const [disciplineReset, setDisciplineReset] = useState(false);
+  const [fastLoad, setFastLoad] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [lockedFields, setLockedFields] = useState<string[]>([]);
+  const [athletesToSave, setAthletesToSave] = useState<Athlete[]>([]);
+  const [currentAthleteIndex, setCurrentAthleteIndex] = useState(0);
+  const [fieldsAnimation, setFieldsAnimation] = useState("");
 
   const { saveJson, readDirectoryJsons } = useJsonFiles();
   const { athlete, setAthlete, resetAthlete } = useStudyContext();
@@ -94,6 +103,42 @@ function NewAthlete({
     if (inputRef.current) {
       inputRef.current.showPicker();
     }
+  };
+
+  const deleteAthlete = () => {
+    if (athletesToSave.length > 0) {
+      setAthletesToSave(athletesToSave.slice(0, -1));
+      setCurrentAthleteIndex(currentAthleteIndex - 1);
+    } else {
+      setCountryReset(true);
+      setStateReset(true);
+      setGenderReset(true);
+      setDisciplineReset(true);
+      resetAthlete();
+    }
+  };
+
+  const onNext = () => {
+    setAthletesToSave([...athletesToSave, athlete]);
+    deleteAthlete();
+
+    setCurrentAthleteIndex(currentAthleteIndex + 1);
+    setFieldsAnimation(navAnimation.fadeOutLeft);
+    setTimeout(() => {
+      setFieldsAnimation(navAnimation.fadeInRight);
+    }, 300);
+  };
+
+  const onBack = () => {
+    if (athletesToSave.length === 0) {
+      return;
+    }
+    setCurrentAthleteIndex(currentAthleteIndex - 1);
+
+    setFieldsAnimation(navAnimation.fadeOutRight);
+    setTimeout(() => {
+      setFieldsAnimation(navAnimation.fadeInLeft);
+    }, 300);
   };
 
   useEffect(() => {
@@ -348,13 +393,19 @@ function NewAthlete({
     if (disciplineReset) setAthlete({ ...athlete, discipline: "" });
   }, [disciplineReset]);
 
+  useEffect(() => {
+    onBlurChange(showInfo);
+  }, [showInfo]);
+
   return (
     <div
       className="flex-1 relative flex flex-col items-center transition-all duration-300 ease-in-out"
       style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
     >
       <div
-        className={`w-[95%] bg-white shadow-sm rounded-2xl mt-8 flex flex-col px-8 transition-all 300 ease-in-out ${animation}`}
+        className={`w-[95%] bg-white shadow-sm rounded-2xl mt-8 flex flex-col px-8 transition-all 300 ease-in-out ${animation} ${
+          showInfo && "blur-md pointer-events-none"
+        }`}
       >
         <div
           className="mt-4 -mr-4 self-end my-0 p-1 rounded-full bg-lightRed hover:opacity-70 flex justify-center cursor-pointer"
@@ -362,13 +413,42 @@ function NewAthlete({
         >
           <img src="/close.png" className="h-10 w-10" alt="close" />
         </div>
-
-        <p className="text-3xl text-secondary self-center -mt-10">
-          Añadir Atleta
+        <div className="w-full flex justify-center -mt-10 items-center gap-x-16">
+          <div className="w-[187px]"></div>
+          <p className="text-3xl text-secondary self-center">Añadir Atleta</p>
+          {fastLoad ? (
+            <OutlinedButton
+              title="Desactivar Carga Rápida"
+              icon="close"
+              onClick={() => setFastLoad(false)}
+            />
+          ) : (
+            <>
+              <TonalButton
+                title="Carga Rápida"
+                icon="lightning"
+                onClick={() => setFastLoad(true)}
+              />
+              <p
+                className="text-secondary hover:opacity-70 active:opacity-40 cursor-pointer"
+                onClick={() => setShowInfo(true)}
+              >
+                ¿Qué es la carga rápida?
+              </p>
+            </>
+          )}
+        </div>
+        <p className="text-4xl mt-8 text-tertiary flex items-center">
+          Datos del Atleta{" "}
+          {fastLoad ? (
+            <span className="text-secondary text-2xl text-light ml-4 ">
+              {currentAthleteIndex + 1}/{athletesToSave.length + 1}
+            </span>
+          ) : (
+            ""
+          )}{" "}
         </p>
-        <p className="text-4xl mt-8 text-black">Datos del Atleta</p>
-
-        <div className="flex w-full mt-8">
+        <div className={`flex w-full mt-8 ${fieldsAnimation}`}>
           {/* Left Column */}
           <div className="flex flex-col w-1/2">
             {/* Name */}
@@ -378,15 +458,31 @@ function NewAthlete({
               </p>
               <input
                 type="text"
-                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
+                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-tertiary ${
                   inputStyles.input
-                } ${errors.name && inputStyles.focused}`}
+                } ${errors.name && inputStyles.focused} ${
+                  lockedFields.includes("name") && "border border-lightRed"
+                }`}
                 placeholder={
                   t("name").charAt(0).toUpperCase() + t("name").slice(1) + "..."
                 }
                 value={athlete.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
               />
+              {fastLoad && (
+                <img
+                  src={`/${!lockedFields.includes("name") ? "un" : ""}lock.png`}
+                  alt=""
+                  className="ml-4 cursor-pointer w-7 h-7 "
+                  onClick={() =>
+                    lockedFields.includes("name")
+                      ? setLockedFields(
+                          lockedFields.filter((e) => e !== "name")
+                        )
+                      : setLockedFields([...lockedFields, "name"])
+                  }
+                />
+              )}
             </div>
             {errors.name === "duplicate" && (
               <p className="text-secondary -mt-1 self-center">
@@ -405,14 +501,16 @@ function NewAthlete({
                   t("birthDate").slice(1)}
               </p>
               <div
-                className={`bg-offWhite y rounded-2xl flex items-center justify-between w-48 shadow-sm pl-2 pr-1 h-10 text-black ${
+                className={`bg-offWhite y rounded-2xl flex items-center justify-between w-48 shadow-sm pl-2 pr-1 h-10 text-tertiary border border-transparent  ${
                   inputStyles.input
-                } ${errors.birthDate && inputStyles.focused}`}
+                } ${errors.birthDate && inputStyles.focused} ${
+                  lockedFields.includes("birthDate") && "border border-lightRed"
+                }`}
               >
                 <input
                   type="date"
                   ref={inputRef}
-                  className={`w-3/5 h-full bg-inherit focus:outline-none  text-black [&::-webkit-calendar-picker-indicator]:hidden`}
+                  className={`w-3/5 h-full bg-inherit focus:outline-none  text-tertiary [&::-webkit-calendar-picker-indicator]:hidden $`}
                   value={
                     athlete.birthDate instanceof Date
                       ? athlete.birthDate.toISOString().split("T")[0]
@@ -429,6 +527,22 @@ function NewAthlete({
                   onClick={togglePicker}
                 />
               </div>
+              {fastLoad && (
+                <img
+                  src={`/${
+                    !lockedFields.includes("birthDate") ? "un" : ""
+                  }lock.png`}
+                  alt=""
+                  className="ml-4 cursor-pointer w-7 h-7 "
+                  onClick={() =>
+                    lockedFields.includes("birthDate")
+                      ? setLockedFields(
+                          lockedFields.filter((e) => e !== "birthDate")
+                        )
+                      : setLockedFields([...lockedFields, "birthDate"])
+                  }
+                />
+              )}
             </div>
             {/* Country */}
             <div className="flex items-center my-4">
@@ -447,6 +561,10 @@ function NewAthlete({
                 error={errors.country}
                 setError={(e: string) => setErrors({ ...errors, country: e })}
                 setReset={setCountryReset}
+                fastload={fastLoad}
+                lockedFields={lockedFields}
+                setLockedFields={setLockedFields}
+                field="country"
               />
             </div>
             {/* State */}
@@ -469,6 +587,10 @@ function NewAthlete({
                 setReset={setStateReset}
                 error={errors.state}
                 setError={(e: string) => setErrors({ ...errors, state: e })}
+                fastload={fastLoad}
+                lockedFields={lockedFields}
+                setLockedFields={setLockedFields}
+                field="state"
               />
             </div>
 
@@ -489,6 +611,10 @@ function NewAthlete({
                 setReset={setGenderReset}
                 error={errors.gender}
                 setError={(e: string) => setErrors({ ...errors, gender: e })}
+                fastload={fastLoad}
+                lockedFields={lockedFields}
+                setLockedFields={setLockedFields}
+                field="gender"
               />
             </div>
           </div>
@@ -504,9 +630,11 @@ function NewAthlete({
               <div className="flex items-center">
                 <input
                   type="numeric"
-                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-28 h-10 text-black mr-4 ${
+                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-28 h-10 text-tertiary mr-4 ${
                     inputStyles.input
-                  } ${errors.height && inputStyles.focused}`}
+                  } ${errors.height && inputStyles.focused} ${
+                    lockedFields.includes("height") && "border border-lightRed"
+                  }`}
                   placeholder={
                     t("height").charAt(0).toUpperCase() +
                     t("height").slice(1) +
@@ -534,6 +662,22 @@ function NewAthlete({
                   Ft
                 </button>
               </div>
+              {fastLoad && (
+                <img
+                  src={`/${
+                    !lockedFields.includes("height") ? "un" : ""
+                  }lock.png`}
+                  alt=""
+                  className="ml-4 cursor-pointer w-7 h-7"
+                  onClick={() =>
+                    lockedFields.includes("height")
+                      ? setLockedFields(
+                          lockedFields.filter((e) => e !== "height")
+                        )
+                      : setLockedFields([...lockedFields, "height"])
+                  }
+                />
+              )}
             </div>
             {/* Weight with Units */}
             <div className="flex items-center my-4">
@@ -543,9 +687,11 @@ function NewAthlete({
               <div className="flex items-center">
                 <input
                   type="numeric"
-                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-28 h-10 text-black mr-4 ${
+                  className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-28 h-10 text-tertiary mr-4 ${
                     inputStyles.input
-                  } ${errors.weight && inputStyles.focused}`}
+                  } ${errors.weight && inputStyles.focused} ${
+                    lockedFields.includes("weight") && "border border-lightRed"
+                  }`}
                   placeholder={
                     t("weight").charAt(0).toUpperCase() +
                     t("weight").slice(1) +
@@ -573,6 +719,22 @@ function NewAthlete({
                   Lbs
                 </button>
               </div>
+              {fastLoad && (
+                <img
+                  src={`/${
+                    !lockedFields.includes("weight") ? "un" : ""
+                  }lock.png`}
+                  alt=""
+                  className="ml-4 cursor-pointer w-7 h-7"
+                  onClick={() =>
+                    lockedFields.includes("weight")
+                      ? setLockedFields(
+                          lockedFields.filter((e) => e !== "weight")
+                        )
+                      : setLockedFields([...lockedFields, "weight"])
+                  }
+                />
+              )}
             </div>
 
             {/* Discipline */}
@@ -595,6 +757,10 @@ function NewAthlete({
                 }}
                 reset={disciplineReset}
                 setReset={setDisciplineReset}
+                fastload={fastLoad}
+                lockedFields={lockedFields}
+                setLockedFields={setLockedFields}
+                field="discipline"
               />
             </div>
 
@@ -605,9 +771,11 @@ function NewAthlete({
               </p>
               <input
                 type="text"
-                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
+                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-tertiary ${
                   inputStyles.input
-                } ${errors.category && inputStyles.focused}`}
+                } ${errors.category && inputStyles.focused} ${
+                  lockedFields.includes("category") && "border border-lightRed"
+                }`}
                 placeholder={
                   t("category").charAt(0).toUpperCase() +
                   t("category").slice(1) +
@@ -616,6 +784,22 @@ function NewAthlete({
                 value={athlete.category}
                 onChange={(e) => handleInputChange("category", e.target.value)}
               />
+              {fastLoad && (
+                <img
+                  src={`/${
+                    !lockedFields.includes("category") ? "un" : ""
+                  }lock.png`}
+                  alt=""
+                  className="ml-4 cursor-pointer w-7 h-7"
+                  onClick={() =>
+                    lockedFields.includes("category")
+                      ? setLockedFields(
+                          lockedFields.filter((e) => e !== "category")
+                        )
+                      : setLockedFields([...lockedFields, "category"])
+                  }
+                />
+              )}
             </div>
 
             {/* Institution */}
@@ -626,9 +810,12 @@ function NewAthlete({
               </p>
               <input
                 type="text"
-                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-black ${
+                className={`bg-offWhite focus:outline-secondary rounded-2xl shadow-sm pl-2 w-80 h-10 text-tertiary ${
                   inputStyles.input
-                } ${errors.institution && inputStyles.focused}`}
+                } ${errors.institution && inputStyles.focused} ${
+                  lockedFields.includes("institution") &&
+                  "border border-lightRed"
+                }`}
                 placeholder={
                   t("institution").charAt(0).toUpperCase() +
                   t("institution").slice(1) +
@@ -639,22 +826,106 @@ function NewAthlete({
                   handleInputChange("institution", e.target.value)
                 }
               />
+              {fastLoad && (
+                <img
+                  src={`/${
+                    !lockedFields.includes("institution") ? "un" : ""
+                  }lock.png`}
+                  alt=""
+                  className="ml-4 cursor-pointer w-7 h-7"
+                  onClick={() =>
+                    lockedFields.includes("institution")
+                      ? setLockedFields(
+                          lockedFields.filter((e) => e !== "institution")
+                        )
+                      : setLockedFields([...lockedFields, "institution"])
+                  }
+                />
+              )}
             </div>
           </div>
+        </div>{" "}
+        <div className={`w-full items-center flex flex-col ${fieldsAnimation}`}>
+          <p className="w-40 text-right self-start mr-8 text-darkGray mt-4">
+            Comentarios
+          </p>
+          <textarea
+            name=""
+            id=""
+            className={`bg-offWhite border border-gray shadow-sm rounded-2xl h-20 p-2 text-tertiary mt-2 w-3/4 self-center ${inputStyles.input}`}
+          ></textarea>
         </div>
-        <p className="w-40 text-right mr-8 text-darkGray mt-4">Comentarios</p>
-        <textarea
-          name=""
-          id=""
-          className={`bg-offWhite border border-gray shadow-sm rounded-2xl h-20 p-2 text-black mt-2 w-3/4 self-center ${inputStyles.input}`}
-        ></textarea>
-        <TonalButton
-          containerStyles="self-center my-8"
-          title="Guardar Atleta"
-          icon="next"
-          onClick={saveAthlete}
-        />
+        {fastLoad ? (
+          <div className="w-full items-center justify-center gap-x-16 flex my-12">
+            <OutlinedButton
+              title="Borrar Atleta"
+              icon="delete"
+              onClick={deleteAthlete}
+              containerStyles="mr-16"
+            />
+            <OutlinedButton
+              title="Volver"
+              icon="back"
+              inverse
+              onClick={onBack}
+            />
+            <TonalButton title="Siguiente" icon="next" onClick={onNext} />
+            <TonalButton
+              title="Guardar y Continuar"
+              icon="save"
+              containerStyles="ml-16"
+              onClick={() => {}}
+            />
+          </div>
+        ) : (
+          <TonalButton
+            containerStyles="self-center my-12"
+            title="Guardar Atleta"
+            icon="next"
+            onClick={saveAthlete}
+          />
+        )}
       </div>
+      {showInfo && (
+        <div
+          className="bg-white shadow-lg fixed z-50 rounded-2xl py-2 px-8 w-[600px]
+             top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center border border-gray"
+        >
+          <div
+            className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
+            onClick={() => setShowInfo(false)}
+          >
+            <img src="/close.png" className="h-6 w-6" alt="Close" />
+          </div>
+          <img src="/lock.png" alt="" className="w-12 h-12 self-center mt-8 " />
+          <ul className="text-tertiary text-lg my-8 list-disc">
+            <li>
+              La{" "}
+              <span className="text-secondary font-medium">carga rápida</span>{" "}
+              permite fijar valores de campos para poder cargar atletas
+              rápidamente.
+            </li>
+            <li>
+              Por ejemplo, si desea cargar atletas de una misma institucion y/o
+              de un mismo género, puede fijar ambos campos, agilizando la carga.
+            </li>
+            <li>
+              Haga click en el{" "}
+              <span className="text-secondary font-medium">candado</span> al
+              lado de un campo para fijar su valor.
+            </li>
+          </ul>
+          <TonalButton
+            icon="backWhite"
+            onClick={() => {
+              setShowInfo(false);
+            }}
+            title="Volver"
+            inverse
+            containerStyles="mt-8 mb-4"
+          />
+        </div>
+      )}
     </div>
   );
 }

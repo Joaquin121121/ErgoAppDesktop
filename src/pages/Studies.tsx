@@ -189,7 +189,7 @@ function Studies({
               className="flex-1 h-full focus:outline-none text-lg bg-white text-darkGray"
               onFocus={() => setSearchBarFocus(true)}
               onBlur={() => setSearchBarFocus(false)}
-              placeholder="Buscar estudios..."
+              placeholder="Buscar tests..."
             />
           </div>
           <OutlinedButton
@@ -286,7 +286,7 @@ function Studies({
         >
           <p className="text-darkGray text-lg my-8">
             Está seguro que desea eliminar el test{" "}
-            <span className="text-black">{studyToDelete}</span>?
+            <span className="text-tertiary">{studyToDelete}</span>?
           </p>
           <div className="flex justify-around w-full mb-8">
             <OutlinedButton

@@ -49,7 +49,7 @@ const TonalButton = React.forwardRef<HTMLButtonElement, ButtonProps>(
           <>
             {icon && inverse && (
               <img
-                className={`${large ? "h-12 w-12" : "mr-4 h-8 w-8"}`}
+                className={`${large ? "h-12 w-12" : "mr-4 h-6 w-6"}`}
                 src={`/${icon}.png`}
                 alt={`${icon} icon`}
               />

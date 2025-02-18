@@ -9,8 +9,8 @@ import { Dispatch, SetStateAction } from "react";
 interface FilterProps {
   selectedEquipment: string[]; // Changed from [string] to string[]
   setSelectedEquipment: (selectedEquipment: string[]) => void; // Fixed type
-  selectedStatsToMeasure: string[]; // Changed from [string] to string[]
-  setSelectedStatsToMeasure: (selectedStatsToMeasure: string[]) => void; // Fixed type
+  selectedStatsToMeasure?: string[]; // Changed from [string] to string[]
+  setSelectedStatsToMeasure?: (selectedStatsToMeasure: string[]) => void; // Fixed type
   setFilteredStudies: Dispatch<SetStateAction<[keyof Studies, Study][]>>;
   setIsBlurred: (isBlurred: boolean) => void;
   onBlurChange: (isBlurred: boolean) => void;
@@ -112,7 +112,7 @@ function Filter({
       >
         <img src="/close.png" className="h-6 w-6" alt="" />
       </div>
-      <p className="text-xl text-black ml-2 mt-8 mb-4">Equipamiento</p>
+      <p className="text-xl text-tertiary ml-2 mt-8 mb-4">Equipamiento</p>
       <div className="flex mb-4">
         {availableEquipment.slice(0, 2).map((equipment) => (
           <button
@@ -141,7 +141,7 @@ function Filter({
           </button>
         ))}
       </div>
-      {/* <p className="text-xl text-black ml-2 mt-8 mb-4">Objeto de Evaluación</p>
+      {/* <p className="text-xl text-tertiary ml-2 mt-8 mb-4">Objeto de Evaluación</p>
       <div className="flex mb-4">
         {statsToMeasure.slice(0, 2).map((statToMeasure) => (
           <button

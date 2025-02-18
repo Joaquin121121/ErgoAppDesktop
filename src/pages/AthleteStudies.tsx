@@ -6,7 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
 import TonalButton from "../components/TonalButton";
-import { validComparisons } from "../types/Studies";
+import Filter from "../components/Filter";
+import { Studies, Study, validComparisons } from "../types/Studies";
 
 function AthleteStudies({
   isExpanded,
@@ -30,10 +31,15 @@ function AthleteStudies({
 
   const [studyToDelete, setStudyToDelete] = useState(null);
   const [comparing, setComparing] = useState(false);
+  const [filtering, setFiltering] = useState(false);
   const [cardStyles, setCardStyles] = useState({});
   const [validStudiesToCompare, setValidStudiesToCompare] = useState(
     studies.map((e) => ({ valid: e.results.type !== "bosco" }))
   );
+  const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
+  const [filteredStudies, setFilteredStudies] = useState<
+    [keyof Studies, Study][]
+  >([]);
 
   const { saveJson } = useJsonFiles();
 
@@ -69,6 +75,11 @@ function AthleteStudies({
     }
   };
 
+  const filter = () => {
+    onBlurChange(true);
+    setFiltering(true);
+  };
+
   const handleStudySelection = (date: string) => {
     if (comparing) {
       if (Object.values(cardStyles).some((style) => style !== "")) {
@@ -80,12 +91,15 @@ function AthleteStudies({
             ...cardStyles,
             [date]: "",
           });
+          setValidStudiesToCompare(
+            studies.map((e) => ({ valid: e.results.type !== "bosco" }))
+          );
           return;
         }
-        customNavigate("forward", "athleteStudies", "compareStudies");
+        customNavigate("forward", "athleteStudies", "compareTwoStudies");
         setTimeout(() => {
           navigate(
-            "/compareStudies?date1=" + dateOfFirstSelected + "&date2=" + date
+            "/compareTwoStudies?date1=" + dateOfFirstSelected + "&date2=" + date
           );
         }, 300);
       }
@@ -138,15 +152,15 @@ function AthleteStudies({
     <>
       <div
         className={`flex-1 relative flex flex-col items-center transition-all duration-300 ease-in-out ${animation} ${
-          studyToDelete && "blur-md pointer-events-none"
+          (studyToDelete || filtering) && "blur-md pointer-events-none"
         }`}
         style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
       >
-        <div className="self-center flex gap-x-16 items-center">
+        <div className="self-center flex gap-x-16 justify-between items-center">
           {comparing ? (
             <>
-              <p className="text-3xl text-dark self-center my-10 text-black">
-                Selecciona los estudios a comparar
+              <p className="text-3xl text-dark self-center my-10 text-tertiary">
+                Selecciona los tests a comparar
               </p>
               <TonalButton
                 icon="closeWhite"
@@ -172,12 +186,12 @@ function AthleteStudies({
             </>
           ) : (
             <>
-              <p className="text-3xl text-dark self-center my-10 text-black">
-                Estudios Realizados:{" "}
-                <span className="text-secondary font-medium">
-                  {athlete.name}
-                </span>
-              </p>
+              <TonalButton
+                title="Volver"
+                icon="backWhite"
+                onClick={onClose}
+                inverse
+              />
               <OutlinedButton
                 title="Ver Info Atleta"
                 onClick={() => {
@@ -188,6 +202,14 @@ function AthleteStudies({
                 }}
                 icon="info"
               />
+              <p className="text-3xl text-dark self-center my-10 text-tertiary">
+                Tests Realizados:{" "}
+                <span className="text-secondary font-medium">
+                  {athlete.name}
+                </span>
+              </p>
+
+              <OutlinedButton icon="filter" title="Filtrar" onClick={filter} />
               <TonalButton
                 icon="compare"
                 title="Comparar"
@@ -221,17 +243,10 @@ function AthleteStudies({
             })}
           </div>
         ) : (
-          <p className="text-xl my-16 self-center text-black">
-            No hay estudios cargados
+          <p className="text-xl my-16 self-center text-tertiary">
+            No hay tests cargados
           </p>
         )}
-        <TonalButton
-          title="Volver"
-          icon="backWhite"
-          onClick={onClose}
-          inverse
-          containerStyles="mt-16 self-center"
-        />
       </div>
       {studyToDelete && (
         <div
@@ -240,7 +255,7 @@ function AthleteStudies({
         >
           <p className="text-darkGray text-lg my-8">
             Está seguro que desea eliminar el test{" "}
-            <span className="text-black">
+            <span className="text-tertiary">
               {
                 studies.find((study) => study.date === studyToDelete)?.studyInfo
                   .name
@@ -266,6 +281,17 @@ function AthleteStudies({
             />
           </div>
         </div>
+      )}
+      {filtering && (
+        <Filter
+          selectedEquipment={selectedEquipment}
+          setSelectedEquipment={setSelectedEquipment}
+          setFilteredStudies={setFilteredStudies}
+          setIsBlurred={setFiltering}
+          onBlurChange={onBlurChange}
+          top={100}
+          right={100}
+        />
       )}
     </>
   );

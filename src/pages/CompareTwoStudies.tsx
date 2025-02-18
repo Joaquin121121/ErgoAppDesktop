@@ -10,7 +10,7 @@ import TonalButton from "../components/TonalButton";
 import navAnimations from "../styles/animations.module.css";
 import ComparisonChartDisplay from "../components/ComparisonChartDisplay";
 
-function CompareStudies({
+function CompareTwoStudies({
   isExpanded,
   animation,
   customNavigate,
@@ -52,7 +52,7 @@ function CompareStudies({
   );
 
   const onClose = () => {
-    customNavigate("back", "compareStudies", "athleteStudies");
+    customNavigate("back", "compareTwoStudies", "athleteStudies");
     setTimeout(() => {
       navigate("/athleteStudies");
     }, 300);
@@ -101,9 +101,11 @@ function CompareStudies({
       default:
         return {
           color:
-            study1.results[criterion] === study2.results[criterion]
+            Number(study1.results[criterion].toFixed(1)) ===
+            Number(study2.results[criterion].toFixed(1))
               ? ""
-              : study1.results[criterion] > study2.results[criterion]
+              : Number(study1.results[criterion].toFixed(1)) >
+                Number(study2.results[criterion].toFixed(1))
               ? "#00A859"
               : "#e81d23",
         };
@@ -140,10 +142,13 @@ function CompareStudies({
           };
         }
       default:
-        const val1 = Number(study1.results[criterion]);
-        const val2 = Number(study2.results[criterion]);
+        const val1 = Number(study1.results[criterion].toFixed(1));
+        const val2 = Number(study2.results[criterion].toFixed(1));
         if (!isNaN(val1) && !isNaN(val2) && val2 !== 0) {
           const diff = ((val1 - val2) / val2) * 100;
+          if (diff === 0) {
+            return {};
+          }
           return {
             content: `${diff.toFixed(1)}%`,
             icon: diff > 0 ? "▲" : diff < 0 ? "▼" : "",
@@ -175,83 +180,80 @@ function CompareStudies({
           <img src="/close.png" className="h-10 w-10" alt="" />
         </div>
         <p className="text-3xl self-center mb-16">Comparación de Tests</p>
-        {study1.results.type !== "bosco" &&
-          study2.results.type !== "bosco" &&
-          study1.results.type !== "multipleJumps" &&
-          study2.results.type !== "multipleJumps" && (
-            <div className="flex justify-around pr-24">
-              <div className="flex flex-col gap-y-12">
-                <div className="w-56 h-16"></div>
+        {study1.results.type !== "bosco" && study2.results.type !== "bosco" && (
+          <div className="flex justify-around pr-24">
+            <div className="flex flex-col gap-y-12 ">
+              <div className="w-64 h-16"></div>
 
-                {criterionLookup[study1.results.type].map((criterion) => (
-                  <div key={criterion} className="w-56 text-2xl">
-                    {t(criterion)}
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-col gap-y-12">
-                <div className="text-3xl font-normal text-secondary w-56 flex flex-col items-center">
-                  {study1.studyInfo.name}
-                  <span className="text-darkGray text-xl">
-                    {formatDate(study1.date)}
-                  </span>
+              {criterionLookup[study1.results.type].map((criterion) => (
+                <div key={criterion} className="w-72 text-2xl">
+                  {t(criterion)}
                 </div>
-
-                {criterionLookup[study1.results.type].map((criterion) => (
-                  <div
-                    key={criterion}
-                    className="w-56 text-2xl flex flex-col items-center"
-                    style={compare(criterion, study1, study2)}
-                  >
-                    {typeof study1.results[criterion] === "number" &&
-                    study1.results[criterion] !== 0
-                      ? study1.results[criterion].toFixed(1)
-                      : t(study1.results[criterion])}
-                    {study1.results[`${criterion}Unit`]
-                      ? ` ${study1.results[`${criterion}Unit`]}`
-                      : ` ${units[criterion] || ""}`}
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-col gap-y-12">
-                <div className="w-36 h-16"></div>
-                {criterionLookup[study1.results.type].map((criterion) => (
-                  <div
-                    key={criterion}
-                    className="text-xl font-light h-8"
-                    style={{ color: getDiff(criterion, study1, study2).color }}
-                  >
-                    {getDiff(criterion, study1, study2).icon}{" "}
-                    {getDiff(criterion, study1, study2).content}
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-col gap-y-12">
-                <div className="text-3xl font-normal text-secondary w-56 flex flex-col items-center">
-                  {study2.studyInfo.name}
-                  <span className="text-darkGray text-xl">
-                    {formatDate(study2.date)}
-                  </span>
-                </div>
-
-                {criterionLookup[study2.results.type].map((criterion) => (
-                  <div
-                    key={criterion}
-                    className="w-56 text-2xl flex flex-col items-center"
-                    style={compare(criterion, study2, study1)}
-                  >
-                    {typeof study2.results[criterion] === "number" &&
-                    study2.results[criterion] !== 0
-                      ? study2.results[criterion].toFixed(1)
-                      : t(study2.results[criterion])}
-                    {study2.results[`${criterion}Unit`]
-                      ? ` ${study2.results[`${criterion}Unit`]}`
-                      : ` ${units[criterion] || ""}`}
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
-          )}
+            <div className="flex flex-col gap-y-12">
+              <div className="text-3xl font-normal text-secondary w-64 flex flex-col items-center">
+                {study1.studyInfo.name}
+                <span className="text-darkGray text-xl">
+                  {formatDate(study1.date)}
+                </span>
+              </div>
+
+              {criterionLookup[study1.results.type].map((criterion) => (
+                <div
+                  key={criterion}
+                  className="w-64 text-2xl flex flex-col items-center"
+                  style={compare(criterion, study1, study2)}
+                >
+                  {typeof study1.results[criterion] === "number" &&
+                  study1.results[criterion] !== 0
+                    ? study1.results[criterion].toFixed(1)
+                    : t(study1.results[criterion])}
+                  {study1.results[`${criterion}Unit`]
+                    ? ` ${study1.results[`${criterion}Unit`]}`
+                    : ` ${units[criterion] || ""}`}
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col gap-y-12">
+              <div className="w-36 h-16"></div>
+              {criterionLookup[study1.results.type].map((criterion) => (
+                <div
+                  key={criterion}
+                  className="text-xl font-light h-8"
+                  style={{ color: getDiff(criterion, study1, study2).color }}
+                >
+                  {getDiff(criterion, study1, study2).icon}{" "}
+                  {getDiff(criterion, study1, study2).content}
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col gap-y-12">
+              <div className="text-3xl font-normal text-secondary w-64 flex flex-col items-center">
+                {study2.studyInfo.name}
+                <span className="text-darkGray text-xl">
+                  {formatDate(study2.date)}
+                </span>
+              </div>
+
+              {criterionLookup[study2.results.type].map((criterion) => (
+                <div
+                  key={criterion}
+                  className="w-64 text-2xl flex flex-col items-center"
+                  style={compare(criterion, study2, study1)}
+                >
+                  {typeof study2.results[criterion] === "number" &&
+                  study2.results[criterion] !== 0
+                    ? study2.results[criterion].toFixed(1)
+                    : t(study2.results[criterion])}
+                  {study2.results[`${criterion}Unit`]
+                    ? ` ${study2.results[`${criterion}Unit`]}`
+                    : ` ${units[criterion] || ""}`}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="w-full mt-32 mb-8 flex items-center justify-center gap-x-16">
           <OutlinedButton
             title="Volver"
@@ -277,10 +279,24 @@ function CompareStudies({
             onClose={onCloseChart}
             type1={study1.results.type}
             type2={study2.results.type}
+            showStiffness={
+              study1.results.type === "multipleJumps" &&
+              study2.results.type === "multipleJumps"
+            }
+            stiffnessA={
+              study1.results.type === "multipleJumps"
+                ? study1.results.stiffness
+                : undefined
+            }
+            stiffnessB={
+              study2.results.type === "multipleJumps"
+                ? study2.results.stiffness
+                : undefined
+            }
           />
         )}
     </div>
   );
 }
 
-export default CompareStudies;
+export default CompareTwoStudies;

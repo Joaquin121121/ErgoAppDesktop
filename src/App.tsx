@@ -23,7 +23,8 @@ import { User } from "./types/User";
 import { UserProvider } from "./contexts/UserContext";
 import StudyInfo from "./pages/StudyInfo";
 import CompletedStudyInfo from "./pages/CompletedStudyInfo";
-import CompareStudies from "./pages/CompareStudies";
+import CompareTwoStudies from "./pages/CompareTwoStudies";
+import CompareThreeStudies from "./pages/CompareThreeStudies";
 const Layout = ({
   children,
   isBlurred = false,
@@ -126,7 +127,8 @@ function App() {
     "athleteStudies",
     "studyInfo",
     "completedStudyInfo",
-    "compareStudies",
+    "compareTwoStudies",
+    "compareThreeStudies",
   ] as const;
   const [animations, setAnimations] = useState(
     Object.fromEntries(keys.map((key) => [key, ""]))
@@ -222,6 +224,7 @@ function App() {
         isExpanded={isExpanded}
         animation={animations.newAthlete}
         customNavigate={customNavigate}
+        onBlurChange={setIsBlurred}
       />
     ),
     athleteStudies: (
@@ -248,10 +251,18 @@ function App() {
         customNavigate={customNavigate}
       />
     ),
-    compareStudies: (
-      <CompareStudies
+    compareTwoStudies: (
+      <CompareTwoStudies
         isExpanded={isExpanded}
-        animation={animations.compareStudies}
+        animation={animations.compareTwoStudies}
+        customNavigate={customNavigate}
+        onBlurChange={setIsBlurred}
+      />
+    ),
+    compareThreeStudies: (
+      <CompareThreeStudies
+        isExpanded={isExpanded}
+        animation={animations.compareThreeStudies}
         customNavigate={customNavigate}
         onBlurChange={setIsBlurred}
       />
@@ -324,7 +335,14 @@ function App() {
                 path="/completedStudyInfo"
                 element={pages.completedStudyInfo}
               />
-              <Route path="/compareStudies" element={pages.compareStudies} />
+              <Route
+                path="/compareTwoStudies"
+                element={pages.compareTwoStudies}
+              />
+              <Route
+                path="/compareThreeStudies"
+                element={pages.compareThreeStudies}
+              />
               <Route path="*" element={pages.notFound} />
             </Routes>
           </Layout>

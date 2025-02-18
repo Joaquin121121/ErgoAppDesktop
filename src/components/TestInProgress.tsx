@@ -105,27 +105,27 @@ function TestInProgress({
     <table className="w-full mt-8">
       <thead className="w-full">
         <tr className="flex justify-around items-center w-full">
-          <th className="text-2xl w-20 font-normal text-black">Saltos</th>
-          <th className="text-2xl w-52 font-normal text-black">
+          <th className="text-2xl w-20 font-normal text-tertiary">Saltos</th>
+          <th className="text-2xl w-52 font-normal text-tertiary">
             Tiempo de Vuelo
           </th>
           {study.type === "multipleJumps" && (
-            <th className="text-2xl w-52 font-normal text-black">
+            <th className="text-2xl w-52 font-normal text-tertiary">
               Tiempo de Piso
             </th>
           )}
-          <th className="text-2xl w-36 font-normal text-black">Altura</th>
+          <th className="text-2xl w-36 font-normal text-tertiary">Altura</th>
           {study.type === "multipleJumps" && (
             <>
-              <th className="text-2xl w-36 font-normal text-black">
+              <th className="text-2xl w-36 font-normal text-tertiary">
                 Stiffness
               </th>
-              <th className="text-2xl w-36 font-normal text-black">
+              <th className="text-2xl w-36 font-normal text-tertiary">
                 Rendimiento
               </th>
             </>
           )}
-          <th className="text-2xl w-24 font-normal text-black">Eliminar</th>
+          <th className="text-2xl w-24 font-normal text-tertiary">Eliminar</th>
         </tr>
       </thead>
       <tbody
@@ -653,7 +653,7 @@ function TestInProgress({
         </div>
         <p className="self-center text-4xl text-secondary">{t(study.type)}</p>
         {tests.length > 1 && (
-          <p className="self-center text-3xl mt-8 text-black">
+          <p className="self-center text-3xl mt-8 text-tertiary">
             Test {pointer + 1}:{" "}
             <span className="text-secondary">{t(tests[pointer])}</span>
           </p>
@@ -661,7 +661,7 @@ function TestInProgress({
 
         <div className="w-full flex flex-col self-center">
           <p
-            className="mt-16 text-2xl text-black"
+            className="mt-16 text-2xl text-tertiary"
             style={{
               alignSelf: "center",
             }}
@@ -698,7 +698,7 @@ function TestInProgress({
             study.criteria === "time" &&
             status !== "Finalizado" &&
             !status.includes("Error") && (
-              <p className="self-center mt-16 text-2xl text-black ml-48">
+              <p className="self-center mt-16 text-2xl text-tertiary ml-48">
                 <span className="text-secondary font-medium">
                   00:{criteriaValue}
                 </span>{" "}
@@ -709,7 +709,7 @@ function TestInProgress({
             status !== "Finalizado" &&
             study.criteria === "numberOfJumps" &&
             !status.includes("Error") && (
-              <p className="mt-8 text-2xl text-black ml-48">
+              <p className="mt-8 text-2xl text-tertiary ml-48">
                 N° de saltos:{" "}
                 <span className="text-secondary font-medium">
                   {criteriaValue} - {study.criteriaValue}
@@ -745,7 +745,7 @@ function TestInProgress({
                   />
                 </div>
 
-                <p className="self-center text-xl mt-12 text-black">
+                <p className="self-center text-xl mt-12 text-tertiary">
                   Caída de Rendimiento por Fatiga:{" "}
                   <span className="text-secondary font-medium">
                     {performanceDrop?.toFixed(1)}%
@@ -773,7 +773,7 @@ function TestInProgress({
         )}
         {status === "Error" && (
           <>
-            <p className="text-2xl text-black self-center mt-8 ml-48">
+            <p className="text-2xl text-tertiary self-center mt-8 ml-48">
               Ha ocurrido un error, por favor reinicie el test
             </p>
             <OutlinedButton
