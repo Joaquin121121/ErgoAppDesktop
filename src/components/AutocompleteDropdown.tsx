@@ -63,11 +63,18 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
     return item;
   };
 
+  // Helper function to normalize text (remove accents)
+  const normalizeText = (text: string) => {
+    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  };
+
   // Filter items based on input
   useEffect(() => {
     const filtered = data.filter((item) => {
       const displayValue = getDisplayValue(item);
-      return displayValue.toLowerCase().includes(query.toLowerCase());
+      return normalizeText(displayValue.toLowerCase()).includes(
+        normalizeText(query.toLowerCase())
+      );
     });
     setFilteredItems(filtered);
     setSelectedIndex(-1); // Reset selection when filter changes
@@ -90,6 +97,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
       setQuery("");
       setReset(false);
       setSelectedIndex(-1);
+      if (onSelect) onSelect("");
     }
   }, [reset]);
 
@@ -151,6 +159,9 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
 
   useEffect(() => {
     setQuery(initialQuery);
+    if (initialQuery.length === 0) {
+      setReset(true);
+    }
   }, [initialQuery]);
 
   return (
@@ -171,10 +182,12 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
           placeholder={placeholder}
           className={`w-80 p-2 rounded-2xl text-tertiary border border-transparent bg-offWhite pr-10 ${
             inputStyles.input
-          } ${error && inputStyles.focused} ${
-            fastload && lockedFields.includes(field) && "border-lightRed"
-          }`}
+          } ${error && inputStyles.focused}`}
           disabled={disabled}
+          style={{
+            borderColor:
+              lockedFields.includes(field) && !error ? "#FFC1C1" : "",
+          }}
         />
         {!disabled && (
           <img
@@ -213,7 +226,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
       {isOpen && filteredItems.length > 0 && (
         <ul
           ref={listRef}
-          className="absolute z-10 w-full mt-1 max-h-60 overflow-auto bg-white rounded-2xl shadow-sm"
+          className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-white rounded-2xl shadow-sm"
         >
           {filteredItems.map((item, index) => (
             <li

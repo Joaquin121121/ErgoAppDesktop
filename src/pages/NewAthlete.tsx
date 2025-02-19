@@ -14,6 +14,7 @@ import { useSearchParams } from "react-router-dom";
 import { VALIDATION_LIMITS } from "../constants/data";
 import navAnimation from "../styles/animations.module.css";
 import OutlinedButton from "../components/OutlinedButton";
+import { set } from "lodash";
 function NewAthlete({
   isExpanded,
   animation,
@@ -38,6 +39,8 @@ function NewAthlete({
 
   const inputRef = useRef(null);
 
+  const dropDownFields = ["country", "state", "gender", "discipline"];
+
   const [loadedAthletes, setLoadedAthletes] = useState<Athlete[]>([]);
 
   const [errors, setErrors] = useState<Record<keyof Athlete, string>>({
@@ -57,24 +60,39 @@ function NewAthlete({
     completedStudies: "",
   });
 
+  const { saveJson, readDirectoryJsons } = useJsonFiles();
+  const { athlete, setAthlete, resetAthlete } = useStudyContext();
+
   // Store previous values for conversion calculations
   const [prevHeight, setPrevHeight] = useState<string>("");
   const [prevHeightUnit, setPrevHeightUnit] = useState<"cm" | "ft" | "">("");
   const [prevWeightUnit, setPrevWeightUnit] = useState<"kgs" | "lbs" | "">("");
   const [statesList, setStatesList] = useState([]);
-  const [countryReset, setCountryReset] = useState(false);
-  const [stateReset, setStateReset] = useState(false);
-  const [genderReset, setGenderReset] = useState(false);
-  const [disciplineReset, setDisciplineReset] = useState(false);
+
   const [fastLoad, setFastLoad] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [lockedFields, setLockedFields] = useState<string[]>([]);
-  const [athletesToSave, setAthletesToSave] = useState<Athlete[]>([]);
+  const [athletesToSave, setAthletesToSave] = useState<Athlete[]>([athlete]);
   const [currentAthleteIndex, setCurrentAthleteIndex] = useState(0);
   const [fieldsAnimation, setFieldsAnimation] = useState("");
-
-  const { saveJson, readDirectoryJsons } = useJsonFiles();
-  const { athlete, setAthlete, resetAthlete } = useStudyContext();
+  const [initialQueries, setInitialQueries] = useState<
+    Record<keyof Athlete, string>
+  >({
+    country: "",
+    state: "",
+    gender: "",
+    discipline: "",
+    category: "",
+    institution: "",
+    comments: "",
+    completedStudies: "",
+    name: "",
+    birthDate: "",
+    height: "",
+    heightUnit: "",
+    weight: "",
+    weightUnit: "",
+  });
 
   const countries = Country.getAllCountries()
     .map((country) => ({
@@ -91,6 +109,11 @@ function NewAthlete({
     { name: "Otro", isoCode: "O" },
   ];
 
+  const [countryReset, setCountryReset] = useState(false);
+  const [stateReset, setStateReset] = useState(false);
+  const [genderReset, setGenderReset] = useState(false);
+  const [disciplineReset, setDisciplineReset] = useState(false);
+
   const onClose = () => {
     resetAthlete();
     customNavigate("back", "newAthlete", from ? "athletes" : "startTest");
@@ -105,47 +128,239 @@ function NewAthlete({
     }
   };
 
+  const resetErrors = () => {
+    setErrors(
+      Object.keys(errors).reduce((acc, key) => {
+        acc[key] = "";
+        return acc;
+      }, {} as Record<keyof Athlete, string>)
+    );
+  };
+
   const deleteAthlete = () => {
-    if (athletesToSave.length > 0) {
-      setAthletesToSave(athletesToSave.slice(0, -1));
-      setCurrentAthleteIndex(currentAthleteIndex - 1);
+    if (athletesToSave.length > 1) {
+      const newAthletes = [...athletesToSave];
+      newAthletes.splice(currentAthleteIndex, 1);
+      setAthletesToSave(newAthletes);
+      const indexToAccess = currentAthleteIndex - 1;
+      setAthlete(athletesToSave[indexToAccess]);
+      setCurrentAthleteIndex(indexToAccess);
+
+      setFieldsAnimation(navAnimation.fadeOutRight);
+      setTimeout(() => {
+        setFieldsAnimation(navAnimation.fadeInLeft);
+      }, 300);
+      setTimeout(() => {
+        setFieldsAnimation("");
+      }, 600);
     } else {
-      setCountryReset(true);
-      setStateReset(true);
-      setGenderReset(true);
-      setDisciplineReset(true);
+      setInitialQueries({
+        ...initialQueries,
+        country: "",
+        state: "",
+        gender: "",
+        discipline: "",
+      });
       resetAthlete();
     }
   };
 
+  const validateAthlete = (athlete: Athlete): boolean => {
+    if (athlete.name === "") {
+      setErrors({ ...errors, name: "empty" });
+      return false;
+    }
+    if (athlete.country === "") {
+      setErrors({ ...errors, country: "empty" });
+      return false;
+    }
+    if (athlete.state === "" && statesList.length > 0) {
+      setErrors({ ...errors, state: "empty" });
+      return false;
+    }
+    if (athlete.gender === "") {
+      setErrors({ ...errors, gender: "empty" });
+      return false;
+    }
+    if (athlete.height === "") {
+      setErrors({ ...errors, height: "empty" });
+      return false;
+    }
+    if (athlete.weight === "") {
+      setErrors({ ...errors, weight: "empty" });
+      return false;
+    }
+    if (athlete.discipline === "") {
+      setErrors({ ...errors, discipline: "empty" });
+      return false;
+    }
+    if (athlete.category === "") {
+      setErrors({ ...errors, category: "empty" });
+      return false;
+    }
+    if (athlete.institution === "") {
+      setErrors({ ...errors, institution: "empty" });
+      return false;
+    }
+    if (loadedAthletes.some((e) => e.name === athlete.name)) {
+      setErrors({ ...errors, name: "duplicate" });
+      return false;
+    }
+    if (
+      athletesToSave.some(
+        (e, index) => e.name === athlete.name && index !== currentAthleteIndex
+      )
+    ) {
+      setErrors({ ...errors, name: "duplicate" });
+      return false;
+    }
+    return true;
+  };
+
   const onNext = () => {
-    setAthletesToSave([...athletesToSave, athlete]);
-    deleteAthlete();
+    if (!validateAthlete(athlete)) {
+      return;
+    }
+
+    const athleteToSave = { ...athlete };
+    const localAthletesToSave = [...athletesToSave].map((athlete, index) =>
+      index === currentAthleteIndex ? athleteToSave : athlete
+    );
+    if (currentAthleteIndex < athletesToSave.length - 1) {
+      setAthletesToSave(localAthletesToSave);
+      const athleteToAccess = localAthletesToSave[currentAthleteIndex + 1];
+      setAthlete(athleteToAccess);
+
+      setInitialQueries({
+        ...initialQueries,
+        country: countries.find((e) => e.isoCode === athleteToAccess.country)
+          ?.name,
+        state: statesList.find((e) => e.isoCode === athleteToAccess.state)
+          ?.name,
+        gender: genders.find((e) => e.isoCode === athleteToAccess.gender)?.name,
+        discipline: formattedDisciplines.find(
+          (e) => e.id === athleteToAccess.discipline
+        )?.label,
+      });
+
+      setCountryReset(
+        !lockedFields.includes("country") &&
+          athleteToAccess.country.length === 0
+      );
+      setStateReset(
+        !lockedFields.includes("state") && athleteToAccess.state.length === 0
+      );
+      setGenderReset(
+        !lockedFields.includes("gender") && athleteToAccess.gender.length === 0
+      );
+      setDisciplineReset(
+        !lockedFields.includes("discipline") &&
+          athleteToAccess.discipline.length === 0
+      );
+      resetErrors();
+    } else {
+      const resetAthleteState: Athlete = {
+        ...athlete,
+        name: lockedFields.includes("name") ? athlete.name : "",
+        birthDate: lockedFields.includes("birthDate")
+          ? athlete.birthDate
+          : new Date(),
+        country: lockedFields.includes("country") ? athlete.country : "",
+        state:
+          lockedFields.includes("state") && lockedFields.includes("country")
+            ? athlete.state
+            : "",
+        gender: lockedFields.includes("gender") ? athlete.gender : "",
+        height: lockedFields.includes("height") ? athlete.height : "",
+        weight: lockedFields.includes("weight") ? athlete.weight : "",
+        discipline: lockedFields.includes("discipline")
+          ? athlete.discipline
+          : "",
+        category: lockedFields.includes("category") ? athlete.category : "",
+        institution: lockedFields.includes("institution")
+          ? athlete.institution
+          : "",
+        comments: lockedFields.includes("comments") ? athlete.comments : "",
+        completedStudies: lockedFields.includes("completedStudies")
+          ? athlete.completedStudies
+          : [],
+      };
+      setAthletesToSave([...localAthletesToSave, resetAthleteState]);
+      if (!lockedFields.includes("country")) {
+        setLockedFields(lockedFields.filter((e) => e !== "state"));
+      }
+      setAthlete(resetAthleteState);
+      setGenderReset(!lockedFields.includes("gender"));
+
+      setDisciplineReset(!lockedFields.includes("discipline"));
+
+      setCountryReset(!lockedFields.includes("country"));
+      setStateReset(!lockedFields.includes("state"));
+    }
 
     setCurrentAthleteIndex(currentAthleteIndex + 1);
     setFieldsAnimation(navAnimation.fadeOutLeft);
+    resetErrors();
     setTimeout(() => {
       setFieldsAnimation(navAnimation.fadeInRight);
     }, 300);
+    setTimeout(() => {
+      setFieldsAnimation("");
+    }, 600);
   };
 
   const onBack = () => {
-    if (athletesToSave.length === 0) {
+    if (athletesToSave.length === 1 || currentAthleteIndex === 0) {
       return;
     }
-    setCurrentAthleteIndex(currentAthleteIndex - 1);
+    const athleteToSave = { ...athlete };
+    const localAthletesToSave = [...athletesToSave].map((athlete, index) =>
+      index === currentAthleteIndex ? athleteToSave : athlete
+    );
+    setAthletesToSave(localAthletesToSave);
 
+    const indexToAccess = currentAthleteIndex - 1;
+    const athleteToAccess = localAthletesToSave[indexToAccess];
+    setAthlete(athleteToAccess);
+    setInitialQueries({
+      ...initialQueries,
+      country:
+        countries.find((e) => e.isoCode === athleteToAccess.country)?.name ||
+        "",
+      state:
+        statesList.find((e) => e.isoCode === athleteToAccess.state)?.name || "",
+      gender:
+        genders.find((e) => e.isoCode === athleteToAccess.gender)?.name || "",
+      discipline:
+        formattedDisciplines.find((e) => e.id === athleteToAccess.discipline)
+          ?.label || "",
+    });
+    setCountryReset(
+      !lockedFields.includes("country") && athleteToAccess.country.length === 0
+    );
+
+    setStateReset(
+      !lockedFields.includes("state") && athleteToAccess.state.length === 0
+    );
+    setGenderReset(
+      !lockedFields.includes("gender") && athleteToAccess.gender.length === 0
+    );
+    setDisciplineReset(
+      !lockedFields.includes("discipline") &&
+        athleteToAccess.discipline.length === 0
+    );
+
+    setCurrentAthleteIndex(indexToAccess);
+
+    resetErrors();
     setFieldsAnimation(navAnimation.fadeOutRight);
     setTimeout(() => {
       setFieldsAnimation(navAnimation.fadeInLeft);
     }, 300);
+    setTimeout(() => {
+      setFieldsAnimation("");
+    }, 600);
   };
-
-  useEffect(() => {
-    if (countryReset) {
-      setStateReset(true);
-    }
-  }, [countryReset]);
 
   const handleInputChange = (field: keyof Athlete, value: string | Date) => {
     if (field === "name" && typeof value === "string" && /\d/.test(value)) {
@@ -154,7 +369,7 @@ function NewAthlete({
     }
     if (
       field === "height" &&
-      athlete.heightUnit === "ft" &&
+      athlete?.heightUnit === "ft" &&
       typeof value === "string" &&
       value.length > 0
     ) {
@@ -184,7 +399,7 @@ function NewAthlete({
       // Allow the feet/inches format (e.g., "5'11")
       !(
         field === "height" &&
-        athlete.heightUnit === "ft" &&
+        athlete?.heightUnit === "ft" &&
         /^\d'?\d*$/.test(String(value))
       )
     ) {
@@ -192,12 +407,12 @@ function NewAthlete({
     }
 
     if (field === "height" && typeof value === "string" && value !== "") {
-      if (athlete.heightUnit === "cm") {
+      if (athlete?.heightUnit === "cm") {
         const numValue = parseFloat(value);
         if (numValue > VALIDATION_LIMITS.height.cm.max) {
           return;
         }
-      } else if (athlete.heightUnit === "ft") {
+      } else if (athlete?.heightUnit === "ft") {
         const [feet, inches = "0"] = value.split("'");
         const feetNum = parseInt(feet);
         const inchesNum = parseInt(inches);
@@ -220,17 +435,17 @@ function NewAthlete({
     if (field === "weight" && typeof value === "string" && value !== "") {
       const numValue = parseFloat(value);
       const maxValue =
-        VALIDATION_LIMITS.weight[athlete.weightUnit as "kgs" | "lbs"].max;
+        VALIDATION_LIMITS.weight[athlete?.weightUnit as "kgs" | "lbs"]?.max;
       if (numValue > maxValue) {
         return;
       }
     }
 
     if (field === "heightUnit") {
-      setPrevHeightUnit(athlete.heightUnit);
+      setPrevHeightUnit(athlete?.heightUnit);
     }
     if (field === "weightUnit") {
-      setPrevWeightUnit(athlete.weightUnit);
+      setPrevWeightUnit(athlete?.weightUnit);
     }
 
     setAthlete({ ...athlete, [field]: value });
@@ -251,47 +466,7 @@ function NewAthlete({
     }
   };
   const saveAthlete = async () => {
-    if (athlete.name === "") {
-      setErrors({ ...errors, name: "empty" });
-      return;
-    }
-    if (athlete.country === "") {
-      setErrors({ ...errors, country: "empty" });
-      return;
-    }
-    if (athlete.state === "" && statesList.length > 0) {
-      setErrors({ ...errors, state: "empty" });
-      return;
-    }
-    if (athlete.gender === "") {
-      setErrors({ ...errors, gender: "empty" });
-      return;
-    }
-    if (athlete.height === "") {
-      setErrors({ ...errors, height: "empty" });
-      return;
-    }
-    if (athlete.weight === "") {
-      setErrors({ ...errors, weight: "empty" });
-      return;
-    }
-
-    if (athlete.discipline === "") {
-      setErrors({ ...errors, discipline: "empty" });
-      return;
-    }
-    if (athlete.category === "") {
-      setErrors({ ...errors, category: "empty" });
-      return;
-    }
-
-    if (athlete.institution === "") {
-      setErrors({ ...errors, institution: "empty" });
-      return;
-    }
-
-    if (loadedAthletes.some((e) => e.name === athlete.name)) {
-      setErrors({ ...errors, name: "duplicate" });
+    if (!validateAthlete(athlete)) {
       return;
     }
 
@@ -311,30 +486,43 @@ function NewAthlete({
     }
   };
 
+  useEffect(() => {
+    if (athlete?.country.length > 0) {
+      setStatesList(State.getStatesOfCountry(athlete?.country));
+    } else {
+      setStatesList([]);
+      setInitialQueries({ ...initialQueries, state: "" });
+    }
+  }, [athlete?.country]);
+
+  useEffect(() => {
+    onBlurChange(showInfo);
+  }, [showInfo]);
+
   // Auto-format height when typing in feet mode
   useEffect(() => {
     if (
-      athlete.heightUnit === "ft" &&
-      athlete.height.length === 1 &&
+      athlete?.heightUnit === "ft" &&
+      athlete?.height?.length === 1 &&
       prevHeight.length === 0
     ) {
       setAthlete({ ...athlete, height: `${athlete.height}'` });
     }
-    setPrevHeight(athlete.height);
-  }, [athlete.height]);
+    setPrevHeight(athlete?.height || "");
+  }, [athlete?.height]);
 
   // Handle height unit conversion
   useEffect(() => {
-    if (athlete.heightUnit === "ft" && prevHeightUnit === "cm") {
-      const heightNum = parseFloat(athlete.height);
+    if (athlete?.heightUnit === "ft" && prevHeightUnit === "cm") {
+      const heightNum = parseFloat(athlete?.height || "");
       if (!isNaN(heightNum)) {
         const feet = Math.floor(heightNum / 30.48);
         const inches = Math.round((heightNum % 30.48) / 2.54);
         setAthlete({ ...athlete, height: `${feet}'${inches}` });
       }
     }
-    if (athlete.heightUnit === "cm" && prevHeightUnit === "ft") {
-      const [feet, inches = "0"] = athlete.height.split("'");
+    if (athlete?.heightUnit === "cm" && prevHeightUnit === "ft") {
+      const [feet, inches = "0"] = (athlete?.height || "").split("'");
       const feetNum = parseInt(feet);
       const inchesNum = parseInt(inches);
       if (!isNaN(feetNum) && !isNaN(inchesNum)) {
@@ -344,12 +532,12 @@ function NewAthlete({
         setAthlete({ ...athlete, height: newHeight });
       }
     }
-  }, [athlete.heightUnit]);
+  }, [athlete?.heightUnit]);
 
   // Handle weight unit conversion
   useEffect(() => {
-    if (prevWeightUnit === "kgs" && athlete.weightUnit === "lbs") {
-      const weightNum = athlete.weight;
+    if (prevWeightUnit === "kgs" && athlete?.weightUnit === "lbs") {
+      const weightNum = athlete?.weight;
       if (!isNaN(parseFloat(weightNum))) {
         setAthlete({
           ...athlete,
@@ -357,8 +545,8 @@ function NewAthlete({
         });
       }
     }
-    if (prevWeightUnit === "lbs" && athlete.weightUnit === "kgs") {
-      const weightNum = athlete.weight;
+    if (prevWeightUnit === "lbs" && athlete?.weightUnit === "kgs") {
+      const weightNum = athlete?.weight;
       if (!isNaN(parseFloat(weightNum))) {
         setAthlete({
           ...athlete,
@@ -366,36 +554,33 @@ function NewAthlete({
         });
       }
     }
-  }, [athlete.weightUnit]);
+  }, [athlete?.weightUnit]);
 
   useEffect(() => {
     loadAthletes();
   }, []);
 
   useEffect(() => {
-    if (athlete.country.length) {
-      setStatesList(State.getStatesOfCountry(athlete.country));
-      setAthlete({ ...athlete, state: "" });
+    if (countryReset) {
+      setAthlete({ ...athlete, country: "" });
+      setStateReset(true);
+      setStatesList([]);
+      setCountryReset(false);
     }
-  }, [athlete.country]);
-
-  useEffect(() => {
-    if (genderReset) setAthlete({ ...athlete, gender: "" });
-  }, [genderReset]);
-
-  useEffect(() => {
-    if (countryReset) setAthlete({ ...athlete, country: "" });
   }, [countryReset]);
-  useEffect(() => {
-    if (stateReset) setAthlete({ ...athlete, state: "" });
-  }, [stateReset]);
-  useEffect(() => {
-    if (disciplineReset) setAthlete({ ...athlete, discipline: "" });
-  }, [disciplineReset]);
 
   useEffect(() => {
-    onBlurChange(showInfo);
-  }, [showInfo]);
+    if (stateReset) {
+      setAthlete({ ...athlete, state: "" });
+      setStateReset(false);
+    }
+  }, [stateReset]);
+
+  useEffect(() => {
+    console.log({
+      athletesToSave,
+    });
+  }, [athletesToSave]);
 
   return (
     <div
@@ -442,7 +627,7 @@ function NewAthlete({
           Datos del Atleta{" "}
           {fastLoad ? (
             <span className="text-secondary text-2xl text-light ml-4 ">
-              {currentAthleteIndex + 1}/{athletesToSave.length + 1}
+              {currentAthleteIndex + 1}/{athletesToSave.length}
             </span>
           ) : (
             ""
@@ -466,7 +651,7 @@ function NewAthlete({
                 placeholder={
                   t("name").charAt(0).toUpperCase() + t("name").slice(1) + "..."
                 }
-                value={athlete.name}
+                value={athlete?.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
               />
               {fastLoad && (
@@ -503,18 +688,19 @@ function NewAthlete({
               <div
                 className={`bg-offWhite y rounded-2xl flex items-center justify-between w-48 shadow-sm pl-2 pr-1 h-10 text-tertiary border border-transparent  ${
                   inputStyles.input
-                } ${errors.birthDate && inputStyles.focused} ${
-                  lockedFields.includes("birthDate") && "border border-lightRed"
-                }`}
+                } ${errors.birthDate && inputStyles.focused} `}
+                style={{
+                  borderColor: lockedFields.includes("birthDate") && "#FFC1C1",
+                }}
               >
                 <input
                   type="date"
                   ref={inputRef}
                   className={`w-3/5 h-full bg-inherit focus:outline-none  text-tertiary [&::-webkit-calendar-picker-indicator]:hidden $`}
                   value={
-                    athlete.birthDate instanceof Date
+                    athlete?.birthDate instanceof Date
                       ? athlete.birthDate.toISOString().split("T")[0]
-                      : athlete.birthDate
+                      : athlete?.birthDate
                   }
                   onChange={(e) =>
                     handleInputChange("birthDate", e.target.value)
@@ -558,13 +744,13 @@ function NewAthlete({
                 valueKey="isoCode"
                 displayKey="name"
                 reset={countryReset}
-                error={errors.country}
-                setError={(e: string) => setErrors({ ...errors, country: e })}
                 setReset={setCountryReset}
+                initialQuery={initialQueries.country}
+                field="country"
                 fastload={fastLoad}
                 lockedFields={lockedFields}
                 setLockedFields={setLockedFields}
-                field="country"
+                error={errors.country}
               />
             </div>
             {/* State */}
@@ -577,7 +763,7 @@ function NewAthlete({
                     : "Selecciona una provincia/estado"
                 }
                 data={statesList}
-                onSelect={(e) => {
+                onSelect={(e: string) => {
                   setAthlete({ ...athlete, state: e });
                 }}
                 valueKey="isoCode"
@@ -585,12 +771,11 @@ function NewAthlete({
                 disabled={statesList.length === 0}
                 reset={stateReset}
                 setReset={setStateReset}
-                error={errors.state}
-                setError={(e: string) => setErrors({ ...errors, state: e })}
+                field="state"
                 fastload={fastLoad}
                 lockedFields={lockedFields}
                 setLockedFields={setLockedFields}
-                field="state"
+                error={errors.state}
               />
             </div>
 
@@ -607,14 +792,14 @@ function NewAthlete({
                 }}
                 valueKey="isoCode"
                 displayKey="name"
+                initialQuery={initialQueries.gender}
+                field="gender"
                 reset={genderReset}
                 setReset={setGenderReset}
-                error={errors.gender}
-                setError={(e: string) => setErrors({ ...errors, gender: e })}
                 fastload={fastLoad}
                 lockedFields={lockedFields}
                 setLockedFields={setLockedFields}
-                field="gender"
+                error={errors.gender}
               />
             </div>
           </div>
@@ -640,13 +825,13 @@ function NewAthlete({
                     t("height").slice(1) +
                     "..."
                   }
-                  value={athlete.height}
+                  value={athlete?.height}
                   onChange={(e) => handleInputChange("height", e.target.value)}
                 />
                 <button
                   onClick={() => handleInputChange("heightUnit", "cm")}
                   className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light mr-2 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                    athlete.heightUnit === "cm" &&
+                    athlete?.heightUnit === "cm" &&
                     "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                   }`}
                 >
@@ -655,7 +840,7 @@ function NewAthlete({
                 <button
                   onClick={() => handleInputChange("heightUnit", "ft")}
                   className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                    athlete.heightUnit === "ft" &&
+                    athlete?.heightUnit === "ft" &&
                     "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                   }`}
                 >
@@ -697,13 +882,13 @@ function NewAthlete({
                     t("weight").slice(1) +
                     "..."
                   }
-                  value={athlete.weight}
+                  value={athlete?.weight}
                   onChange={(e) => handleInputChange("weight", e.target.value)}
                 />
                 <button
                   onClick={() => handleInputChange("weightUnit", "kgs")}
                   className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light mr-2 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                    athlete.weightUnit === "kgs" &&
+                    athlete?.weightUnit === "kgs" &&
                     "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                   }`}
                 >
@@ -712,7 +897,7 @@ function NewAthlete({
                 <button
                   onClick={() => handleInputChange("weightUnit", "lbs")}
                   className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                    athlete.weightUnit === "lbs" &&
+                    athlete?.weightUnit === "lbs" &&
                     "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                   }`}
                 >
@@ -752,15 +937,13 @@ function NewAthlete({
                 onSelect={(e) => {
                   setAthlete({ ...athlete, discipline: e });
                 }}
-                setError={(e) => {
-                  setErrors({ ...errors, discipline: e });
-                }}
+                initialQuery={initialQueries.discipline}
+                field="discipline"
                 reset={disciplineReset}
                 setReset={setDisciplineReset}
                 fastload={fastLoad}
                 lockedFields={lockedFields}
                 setLockedFields={setLockedFields}
-                field="discipline"
               />
             </div>
 
@@ -781,7 +964,7 @@ function NewAthlete({
                   t("category").slice(1) +
                   "..."
                 }
-                value={athlete.category}
+                value={athlete?.category}
                 onChange={(e) => handleInputChange("category", e.target.value)}
               />
               {fastLoad && (
@@ -821,7 +1004,7 @@ function NewAthlete({
                   t("institution").slice(1) +
                   "..."
                 }
-                value={athlete.institution}
+                value={athlete?.institution}
                 onChange={(e) =>
                   handleInputChange("institution", e.target.value)
                 }
@@ -846,7 +1029,7 @@ function NewAthlete({
           </div>
         </div>{" "}
         <div className={`w-full items-center flex flex-col ${fieldsAnimation}`}>
-          <p className="w-40 text-right self-start mr-8 text-darkGray mt-4">
+          <p className="w-40 text-right self-start mr-8 text-darkGray mt-4 0">
             Comentarios
           </p>
           <textarea
