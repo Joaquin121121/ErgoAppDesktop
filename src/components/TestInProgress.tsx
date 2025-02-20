@@ -623,11 +623,6 @@ function TestInProgress({
   }, [status]);
 
   useEffect(() => {
-    setFlightTimes([0.45, 0.43, 0.44, 0.46, 0.42]);
-    setFloorTimes([0.22, 0.24, 0.23, 0.21, 0.25]);
-  }, []);
-
-  useEffect(() => {
     if (floorTimes.length) {
       finishTest();
     }
@@ -636,14 +631,15 @@ function TestInProgress({
   return (
     <>
       <div
-        className={`bg-white shadow-lg rounded-2xl transition-all duration-300 ease-linear fixed  top-20 flex flex-col items-center px-16 py-8 ${
+        className={`bg-white shadow-lg rounded-2xl transition-all duration-300 ease-linear fixed right-8 flex flex-col items-center px-16 py-8 ${
           (isBlurred || showTable || showChart) && "blur-md pointer-events-none"
-        }`}
-        style={
-          study.type === "multipleJumps"
-            ? { width: "1400px", left: "15%" }
-            : { width: "50%", left: "25%" }
         }
+        `}
+        style={{
+          width: study.type === "multipleJumps" ? "1400px" : "50%",
+          left: study.type === "multipleJumps" ? "5%" : "25%",
+          top: study.type === "multipleJumps" ? "2%" : "12%",
+        }}
       >
         <div
           className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"

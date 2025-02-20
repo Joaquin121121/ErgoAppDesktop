@@ -70,11 +70,11 @@ function StudyInfo({
           {studyInfo.shortDesc}
         </p>
         <p className="ml-8 mt-12 text-xl text-secondary font-medium">Qué es?</p>
-        <p className="ml-8 w-3/5 mt-2 text-tertiary">{studyInfo.longDesc}</p>
+        <p className="ml-8 w-4/5 mt-2 text-tertiary">{studyInfo.longDesc}</p>
         <p className="ml-8 mt-8 text-xl text-secondary font-medium">
           Que dispositivos se utilizan?
         </p>
-        <p className="ml-8 w-3/5 mt-2 text-tertiary">
+        <p className="ml-8 w-4/5 mt-2 text-tertiary">
           Se puede medir utilizando una {studyInfo.equipment[0]}
         </p>
         <p className="ml-8 mt-8 text-xl text-secondary font-medium">
@@ -88,7 +88,7 @@ function StudyInfo({
         <p className="ml-8 mt-8 text-xl text-secondary font-medium">
           Como se aplican los resultados?
         </p>
-        <p className="ml-8 w-3/5 mt-2 text-tertiary">
+        <p className="ml-8 w-4/5 mt-2 text-tertiary">
           {studyInfo.trainingApplications}
         </p>
         <div className="flex w-full justify-around items-center mt-16 mb-8">

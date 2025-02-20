@@ -144,8 +144,8 @@ function CompareTwoStudies({
       default:
         const val1 = Number(study1.results[criterion].toFixed(1));
         const val2 = Number(study2.results[criterion].toFixed(1));
-        if (!isNaN(val1) && !isNaN(val2) && val2 !== 0) {
-          const diff = ((val1 - val2) / val2) * 100;
+        if (!isNaN(val1) && !isNaN(val2) && val2 !== 0 && val1 !== 0) {
+          const diff = ((val2 - val1) / val1) * 100;
           if (diff === 0) {
             return {};
           }

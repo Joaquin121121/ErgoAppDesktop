@@ -638,6 +638,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                   error={errors.country}
                   setError={(e: string) => setErrors({ ...errors, country: e })}
                   setReset={setCountryReset}
+                  field="country"
                 />
               </div>
 
@@ -664,6 +665,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                   setReset={setStateReset}
                   error={errors.state}
                   setError={(e: string) => setErrors({ ...errors, state: e })}
+                  field="state"
                 />
               </div>
               {/* Gender */}
@@ -684,6 +686,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                   setReset={setGenderReset}
                   error={errors.gender}
                   setError={(e: string) => setErrors({ ...errors, gender: e })}
+                  field="gender"
                 />
               </div>
             </div>
@@ -797,6 +800,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                   }}
                   reset={disciplineReset}
                   setReset={setDisciplineReset}
+                  field="discipline"
                 />
               </div>
 
