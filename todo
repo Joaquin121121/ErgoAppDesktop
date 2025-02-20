@@ -1,16 +1,15 @@
 MVP
-    Carga rapida
     Preview en seleccionar atletas
+    Implementar limites de caracteres para prevenir overflow de texto
     Comparar atletas    
     Ver que los toFixed sean consistentes
-    MJ --> % rendimiento los 3 mas altos (graficos)
     Cuando se baja x% de altura de salto, cortar salto. 
     Mostrar grafico en tiempo real y elegir que queres que se muestre (stifness, altura de salto, tiempo de piso)
     Boton de ver video en seccion info
     Que la mina salude cuando la apretes
     Que el logo sea animado
     Perfil Fuerza Velocidad
-    sacar licencia
+    Sacar licencia
     Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
     Testing de precision (implementar sensibilidad?)
 

@@ -33,7 +33,9 @@ function AthleteCard({
       >
         <img src="/delete.png" className="h-8 w-8" alt="" />
       </div>
-      <p className="text-secondary text-2xl self-center">{athlete.name}</p>
+      <p className="text-secondary text-2xl self-center w-[90%]">
+        {athlete.name}
+      </p>
 
       <div className="w-full flex justify-around items-center mb-8">
         <div>

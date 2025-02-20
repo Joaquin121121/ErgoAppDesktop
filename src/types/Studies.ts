@@ -224,6 +224,7 @@ export interface MultipleJumpsResult extends BaseResult {
   performance: number[];
   avgStiffness: number;
   avgPerformance: number;
+  performanceDrop: number;
 }
 
 export interface DropJumpResult extends BaseResult {
@@ -321,6 +322,7 @@ const criterion3 = [
   "avgHeightReached",
   "avgPerformance",
   "avgStiffness",
+  "performanceDrop",
 ];
 
 export const criterionLookup = {

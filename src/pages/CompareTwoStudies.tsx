@@ -79,6 +79,17 @@ function CompareTwoStudies({
     study2: CompletedStudy
   ) => {
     switch (criterion) {
+      case "performanceDrop":
+        return {
+          color:
+            Number(study1.results[criterion].toFixed(1)) ===
+            Number(study2.results[criterion].toFixed(1))
+              ? ""
+              : Number(study1.results[criterion].toFixed(1)) >
+                Number(study2.results[criterion].toFixed(1))
+              ? "#e81d23"
+              : "#00A859",
+        };
       case "takeoffFoot":
         return {};
       case "height":
@@ -117,7 +128,26 @@ function CompareTwoStudies({
     study1: CompletedStudy,
     study2: CompletedStudy
   ) => {
+    if (study1.results[criterion] === 0 || study2.results[criterion] === 0) {
+      return {};
+    }
     switch (criterion) {
+      case "performanceDrop":
+        return {
+          content: `${study1.results[criterion].toFixed(2)}%`,
+          icon:
+            study1.results[criterion] > study2.results[criterion]
+              ? "▲"
+              : study1.results[criterion] < study2.results[criterion]
+              ? "▼"
+              : "",
+          color:
+            study1.results[criterion] < study2.results[criterion]
+              ? "#00A859"
+              : study1.results[criterion] > study2.results[criterion]
+              ? "#e81d23"
+              : "",
+        };
       case "takeoffFoot":
         return {};
       case "height":
@@ -144,7 +174,7 @@ function CompareTwoStudies({
       default:
         const val1 = Number(study1.results[criterion].toFixed(1));
         const val2 = Number(study2.results[criterion].toFixed(1));
-        if (!isNaN(val1) && !isNaN(val2) && val2 !== 0 && val1 !== 0) {
+        if (!isNaN(val1) && !isNaN(val2)) {
           const diff = ((val2 - val1) / val1) * 100;
           if (diff === 0) {
             return {};
@@ -212,6 +242,7 @@ function CompareTwoStudies({
                   {study1.results[`${criterion}Unit`]
                     ? ` ${study1.results[`${criterion}Unit`]}`
                     : ` ${units[criterion] || ""}`}
+                  {criterion === "performanceDrop" && "%"}
                 </div>
               ))}
             </div>
@@ -242,8 +273,10 @@ function CompareTwoStudies({
                   className="w-64 text-2xl flex flex-col items-center"
                   style={compare(criterion, study2, study1)}
                 >
-                  {typeof study2.results[criterion] === "number" &&
-                  study2.results[criterion] !== 0
+                  {criterion === "performanceDrop"
+                    ? study2.results[criterion].toFixed(2) + "%"
+                    : typeof study2.results[criterion] === "number" &&
+                      study2.results[criterion] !== 0
                     ? study2.results[criterion].toFixed(1)
                     : t(study2.results[criterion])}
                   {study2.results[`${criterion}Unit`]

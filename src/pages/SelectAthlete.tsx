@@ -570,7 +570,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
               {/* Name */}
               <div className="flex items-center my-4">
                 <p className="w-40 text-right mr-8 text-darkGray">
-                  {t("name").charAt(0).toUpperCase() + t("name").slice(1)}
+                  Nombre Completo
                 </p>
                 <input
                   type="text"

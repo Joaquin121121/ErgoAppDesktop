@@ -352,6 +352,7 @@ function TestInProgress({
               avgStiffness: data.avgStiffness,
               avgPerformance: data.avgPerformance,
               avgFloorTime: data.avgFloorTime,
+              performanceDrop: performanceDrop,
             }
           : study.type === "dropJump"
           ? {

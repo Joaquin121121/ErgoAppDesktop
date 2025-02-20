@@ -71,5 +71,6 @@
   "right": "Derecho",
   "left": "Izquierdo",
   "avgStiffness": "Stiffness Promedio",
-  "avgPerformance": "Rendimiento Promedio"
+  "avgPerformance": "Rendimiento Promedio",
+  "performanceDrop": "Caída de Rendimiento por Fatiga"
 }

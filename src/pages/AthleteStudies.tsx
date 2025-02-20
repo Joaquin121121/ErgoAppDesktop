@@ -205,7 +205,7 @@ function AthleteStudies({
               <p className="text-3xl text-dark self-center my-10 text-tertiary">
                 Tests Realizados:{" "}
                 <span className="text-secondary font-medium">
-                  {athlete.name}
+                  {athlete.name.split(" ")[0]}
                 </span>
               </p>
 

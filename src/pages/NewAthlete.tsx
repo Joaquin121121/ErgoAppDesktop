@@ -486,6 +486,32 @@ function NewAthlete({
     }
   };
 
+  const saveAll = async () => {
+    if (!validateAthlete(athlete)) {
+      return;
+    }
+
+    const athleteToSave = { ...athlete };
+    const localAthletesToSave = [...athletesToSave].map((athlete, index) =>
+      index === currentAthleteIndex ? athleteToSave : athlete
+    );
+    try {
+      for (const athlete of localAthletesToSave) {
+        const result = await saveJson(
+          `${naturalToCamelCase(athlete.name)}.json`,
+          athlete,
+          "athletes"
+        );
+        console.log(result.message);
+      }
+      customNavigate("back", "newAthlete", from ? "athletes" : "startTest");
+      setTimeout(() => {
+        navigate(from ? "/athletes" : "/startTest");
+      }, 300);
+    } catch (error) {
+      console.log(error);
+    }
+  };
   useEffect(() => {
     if (athlete?.country.length > 0) {
       setStatesList(State.getStatesOfCountry(athlete?.country));
@@ -593,7 +619,7 @@ function NewAthlete({
         }`}
       >
         <div
-          className="mt-4 -mr-4 self-end my-0 p-1 rounded-full bg-lightRed hover:opacity-70 flex justify-center cursor-pointer"
+          className="mt-4 -mr-4 self-end my-0 p-1 rounded-full bg-lightRed hover:opacity-70 flex justify-center cursor-pointer z-50"
           onClick={onClose}
         >
           <img src="/close.png" className="h-10 w-10" alt="close" />
@@ -639,7 +665,7 @@ function NewAthlete({
             {/* Name */}
             <div className="flex items-center my-4">
               <p className="w-40 text-right mr-8 text-darkGray">
-                {t("name").charAt(0).toUpperCase() + t("name").slice(1)}
+                Nombre Completo
               </p>
               <input
                 type="text"
@@ -1057,7 +1083,7 @@ function NewAthlete({
               title="Guardar y Continuar"
               icon="save"
               containerStyles="ml-16"
-              onClick={() => {}}
+              onClick={saveAll}
             />
           </div>
         ) : (
@@ -1075,7 +1101,7 @@ function NewAthlete({
              top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center border border-gray"
         >
           <div
-            className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
+            className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer "
             onClick={() => setShowInfo(false)}
           >
             <img src="/close.png" className="h-6 w-6" alt="Close" />
