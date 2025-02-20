@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ComposedChart,
   Bar,
@@ -12,8 +12,10 @@ import {
 } from "recharts";
 import TonalButton from "./TonalButton";
 import OutlinedButton from "./OutlinedButton";
-import { JumpTime } from "../types/Studies";
+import { JumpTime, units } from "../types/Studies";
 import animations from "../styles/animations.module.css";
+import { useTranslation } from "react-i18next";
+
 function MultipleJumpsChartDisplay({
   setShowChart,
   jumpTimes,
@@ -21,6 +23,7 @@ function MultipleJumpsChartDisplay({
   chartAnimation,
   onClose,
   displayTable,
+  performance,
 }: {
   setShowChart: (show: boolean) => void;
   jumpTimes: JumpTime[];
@@ -28,6 +31,7 @@ function MultipleJumpsChartDisplay({
   chartAnimation: string;
   onClose: () => void;
   displayTable?: () => void;
+  performance: number[];
 }) {
   const validJumpTimes = jumpTimes.filter((e) => !e.deleted);
 
@@ -44,17 +48,32 @@ function MultipleJumpsChartDisplay({
     qIndex: Number((jumpTime.time / jumpTime.floorTime).toFixed(2)),
   }));
 
-  const [buttonText, setButtonText] = useState("Alturas");
-  const [data, setData] = useState<any>(timesData);
+  const { t } = useTranslation();
 
-  const toggleGraph = () => {
-    if (buttonText === "Alturas") {
+  const [data, setData] = useState<any>(timesData);
+  const [displayMetric, setDisplayMetric] = useState<
+    "height" | "time" | "performance"
+  >("time");
+  const performanceData = performance.map(
+    (performance, i) =>
+      !jumpTimes[i].deleted && {
+        index: i,
+        performance: Number(performance.toFixed(2)),
+        qIndex: Number(
+          (validJumpTimes[i].time / validJumpTimes[i].floorTime).toFixed(2)
+        ),
+      }
+  );
+
+  const toggleGraph = (newMetric: "height" | "time" | "performance") => {
+    if (newMetric === "height") {
       setData(heightData);
-      setButtonText("Tiempos");
-    } else {
+    } else if (newMetric === "time") {
       setData(timesData);
-      setButtonText("Alturas");
+    } else {
+      setData(performanceData);
     }
+    setDisplayMetric(newMetric);
   };
 
   return (
@@ -68,15 +87,40 @@ function MultipleJumpsChartDisplay({
       >
         <img src="/close.png" className="h-6 w-6" alt="Close" />
       </div>
-      <div className="w-1/2 flex items-center justify-center">
+      <div className="w-3/4 flex items-center justify-center">
         <p className="text-3xl text-secondary mr-16 ">
-          Gráfico de {buttonText === "Alturas" ? "Tiempos" : "Alturas"}
+          Gráfico de {t(displayMetric)}
+          {` (${units[displayMetric]})`}
         </p>
-        <TonalButton
-          title={"Ver " + buttonText}
-          onClick={toggleGraph}
-          icon="studies"
-        />
+        <button
+          onClick={() => toggleGraph("height")}
+          className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-2 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+            displayMetric === "height" &&
+            "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+          }`}
+        >
+          Ver Alturas
+        </button>
+        <button
+          onClick={() => toggleGraph("time")}
+          className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-2 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+            displayMetric === "time" &&
+            "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+          }`}
+        >
+          Ver Tiempos
+        </button>
+        {performance.length > 0 && (
+          <button
+            onClick={() => toggleGraph("performance")}
+            className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-2 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+              displayMetric === "performance" &&
+              "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+            }`}
+          >
+            Ver Rendimiento
+          </button>
+        )}
       </div>
       <div className="w-full" style={{ height: "600px" }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -96,7 +140,12 @@ function MultipleJumpsChartDisplay({
             <YAxis
               yAxisId="left"
               label={{
-                value: buttonText === "Alturas" ? "Tiempo (s)" : "Altura (cm)",
+                value:
+                  displayMetric === "time"
+                    ? "Tiempo (s)"
+                    : displayMetric === "height"
+                    ? "Altura (cm)"
+                    : "Rendimiento (%)",
                 angle: -90,
                 position: "insideLeft",
               }}
@@ -130,7 +179,7 @@ function MultipleJumpsChartDisplay({
               layout="horizontal"
               align="center"
             />
-            {buttonText === "Alturas" ? (
+            {displayMetric === "time" ? (
               <>
                 <Bar
                   yAxisId="left"
@@ -138,6 +187,8 @@ function MultipleJumpsChartDisplay({
                   fill="#e81d23"
                   name="Tiempo de Vuelo"
                   barSize={20}
+                  animationDuration={500}
+                  animationEasing="ease"
                 />
                 <Bar
                   yAxisId="left"
@@ -145,15 +196,29 @@ function MultipleJumpsChartDisplay({
                   fill="#FFC1C1"
                   name="Tiempo de Piso"
                   barSize={20}
+                  animationDuration={500}
+                  animationEasing="ease"
                 />
               </>
-            ) : (
+            ) : displayMetric === "height" ? (
               <Bar
                 yAxisId="left"
                 dataKey="height"
                 fill="#e81d23"
                 name="Altura"
                 barSize={20}
+                animationDuration={500}
+                animationEasing="ease"
+              />
+            ) : (
+              <Bar
+                yAxisId="left"
+                dataKey="performance"
+                fill="#e81d23"
+                name="Rendimiento"
+                barSize={20}
+                animationDuration={500}
+                animationEasing="ease"
               />
             )}
             <Line

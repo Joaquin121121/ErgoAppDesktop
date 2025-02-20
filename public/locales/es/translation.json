@@ -6,7 +6,6 @@
   "birthDate": "fecha de nacimiento",
   "country": "país",
   "state": "Provincia/Estado",
-  "height": "Altura",
   "heightUnit": "unidad de altura",
   "weight": "peso",
   "weightUnit": "unidad de peso",
@@ -62,7 +61,7 @@
   "jumpingAthletics": "Atletismo Salto",
   "numberOfJumps": "N° de saltos",
   "stiffness": "Stiffness",
-  "time": "Tiempo (s)",
+  "time": "Tiempo",
   "load": "Carga",
   "avgFlightTime": "Vuelo Promedio",
   "avgHeightReached": "Altura Promedio",
@@ -72,5 +71,8 @@
   "left": "Izquierdo",
   "avgStiffness": "Stiffness Promedio",
   "avgPerformance": "Rendimiento Promedio",
-  "performanceDrop": "Caída de Rendimiento por Fatiga"
+  "performanceDrop": "Caída de Rendimiento por Fatiga",
+  "performance": "Rendimiento",
+  "qIndex": "Q-Index",
+  "height": "Altura"
 }

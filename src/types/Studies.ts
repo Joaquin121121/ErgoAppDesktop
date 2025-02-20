@@ -262,6 +262,8 @@ export const units = {
   stiffness: "N/m",
   avgPerformance: "%",
   performance: "%",
+  time: "s",
+  height: "cm",
 };
 
 export const studyInfoLookup = {
@@ -325,12 +327,14 @@ const criterion3 = [
   "performanceDrop",
 ];
 
+const criterion4 = ["takeoffFoot", "avgFlightTime", "avgHeightReached"];
+
 export const criterionLookup = {
   cmj: criterion1,
   squatJump: criterion1,
   abalakov: criterion1,
   dropJump: criterion2,
-  bosco: criterion1,
+  bosco: criterion4,
   multipleJumps: criterion3,
 } satisfies Record<keyof Studies, string[]>;
 

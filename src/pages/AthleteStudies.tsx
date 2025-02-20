@@ -160,7 +160,7 @@ function AthleteStudies({
           {comparing ? (
             <>
               <p className="text-3xl text-dark self-center my-10 text-tertiary">
-                Selecciona los tests a comparar
+                Seleccione los tests a comparar
               </p>
               <TonalButton
                 icon="closeWhite"
@@ -238,6 +238,7 @@ function AthleteStudies({
                     handleStudySelection(key);
                   }}
                   cardStyles={cardStyles[key]}
+                  comparing={comparing}
                 />
               );
             })}

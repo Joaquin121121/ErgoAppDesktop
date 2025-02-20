@@ -8,6 +8,8 @@ type AthleteCardProps = {
   height?: number;
   width?: number;
   onDelete: (study: string) => void;
+  selected: boolean;
+  comparing: boolean;
 };
 
 function AthleteCard({
@@ -16,23 +18,31 @@ function AthleteCard({
   height,
   width,
   onDelete,
+  selected,
+  comparing,
 }: AthleteCardProps) {
   const { t } = useTranslation();
   return (
     <div
-      className={`bg-white rounded-2xl shadow-sm hover:shadow-xl flex relative flex-col hover:scale-105 hover:cursor-pointer transition-transform active:opacity-70 duration-300 ease-in-out px-4 pt-4 `}
-      style={{ width: width || "auto", height: height || "auto" }}
+      className={`bg-white rounded-2xl shadow-sm hover:shadow-xl flex relative flex-col hover:scale-105 hover:cursor-pointer transition-transform active:opacity-70 duration-300 ease-in-out px-4 pt-4 border border-transparent `}
+      style={{
+        width: width || "auto",
+        height: height || "auto",
+        borderColor: selected ? "#E81D23" : "transparent",
+      }}
       onClick={onClick}
     >
-      <div
-        className="flex absolute right-2 top-2 hover:opacity-70 hover:cursor-pointer px-2 pb-4 z-10"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(athlete.name);
-        }}
-      >
-        <img src="/delete.png" className="h-8 w-8" alt="" />
-      </div>
+      {!comparing && (
+        <div
+          className="flex absolute right-2 top-2 hover:opacity-70 hover:cursor-pointer px-2 pb-4 z-10"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(athlete.name);
+          }}
+        >
+          <img src="/delete.png" className="h-8 w-8" alt="" />
+        </div>
+      )}
       <p className="text-secondary text-2xl self-center w-[90%]">
         {athlete.name}
       </p>

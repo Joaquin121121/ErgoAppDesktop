@@ -661,6 +661,7 @@ function CompletedStudyInfo({
           onClose={onCloseChart}
           chartAnimation={chartAnimation}
           displayTable={displayTable}
+          performance={performance}
         />
       )}
     </>

@@ -25,6 +25,9 @@ import StudyInfo from "./pages/StudyInfo";
 import CompletedStudyInfo from "./pages/CompletedStudyInfo";
 import CompareTwoStudies from "./pages/CompareTwoStudies";
 import CompareThreeStudies from "./pages/CompareThreeStudies";
+import CompareTwoAthletes from "./pages/CompareTwoAthletes";
+import { AthleteComparisonProvider } from "./contexts/AthleteComparisonContext";
+
 const Layout = ({
   children,
   isBlurred = false,
@@ -129,6 +132,7 @@ function App() {
     "completedStudyInfo",
     "compareTwoStudies",
     "compareThreeStudies",
+    "compareTwoAthletes",
   ] as const;
   const [animations, setAnimations] = useState(
     Object.fromEntries(keys.map((key) => [key, ""]))
@@ -267,6 +271,14 @@ function App() {
         onBlurChange={setIsBlurred}
       />
     ),
+    compareTwoAthletes: (
+      <CompareTwoAthletes
+        isExpanded={isExpanded}
+        animation={animations.compareTwoAthletes}
+        customNavigate={customNavigate}
+        onBlurChange={setIsBlurred}
+      />
+    ),
   } as const;
 
   useEffect(() => {
@@ -291,76 +303,82 @@ function App() {
   }, []);
 
   return (
-    <UserProvider>
-      <HashRouter>
-        {isMaximized ? (
-          <Layout
-            isBlurred={isBlurred}
-            isExpanded={isExpanded}
-            setIsExpanded={setIsExpanded}
-            resetAnimations={resetAnimations}
-            selectedOption={selectedOption}
-            setSelectedOption={setSelectedOption}
-          >
-            <UpdateChecker
-              showUpdate={showUpdate}
-              setShowUpdate={setShowUpdate}
-            />
-            {isBlockingClicks && (
-              <div
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  width: "100vw",
-                  height: "100vh",
-                  background: "transparent",
-                  zIndex: 9999,
-                }}
+    <AthleteComparisonProvider>
+      <UserProvider>
+        <HashRouter>
+          {isMaximized ? (
+            <Layout
+              isBlurred={isBlurred}
+              isExpanded={isExpanded}
+              setIsExpanded={setIsExpanded}
+              resetAnimations={resetAnimations}
+              selectedOption={selectedOption}
+              setSelectedOption={setSelectedOption}
+            >
+              <UpdateChecker
+                showUpdate={showUpdate}
+                setShowUpdate={setShowUpdate}
               />
-            )}
+              {isBlockingClicks && (
+                <div
+                  style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    width: "100vw",
+                    height: "100vh",
+                    background: "transparent",
+                    zIndex: 9999,
+                  }}
+                />
+              )}
 
-            <Routes>
-              <Route path="/" element={pages.studies} />
-              <Route path="/studies" element={pages.studies} />
-              <Route path="/athletes" element={pages.athletes} />
-              <Route path="/about" element={pages.about} />
-              <Route path="/startTest" element={pages.startTest} />
-              <Route path="/newTest" element={pages.newTest} />
-              <Route path="/selectAthlete" element={pages.selectAthlete} />
-              <Route path="/newAthlete" element={pages.newAthlete} />
-              <Route path="/athleteStudies" element={pages.athleteStudies} />
-              <Route path="/studyInfo" element={pages.studyInfo} />
-              <Route
-                path="/completedStudyInfo"
-                element={pages.completedStudyInfo}
-              />
-              <Route
-                path="/compareTwoStudies"
-                element={pages.compareTwoStudies}
-              />
-              <Route
-                path="/compareThreeStudies"
-                element={pages.compareThreeStudies}
-              />
-              <Route path="*" element={pages.notFound} />
-            </Routes>
-          </Layout>
-        ) : (
-          <div className="w-[100vw] h-[100vh] flex flex-col items-center justify-center bg-secondary overflow-hidden">
-            <img className="w-1/2 h-1/2 object-contain" src="/splash.png" />
-            {/* <OutlinedButton
-            title="Maximizar Ventana"
-            onClick={expandScreen}
-            icon="expand"
-          /> */}
-            <p className="text-2xl text-offWhite mt-8">
-              Maximice la ventana para usar la app
-            </p>
-          </div>
-        )}
-      </HashRouter>
-    </UserProvider>
+              <Routes>
+                <Route path="/" element={pages.studies} />
+                <Route path="/studies" element={pages.studies} />
+                <Route path="/athletes" element={pages.athletes} />
+                <Route path="/about" element={pages.about} />
+                <Route path="/startTest" element={pages.startTest} />
+                <Route path="/newTest" element={pages.newTest} />
+                <Route path="/selectAthlete" element={pages.selectAthlete} />
+                <Route path="/newAthlete" element={pages.newAthlete} />
+                <Route path="/athleteStudies" element={pages.athleteStudies} />
+                <Route path="/studyInfo" element={pages.studyInfo} />
+                <Route
+                  path="/completedStudyInfo"
+                  element={pages.completedStudyInfo}
+                />
+                <Route
+                  path="/compareTwoStudies"
+                  element={pages.compareTwoStudies}
+                />
+                <Route
+                  path="/compareThreeStudies"
+                  element={pages.compareThreeStudies}
+                />
+                <Route
+                  path="/compareTwoAthletes"
+                  element={pages.compareTwoAthletes}
+                />
+                <Route path="*" element={pages.notFound} />
+              </Routes>
+            </Layout>
+          ) : (
+            <div className="w-[100vw] h-[100vh] flex flex-col items-center justify-center bg-secondary overflow-hidden">
+              <img className="w-1/2 h-1/2 object-contain" src="/splash.png" />
+              {/* <OutlinedButton
+              title="Maximizar Ventana"
+              onClick={expandScreen}
+              icon="expand"
+            /> */}
+              <p className="text-2xl text-offWhite mt-8">
+                Maximice la ventana para usar la app
+              </p>
+            </div>
+          )}
+        </HashRouter>
+      </UserProvider>
+    </AthleteComparisonProvider>
   );
 }
 

@@ -12,6 +12,7 @@ type CompletedStudyCardProps = {
   onDelete: (date: Date) => void;
   cardStyles?: string;
   disabled?: boolean;
+  comparing?: boolean;
 };
 
 function CompletedStudyCard({
@@ -22,6 +23,7 @@ function CompletedStudyCard({
   onDelete,
   cardStyles,
   disabled,
+  comparing,
 }: CompletedStudyCardProps) {
   const { t } = useTranslation();
 
@@ -44,15 +46,17 @@ function CompletedStudyCard({
       style={{ width: width || "auto", height: height || "auto" }}
       onClick={onClick}
     >
-      <div
-        className="flex absolute right-2 top-2 hover:opacity-70 hover:cursor-pointer px-2 pb-4 z-10"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(study.date);
-        }}
-      >
-        <img src="/delete.png" className="h-8 w-8" alt="" />
-      </div>
+      {!comparing && (
+        <div
+          className="flex absolute right-2 top-2 hover:opacity-70 hover:cursor-pointer px-2 pb-4 z-10"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(study.date);
+          }}
+        >
+          <img src="/delete.png" className="h-8 w-8" alt="" />
+        </div>
+      )}
       <p className="text-darkGray absolute top-2 left-2">
         {formatDate(study.date)}
       </p>

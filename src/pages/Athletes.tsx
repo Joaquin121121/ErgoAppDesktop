@@ -10,7 +10,7 @@ import { naturalToCamelCase } from "../utils/utils";
 import { useNavigate } from "react-router-dom";
 import AthleteFilter from "../components/AthleteFilter";
 import { athleteAgeRanges } from "../types/Athletes";
-
+import { useAthleteComparison } from "../contexts/AthleteComparisonContext";
 // New interface for filter state
 interface FilterState {
   age: string[];
@@ -47,6 +47,8 @@ function Athletes({
     discipline: [],
   });
 
+  const [keyToCompare, setKeyToCompare] = useState("");
+
   const navigate = useNavigate();
 
   const user = {
@@ -58,11 +60,13 @@ function Athletes({
   const [filteredAthletes, setFilteredAthletes] = useState<[string, Athlete][]>(
     []
   );
+  const [comparing, setComparing] = useState(false);
   const [athleteToDelete, setAthleteToDelete] = useState("");
 
   const { readDirectoryJsons, deleteJson } = useJsonFiles();
   const { resetAthlete, setAthlete } = useStudyContext();
   const filterButtonRef = useRef(null);
+  const { setAthleteToCompare1, setAthleteToCompare2 } = useAthleteComparison();
 
   // Updated validation function to handle multiple criteria
   const validateAthlete = (athlete: Athlete): boolean => {
@@ -124,7 +128,33 @@ function Athletes({
     }, 300);
   };
 
+  const compare = (key1: string, key2: string) => {
+    setAthleteToCompare1(
+      loadedAthletes.find((athlete) => athlete[0] === key1)?.[1]
+    );
+    setAthleteToCompare2(
+      loadedAthletes.find((athlete) => athlete[0] === key2)?.[1]
+    );
+    customNavigate("forward", "athletes", "compareTwoAthletes");
+    setTimeout(() => {
+      navigate("/compareTwoAthletes");
+    }, 300);
+  };
+
   const onClick = (key: string) => {
+    if (comparing) {
+      if (keyToCompare.length > 0) {
+        if (keyToCompare === key) {
+          setKeyToCompare("");
+        } else {
+          compare(keyToCompare, key);
+        }
+      } else {
+        setKeyToCompare(key);
+      }
+      return;
+    }
+
     const athlete = loadedAthletes.find((athlete) => athlete[0] === key);
     if (athlete) {
       setAthlete(athlete[1]);
@@ -213,36 +243,65 @@ function Athletes({
           <h1 className="pt-2">Hola Profe!</h1>
           <img src="/hand.png" className="h-16 w-16 ml-12" />
         </div>
-        <div className="self-end w-3/4 flex items-center">
-          <div
-            className={`w-3/5 h-16 rounded-2xl bg-white shadow-sm flex items-center mt-12 px-4 mb-12 ${
-              searchBarFocus && inputStyles.focused
-            }`}
-          >
-            <img src="/search.png" alt="Buscar" className="h-8 w-8 mr-8" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 h-full focus:outline-none text-lg bg-white text-darkGray"
-              onFocus={() => setSearchBarFocus(true)}
-              onBlur={() => setSearchBarFocus(false)}
-              placeholder="Buscar atleta..."
-            />
-          </div>
-          <OutlinedButton
-            title="Filtrar"
-            onClick={handleFilter}
-            containerStyles="ml-8"
-            icon="filter"
-            ref={filterButtonRef}
-          />
-          <TonalButton
-            title="Nuevo Atleta"
-            onClick={createAthlete}
-            containerStyles="ml-8"
-            icon="add"
-          />
+        <div className="w-4/5  flex items-center justify-center">
+          {comparing ? (
+            <div className="flex items-center justify-center h-40  ">
+              <div className="w-40"></div>
+              <p className="text-3xl text-dark self-center text-tertiary">
+                Seleccione los atletas a comparar
+              </p>
+              <TonalButton
+                title="Cancelar"
+                onClick={() => {
+                  setComparing(false);
+                  setKeyToCompare("");
+                }}
+                containerStyles="ml-16"
+                icon="closeWhite"
+              />
+            </div>
+          ) : (
+            <>
+              <TonalButton
+                title="Nuevo Atleta"
+                onClick={createAthlete}
+                containerStyles="mr-16"
+                icon="add"
+              />
+              <div
+                className={`w-1/2 h-16 rounded-2xl bg-white shadow-sm flex items-center mt-12 px-4 mb-12 ${
+                  searchBarFocus && inputStyles.focused
+                }`}
+              >
+                <img src="/search.png" alt="Buscar" className="h-8 w-8 mr-8" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 h-full focus:outline-none text-lg bg-white text-darkGray"
+                  onFocus={() => setSearchBarFocus(true)}
+                  onBlur={() => setSearchBarFocus(false)}
+                  placeholder="Buscar atleta..."
+                />
+              </div>
+              <OutlinedButton
+                title="Filtrar"
+                onClick={handleFilter}
+                containerStyles="ml-8"
+                icon="filter"
+                ref={filterButtonRef}
+              />
+              <TonalButton
+                title="Comparar"
+                onClick={() => {
+                  setComparing(true);
+                }}
+                containerStyles="ml-8"
+                icon="compare"
+              />
+            </>
+          )}
+
           {Object.values(selectedFilters).some(
             (value) => Array.isArray(value) && value.length > 0
           ) && (
@@ -270,6 +329,8 @@ function Athletes({
                 onClick(key);
               }}
               onDelete={(name) => setAthleteToDelete(name)}
+              selected={keyToCompare === key}
+              comparing={comparing}
             />
           ))}
         </div>

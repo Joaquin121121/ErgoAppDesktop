@@ -250,6 +250,17 @@ function TestInProgress({
 
   const nextTest = () => {
     setJumpTimes([]);
+    setFlightTimes([]);
+    setFloorTimes([]);
+    setPerformance([]);
+    setStiffness([]);
+    setData({
+      avgFlightTime: 0,
+      avgHeightReached: 0,
+      avgFloorTime: 0,
+      avgPerformance: 0,
+      avgStiffness: 0,
+    });
     setPointer(pointer + 1);
     setStatus("Súbase a la alfombra");
   };
@@ -282,7 +293,10 @@ function TestInProgress({
         ...boscoResults,
         [tests[pointer]]: {
           avgFlightTime: avgFlightTime,
-          heightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
+          avgHeightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
+          takeoffFoot: "both",
+          jumpTimes: localJumpTimes,
+          type: tests[pointer],
         },
       });
     }
@@ -332,7 +346,7 @@ function TestInProgress({
       return;
     }
     const studyToSave: CompletedStudy = {
-      studyInfo: studyInfoLookup[naturalToCamelCase(study.name)],
+      studyInfo: studyInfoLookup[study.type],
       date: new Date(),
       results:
         study.type === "bosco"
@@ -623,12 +637,6 @@ function TestInProgress({
     }
   }, [status]);
 
-  useEffect(() => {
-    if (floorTimes.length) {
-      finishTest();
-    }
-  }, [floorTimes]);
-
   return (
     <>
       <div
@@ -828,6 +836,7 @@ function TestInProgress({
           onClose={onCloseChart}
           displayTable={displayTable}
           chartAnimation={chartAnimation}
+          performance={performance}
         />
       )}
     </>

@@ -1,6 +1,4 @@
 MVP
-    Preview en seleccionar atletas
-    Implementar limites de caracteres para prevenir overflow de texto
     Comparar atletas    
     Ver que los toFixed sean consistentes
     Cuando se baja x% de altura de salto, cortar salto. 
@@ -13,7 +11,7 @@ MVP
     Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
     Testing de precision (implementar sensibilidad?)
 
-    
+Preview en seleccionar atletas quizas
 Implementar resumen BOSCO test pre-guardar (despues)
 Personalizar menu de instalacion
 Implementar registro, login, persistencia de sesión

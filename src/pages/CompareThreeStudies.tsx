@@ -17,6 +17,7 @@ import { formatDate } from "../utils/utils";
 import ComparisonChartDisplay from "../components/ComparisonChartDisplay";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
+import BoscoComparisonChart from "../components/BoscoComparisonChart";
 
 function CompareThreeStudies({
   isExpanded,
@@ -88,6 +89,9 @@ function CompareThreeStudies({
     study1: CMJResult | SquatJumpResult | AbalakovResult,
     study2: CMJResult | SquatJumpResult | AbalakovResult
   ) => {
+    console.log("criterion", criterion);
+    console.log("study1", study1);
+    console.log("study2", study2);
     switch (criterion) {
       case "takeoffFoot":
         return {};
@@ -128,7 +132,7 @@ function CompareThreeStudies({
             <div className="flex flex-col gap-y-12">
               <div className="w-56 h-16"></div>
 
-              {criterionLookup["squatJump"].map((criterion) => (
+              {criterionLookup["bosco"].map((criterion) => (
                 <div key={criterion} className="w-56 text-2xl">
                   {t(criterion)}
                 </div>
@@ -142,7 +146,7 @@ function CompareThreeStudies({
                 </span>
               </div>
 
-              {criterionLookup["squatJump"].map((criterion) => (
+              {criterionLookup["bosco"].map((criterion) => (
                 <div
                   key={criterion}
                   className="w-56 text-2xl flex flex-col items-center"
@@ -167,7 +171,7 @@ function CompareThreeStudies({
                 </span>
               </div>
 
-              {criterionLookup["cmj"].map((criterion) => (
+              {criterionLookup["bosco"].map((criterion) => (
                 <div
                   key={criterion}
                   className="w-56 text-2xl flex flex-col items-center"
@@ -189,7 +193,7 @@ function CompareThreeStudies({
                   {formatDate(study.date)}
                 </span>
               </div>
-              {criterionLookup["abalakov"].map((criterion) => (
+              {criterionLookup["bosco"].map((criterion) => (
                 <div
                   key={criterion}
                   className="w-56 text-2xl flex flex-col items-center"
@@ -222,11 +226,13 @@ function CompareThreeStudies({
         </div>
       </div>
       {showChart && (
-        <ComparisonChartDisplay
-          jumpTimesA={squatJump.times}
-          jumpTimesB={cmj.times}
-          jumpTimesC={abalakov.times}
-          setShowChart={setShowChart}
+        <BoscoComparisonChart
+          avgHeightReachedA={squatJump.avgHeightReached}
+          avgHeightReachedB={cmj.avgHeightReached}
+          avgHeightReachedC={abalakov.avgHeightReached}
+          avgFlightTimeA={squatJump.avgFlightTime}
+          avgFlightTimeB={cmj.avgFlightTime}
+          avgFlightTimeC={abalakov.avgFlightTime}
           chartAnimation={chartAnimation}
           onClose={onCloseChart}
           type1="squatJump"

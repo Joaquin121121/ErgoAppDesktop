@@ -74,6 +74,7 @@ function AthleteFilter({
               }
               placeholder="Selecciona una disciplina"
               displayKey="label"
+              field="discipline"
             />
             {selectedFilters.discipline.map((filterId) => (
               <button
