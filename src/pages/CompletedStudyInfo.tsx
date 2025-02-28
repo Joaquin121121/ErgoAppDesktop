@@ -443,6 +443,7 @@ function CompletedStudyInfo({
 
   useEffect(() => {
     const originalTimes = boscoStudy ? study.times : study.results.times;
+    console.log("Study: ", study);
     setJumpTimes(originalTimes);
 
     setData(

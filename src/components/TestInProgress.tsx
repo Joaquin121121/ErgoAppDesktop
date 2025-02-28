@@ -295,7 +295,7 @@ function TestInProgress({
           avgFlightTime: avgFlightTime,
           avgHeightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
           takeoffFoot: "both",
-          jumpTimes: localJumpTimes,
+          times: localJumpTimes,
           type: tests[pointer],
         },
       });
@@ -345,6 +345,17 @@ function TestInProgress({
       setIsBlurred(true);
       return;
     }
+    if (study.type === "bosco") {
+      setBoscoResults({
+        ...boscoResults,
+        [tests[pointer]]: {
+          ...boscoResults[tests[pointer]],
+          avgFlightTime: data.avgFlightTime,
+          avgHeightReached: ((9.81 * data.avgFlightTime ** 2) / 8) * 100,
+          times: jumpTimes,
+        },
+      });
+    }
     const studyToSave: CompletedStudy = {
       studyInfo: studyInfoLookup[study.type],
       date: new Date(),
@@ -391,7 +402,6 @@ function TestInProgress({
             },
     };
 
-    console.log(studyToSave);
     try {
       const result = await saveJson(
         `${naturalToCamelCase(athlete.name)}.json`,
