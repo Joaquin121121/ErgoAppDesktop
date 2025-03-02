@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { genders, athleteAgeRanges } from "../types/Athletes";
 import { formattedDisciplines } from "../constants/data";
@@ -26,6 +26,28 @@ function AthleteFilter({
   resetFilters,
 }: AthleteFilterProps) {
   const { t } = useTranslation();
+
+  // Add DEL key event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const parseLabel = (id: string | number, criterion: keyof FilterState) => {
     const stringId = id.toString();
@@ -111,7 +133,7 @@ function AthleteFilter({
 
   return (
     <div
-      className="bg-white shadow-sm z-50 rounded-2xl p-8 mx-auto fixed top-[15%] right-[12%] flex flex-col"
+      className="bg-white shadow-sm z-50 rounded-2xl p-8 mx-auto fixed top-[5%] right-[12%] flex flex-col"
       style={{ minWidth: "75%" }}
     >
       <div

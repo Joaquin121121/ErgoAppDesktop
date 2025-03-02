@@ -251,13 +251,19 @@ function Athletes({
                 Seleccione los atletas a comparar
               </p>
               <TonalButton
+                title="Comparacion Múltiple"
+                onClick={() => {}}
+                containerStyles="ml-16"
+                icon="compare"
+              />
+              <OutlinedButton
                 title="Cancelar"
                 onClick={() => {
                   setComparing(false);
                   setKeyToCompare("");
                 }}
                 containerStyles="ml-16"
-                icon="closeWhite"
+                icon="close"
               />
             </div>
           ) : (

@@ -7,6 +7,7 @@ import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import availableStudies from "../types/Studies";
 import { useStudyContext } from "../contexts/StudyContext";
+
 function StudyInfo({
   onBlurChange,
   isExpanded,
@@ -46,6 +47,28 @@ function StudyInfo({
       navigate("/startTest");
     }, 300);
   };
+
+  // Add DEL key event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
     <div

@@ -71,7 +71,7 @@ function AthleteCard({
         <img
           src={athlete.gender === "F" ? "/emily.png" : "/roger.png"}
           alt=""
-          className="h-28 w-28 rounded-full overflow-hidden"
+          className="h-20 w-20 rounded-full overflow-hidden"
         />
       </div>
     </div>

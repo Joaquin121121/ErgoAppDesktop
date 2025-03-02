@@ -1,18 +1,26 @@
 MVP
-    Comparar atletas    
-    Ver que los toFixed sean consistentes
-    Cuando se baja x% de altura de salto, cortar salto. 
-    Mostrar grafico en tiempo real y elegir que queres que se muestre (stifness, altura de salto, tiempo de piso)
-    Boton de ver video en seccion info
-    Que la mina salude cuando la apretes
-    Que el logo sea animado
-    Perfil Fuerza Velocidad
-    Sacar licencia
-    Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
-    Testing de precision (implementar sensibilidad?)
+Comparar atletas  
+ Ver que los toFixed sean consistentes
+Cuando se baja x% de altura de salto, cortar salto.
+Mostrar grafico en tiempo real y elegir que queres que se muestre (stifness, altura de salto, tiempo de piso)
+Boton de ver video en seccion info
+Que la mina salude cuando la apretes
+Que el logo sea animado
+Perfil Fuerza Velocidad
+Sacar licencia
+Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
+Testing de precision (implementar sensibilidad?)
 
 Preview en seleccionar atletas quizas
 Implementar resumen BOSCO test pre-guardar (despues)
 Personalizar menu de instalacion
 Implementar registro, login, persistencia de sesión
 Implementar estudios en nube (boton de sincronizar ErgoSync, automatico si se detecta conexion a internet)
+Implementar menu de atletas
+Cuando haces click en un test, mostrar un preview con las soluciones de entrenamiento inferidas de ese test
+Probar como queda poner Tests y Atletas en menus con iconos
+Fotos de personaje mas chicas
+Añadir institucion y categoria en filtro de atletas
+
+Implementar creacion de planes (tipo de plan (intervalos, circuitos, junto con video, opcion de incluir encuesta post de nivel de dificultad))
+Ver https://www.trainerize.com/independent-trainers/

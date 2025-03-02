@@ -13,10 +13,6 @@ import inputStyles from "../styles/inputStyles.module.css";
 import { availableEquipment } from "../types/Studies";
 import ReusableFilter from "../components/ReusableFilter";
 import { useUser } from "../contexts/UserContext";
-import HandleUpdate from "../components/HandleUpdate";
-import { check, Update } from "@tauri-apps/plugin-updater";
-import { relaunch } from "@tauri-apps/plugin-process";
-import { getVersion } from "@tauri-apps/api/app";
 
 function About({
   onBlurChange,

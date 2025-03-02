@@ -9,7 +9,7 @@ type CompletedStudyCardProps = {
   onClick: (event: React.MouseEvent<HTMLDivElement>) => void; // Corrected type
   height?: number;
   width?: number;
-  onDelete: (date: Date) => void;
+  onDelete: (date: Date | string) => void;
   cardStyles?: string;
   disabled?: boolean;
   comparing?: boolean;

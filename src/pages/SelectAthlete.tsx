@@ -53,6 +53,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const from = searchParams.get("from");
 
   const inputRef = useRef(null);
+  const searchInputRef = useRef(null);
   const { readDirectoryJsons, saveJson } = useJsonFiles();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -96,6 +97,28 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       navigate(from ? "/athleteStudies" : "/startTest");
     }, 300);
   };
+
+  // Add DEL key event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const togglePicker = () => {
     if (inputRef.current) {
@@ -339,6 +362,12 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   }, [selectedIndex]);
 
   useEffect(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, []);
+
+  useEffect(() => {
     if (
       athlete.heightUnit === "ft" &&
       athlete.height.length === 1 &&
@@ -464,6 +493,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
               <img src="/search.png" alt="Buscar" className="h-8 w-8 mr-8" />
               <input
                 type="text"
+                ref={searchInputRef}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);

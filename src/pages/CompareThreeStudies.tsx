@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   CompletedStudy,
   criterionLookup,
@@ -69,6 +69,29 @@ function CompareThreeStudies({
       navigate("/completedStudyInfo?date=" + date);
     }, 300);
   };
+
+  // Add DEL key event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   const displayChart = () => {
     setChartAnimation(navAnimations.popupFadeInTop);
     setShowChart(true);

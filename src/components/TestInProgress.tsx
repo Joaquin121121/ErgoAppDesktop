@@ -358,7 +358,7 @@ function TestInProgress({
     }
     const studyToSave: CompletedStudy = {
       studyInfo: studyInfoLookup[study.type],
-      date: new Date(),
+      date: new Date().toISOString(),
       results:
         study.type === "bosco"
           ? boscoResults
@@ -401,23 +401,20 @@ function TestInProgress({
               loadUnit: study.loadUnit,
             },
     };
-
+    const newAthleteState = {
+      ...athlete,
+      completedStudies: [...athlete.completedStudies, studyToSave],
+    };
     try {
       const result = await saveJson(
         `${naturalToCamelCase(athlete.name)}.json`,
-        {
-          ...athlete,
-          completedStudies: [...athlete.completedStudies, studyToSave],
-        },
+        newAthleteState,
         "athletes"
       );
       console.log(result.message);
       setTestInProgress(false);
       onBlurChange(false);
-      setAthlete({
-        ...athlete,
-        completedStudies: [...athlete.completedStudies, studyToSave],
-      });
+      setAthlete(newAthleteState);
       customNavigate("back", "startTest", "athleteStudies");
       setSelectedOption("athletes");
       setTimeout(() => {
@@ -480,6 +477,28 @@ function TestInProgress({
     setTestInProgress(false);
     onBlurChange(false);
   };
+
+  // Add DEL key event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const redoTest = () => {
     setJumpTimes([]);

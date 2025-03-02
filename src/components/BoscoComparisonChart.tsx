@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -43,6 +43,28 @@ function BoscoComparisonChart({
   const [showHeights, setShowHeights] = useState(true);
   const { t } = useTranslation();
 
+  // Add DEL key event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   const heightData = [
     {
       name: t(type1),
@@ -68,19 +90,19 @@ function BoscoComparisonChart({
   const timeData = [
     {
       name: t(type1),
-      value: Number(avgFlightTimeA.toFixed(2)),
+      value: Number(avgFlightTimeA.toFixed(1)),
       fill: "#e81d23",
     },
     {
       name: t(type2),
-      value: Number(avgFlightTimeB.toFixed(2)),
+      value: Number(avgFlightTimeB.toFixed(1)),
       fill: "#FFC1C1",
     },
     ...(avgFlightTimeC
       ? [
           {
             name: t(type3!),
-            value: Number(avgFlightTimeC.toFixed(2)),
+            value: Number(avgFlightTimeC.toFixed(1)),
             fill: "#FF7F7F",
           },
         ]

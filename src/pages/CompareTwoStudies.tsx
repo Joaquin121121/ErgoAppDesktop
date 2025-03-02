@@ -9,7 +9,7 @@ import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import navAnimations from "../styles/animations.module.css";
 import ComparisonChartDisplay from "../components/ComparisonChartDisplay";
-
+import { useAthleteComparison } from "../contexts/AthleteComparisonContext";
 function CompareTwoStudies({
   isExpanded,
   animation,
@@ -31,32 +31,70 @@ function CompareTwoStudies({
   const [searchParams] = useSearchParams();
   const date1 = searchParams.get("date1");
   const date2 = searchParams.get("date2");
+  const diffAthletes = searchParams.get("diffAthletes") === "true";
+  const { athleteToCompare1, athleteToCompare2 } = useAthleteComparison();
 
   const [showChart, setShowChart] = useState(false);
-  const [tableAnimation, setTableAnimation] = useState(
-    navAnimations.popupFadeInTop
-  );
+
   const [chartAnimation, setChartAnimation] = useState(
     navAnimations.popupFadeInTop
   );
 
-  const study1 = athlete.completedStudies.find((study) =>
-    typeof study.date === "string"
-      ? study.date === date1
-      : study.date.toISOString() === date1
-  );
-  const study2 = athlete.completedStudies.find((study) =>
-    typeof study.date === "string"
-      ? study.date === date2
-      : study.date.toISOString() === date2
-  );
+  const study1 = diffAthletes
+    ? athleteToCompare1.completedStudies.find((study) =>
+        typeof study.date === "string"
+          ? study.date === date1
+          : study.date.toISOString() === date1
+      )
+    : athlete.completedStudies.find((study) =>
+        typeof study.date === "string"
+          ? study.date === date1
+          : study.date.toISOString() === date1
+      );
+  const study2 = diffAthletes
+    ? athleteToCompare2.completedStudies.find((study) =>
+        typeof study.date === "string"
+          ? study.date === date2
+          : study.date.toISOString() === date2
+      )
+    : athlete.completedStudies.find((study) =>
+        typeof study.date === "string"
+          ? study.date === date2
+          : study.date.toISOString() === date2
+      );
 
   const onClose = () => {
-    customNavigate("back", "compareTwoStudies", "athleteStudies");
+    customNavigate(
+      "back",
+      "compareTwoStudies",
+      diffAthletes ? "compareTwoAthletes" : "athleteStudies"
+    );
     setTimeout(() => {
-      navigate("/athleteStudies");
+      navigate(diffAthletes ? "/compareTwoAthletes" : "/athleteStudies");
     }, 300);
   };
+
+  // Add DEL key event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const displayChart = () => {
     setChartAnimation(navAnimations.popupFadeInTop);
@@ -134,7 +172,7 @@ function CompareTwoStudies({
     switch (criterion) {
       case "performanceDrop":
         return {
-          content: `${study1.results[criterion].toFixed(2)}%`,
+          content: `${study1.results[criterion].toFixed(1)}%`,
           icon:
             study1.results[criterion] > study2.results[criterion]
               ? "▲"
@@ -225,7 +263,9 @@ function CompareTwoStudies({
               <div className="text-3xl font-normal text-secondary w-64 flex flex-col items-center">
                 {study1.studyInfo.name}
                 <span className="text-darkGray text-xl">
-                  {formatDate(study1.date)}
+                  {diffAthletes
+                    ? athleteToCompare1.name
+                    : formatDate(study1.date)}
                 </span>
               </div>
 
@@ -263,7 +303,9 @@ function CompareTwoStudies({
               <div className="text-3xl font-normal text-secondary w-64 flex flex-col items-center">
                 {study2.studyInfo.name}
                 <span className="text-darkGray text-xl">
-                  {formatDate(study2.date)}
+                  {diffAthletes
+                    ? athleteToCompare2.name
+                    : formatDate(study2.date)}
                 </span>
               </div>
 
@@ -274,7 +316,7 @@ function CompareTwoStudies({
                   style={compare(criterion, study2, study1)}
                 >
                   {criterion === "performanceDrop"
-                    ? study2.results[criterion].toFixed(2) + "%"
+                    ? study2.results[criterion].toFixed(1) + "%"
                     : typeof study2.results[criterion] === "number" &&
                       study2.results[criterion] !== 0
                     ? study2.results[criterion].toFixed(1)

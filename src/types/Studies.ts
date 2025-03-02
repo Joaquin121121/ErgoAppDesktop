@@ -242,7 +242,7 @@ export interface BoscoResult {
 
 export interface CompletedStudy {
   studyInfo: BaseStudy;
-  date: Date;
+  date: Date | string;
   results:
     | CMJResult
     | BoscoResult

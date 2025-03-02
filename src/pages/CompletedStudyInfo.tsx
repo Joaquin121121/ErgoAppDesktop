@@ -12,6 +12,7 @@ import BoscoStudyCard from "../components/BoscoStudyCard";
 import navAnimations from "../styles/animations.module.css";
 import scrollBarStyles from "../styles/scrollbar.module.css";
 import ChartDisplay from "../components/MultipleJumpsChartDisplay";
+
 function CompletedStudyInfo({
   isExpanded,
   animation,
@@ -281,6 +282,37 @@ function CompletedStudyInfo({
       }, 300);
     }
   };
+
+  // Add DEL key event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (showTable) {
+        setTableAnimation(navAnimations.popupFadeOutTop);
+        setTimeout(() => {
+          setShowTable(false);
+        }, 200);
+      } else if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        if (study.results && study.results.type === "bosco" && !boscoStudy) {
+          returnToMenu();
+        } else {
+          onClose();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const returnToMenu = () => {
     customNavigate("back", "completedStudyInfo", "athleteStudies");

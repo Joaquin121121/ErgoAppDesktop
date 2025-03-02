@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ComposedChart,
   Bar,
@@ -57,13 +57,13 @@ function ComparisonChartDisplay({
   const timesData = Array.from({ length: maxLength }, (_, i) => ({
     index: i,
     timeA: validJumpTimesA[i]
-      ? Number(validJumpTimesA[i].time.toFixed(2))
+      ? Number(validJumpTimesA[i].time.toFixed(1))
       : null,
     timeB: validJumpTimesB[i]
-      ? Number(validJumpTimesB[i].time.toFixed(2))
+      ? Number(validJumpTimesB[i].time.toFixed(1))
       : null,
     timeC: validJumpTimesC[i]
-      ? Number(validJumpTimesC[i].time.toFixed(2))
+      ? Number(validJumpTimesC[i].time.toFixed(1))
       : null,
     stiffnessA: stiffnessA?.[i] || null,
     stiffnessB: stiffnessB?.[i] || null,
@@ -99,6 +99,28 @@ function ComparisonChartDisplay({
       setButtonText("Alturas");
     }
   };
+
+  // Add DEL key event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
     <div

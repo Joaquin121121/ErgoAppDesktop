@@ -15,6 +15,7 @@ import { VALIDATION_LIMITS } from "../constants/data";
 import navAnimation from "../styles/animations.module.css";
 import OutlinedButton from "../components/OutlinedButton";
 import { set } from "lodash";
+
 function NewAthlete({
   isExpanded,
   animation,
@@ -121,6 +122,28 @@ function NewAthlete({
       navigate(from ? "/athletes" : "/startTest");
     }, 300);
   };
+
+  // Add DEL key event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const togglePicker = () => {
     if (inputRef.current) {
