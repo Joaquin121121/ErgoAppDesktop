@@ -18,6 +18,8 @@ interface AutocompleteDropdownProps<T> {
   lockedFields?: string[];
   setLockedFields?: (lockedFields: string[]) => void;
   field: string;
+  maxHeight?: number;
+  autoResetOnSelect?: boolean;
 }
 
 const AutocompleteDropdown = <T extends string | Record<string, any>>({
@@ -37,6 +39,8 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
   lockedFields = [],
   setLockedFields = (lockedFields: string[]) => {},
   field,
+  maxHeight = 240,
+  autoResetOnSelect = false,
 }) => {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -119,6 +123,10 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
     setIsOpen(false);
     setSelectedIndex(-1);
     if (onSelect) onSelect(getValue(item));
+    // Reset query after a small delay to ensure all other logic is completed
+    if (autoResetOnSelect) {
+      setQuery("");
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -165,10 +173,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
   }, [initialQuery]);
 
   return (
-    <div
-      className={`relative w-[440px] shadow-sm ${className}`}
-      ref={dropdownRef}
-    >
+    <div className={`relative w-[364px] ${className}`} ref={dropdownRef}>
       <div className="relative flex flex-row items-center">
         <input
           type="text"
@@ -180,7 +185,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`w-80 p-2 rounded-2xl text-tertiary border border-transparent bg-offWhite pr-10 ${
+          className={`w-80 p-2 rounded-2xl shadow-sm  text-tertiary border border-transparent bg-offWhite pr-10 ${
             inputStyles.input
           } ${error && inputStyles.focused}`}
           disabled={disabled}
@@ -226,7 +231,8 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
       {isOpen && filteredItems.length > 0 && (
         <ul
           ref={listRef}
-          className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-white rounded-2xl shadow-sm"
+          className="absolute z-50 w-full mt-1 overflow-auto bg-white rounded-2xl shadow-sm"
+          style={{ maxHeight: `${maxHeight}px` }}
         >
           {filteredItems.map((item, index) => (
             <li

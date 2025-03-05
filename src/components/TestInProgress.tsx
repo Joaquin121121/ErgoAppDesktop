@@ -11,6 +11,7 @@ import {
   BoscoResult,
   JumpTime,
   StudyData,
+  MultipleDropJumpResult,
 } from "../types/Studies";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase, getPerformanceDrop } from "../utils/utils";
@@ -19,7 +20,19 @@ import { useTranslation } from "react-i18next";
 import ErrorDisplay from "./ErrorDisplay";
 import styles from "../styles/animations.module.css";
 import ChartDisplay from "./MultipleJumpsChartDisplay";
+import MultipleDropJumpChartDisplay from "./MultipleDropJumpChartDisplay";
 import navAnimations from "../styles/animations.module.css";
+import {
+  Bar,
+  CartesianGrid,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { ComposedChart } from "recharts";
 
 function TestInProgress({
   setTestInProgress,
@@ -50,7 +63,7 @@ function TestInProgress({
   const { serialData, error, startSerialListener, logs, isConnected } =
     useSerialMonitor();
   const { study, setStudy, athlete, setAthlete } = useStudyContext();
-  const { saveJson } = useJsonFiles();
+  const { saveJson, readJson } = useJsonFiles();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -64,6 +77,9 @@ function TestInProgress({
   const [showChart, setShowChart] = useState(false);
   const [tableAnimation, setTableAnimation] = useState("");
   const [chartAnimation, setChartAnimation] = useState("");
+  const [displayMetric, setDisplayMetric] = useState<
+    "height" | "time" | "performance"
+  >("height");
   const [performanceDrop, setPerformanceDrop] = useState(0);
   const [boscoResults, setBoscoResults] = useState<BoscoResult>({
     type: "bosco",
@@ -100,6 +116,19 @@ function TestInProgress({
   });
   const [criteriaValue, setCriteriaValue] = useState(0);
   const [intervalID, setIntervalID] = useState(null);
+  const [multipleDropJumpResults, setMultipleDropJumpResults] =
+    useState<MultipleDropJumpResult | null>(
+      study.type === "multipleDropJump"
+        ? {
+            heightUnit: study.heightUnit,
+            type: study.type,
+            dropJumps: [],
+            maxAvgHeightReached: 0,
+            takeoffFoot: study.takeoffFoot,
+          }
+        : null
+    );
+  const [chartData, setChartData] = useState<any[]>([]);
 
   const tableJSX = (
     <table className="w-full mt-8">
@@ -177,13 +206,13 @@ function TestInProgress({
                   className="text-inherit opacity w-36 flex items-center justify-center"
                   style={{ opacity: e.deleted && "60%" }}
                 >
-                  {stiffness?.[i] ? `${stiffness[i].toFixed(1)} N/m` : "-"}
+                  {e.stiffness ? `${e.stiffness.toFixed(1)} N/m` : "-"}
                 </td>
                 <td
                   className="text-inherit opacity w-36 flex items-center justify-center"
                   style={{ opacity: e.deleted && "60%" }}
                 >
-                  {performance?.[i] ? `${performance[i].toFixed(1)}%` : "-"}
+                  {e.performance ? `${e.performance.toFixed(1)}%` : "-"}
                 </td>
               </>
             )}
@@ -248,7 +277,7 @@ function TestInProgress({
     </table>
   );
 
-  const nextTest = () => {
+  const resetTest = () => {
     setJumpTimes([]);
     setFlightTimes([]);
     setFloorTimes([]);
@@ -261,8 +290,43 @@ function TestInProgress({
       avgPerformance: 0,
       avgStiffness: 0,
     });
-    setPointer(pointer + 1);
     setStatus("Súbase a la alfombra");
+  };
+
+  const nextTest = () => {
+    if (study.type === "multipleDropJump") {
+      setMultipleDropJumpResults({
+        ...multipleDropJumpResults,
+        dropJumps: [
+          ...multipleDropJumpResults.dropJumps,
+          {
+            avgHeightReached: data.avgHeightReached,
+            times: jumpTimes,
+            avgFlightTime: data.avgFlightTime,
+            type: "dropJump",
+            height: study.dropJumpHeights[pointer],
+            takeoffFoot: study.takeoffFoot,
+            sensitivity: study.sensitivity,
+          },
+        ],
+        maxAvgHeightReached: 0,
+      });
+    }
+    if (study.type === "bosco") {
+      setBoscoResults({
+        ...boscoResults,
+        [tests[pointer]]: {
+          avgFlightTime: data.avgFlightTime,
+          avgHeightReached: ((9.81 * data.avgFlightTime ** 2) / 8) * 100,
+          takeoffFoot: "both",
+          times: jumpTimes,
+          type: tests[pointer],
+        },
+      });
+    }
+    resetTest();
+
+    setPointer(pointer + 1);
   };
 
   const finishTest = () => {
@@ -277,6 +341,13 @@ function TestInProgress({
       deleted: false,
       time: jump,
       floorTime: processedFloorTimes[i],
+      performance: Number(((jump / Math.max(...flightTimes)) * 100).toFixed(1)),
+      stiffness: Number(
+        (Math.PI * (jump + processedFloorTimes[i])) /
+          (processedFloorTimes[i] *
+            processedFloorTimes[i] *
+            (jump / processedFloorTimes[i] + Math.PI / 4))
+      ),
     }));
     console.log(localJumpTimes);
     setJumpTimes(localJumpTimes);
@@ -288,39 +359,30 @@ function TestInProgress({
       setStatus("Error");
       return;
     }
-    if (study.type === "bosco") {
-      setBoscoResults({
-        ...boscoResults,
-        [tests[pointer]]: {
-          avgFlightTime: avgFlightTime,
-          avgHeightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
-          takeoffFoot: "both",
-          times: localJumpTimes,
-          type: tests[pointer],
-        },
-      });
-    }
     if (study.type === "multipleJumps") {
-      const max = Math.max(...flightTimes);
-      const performances = flightTimes.map((e) =>
+      const validFlightTimes = localJumpTimes.map((e) => e.time);
+
+      const max = Math.max(...validFlightTimes);
+      const validPerformances = validFlightTimes.map((e) =>
         Number(((e / max) * 100).toFixed(1))
       );
-      setPerformance(performances);
-      const stiffnesses = localJumpTimes.map((e) =>
+      setPerformance(validPerformances);
+      const validStiffnesses = localJumpTimes.map((e) =>
         Number(
           (Math.PI * (e.time + e.floorTime)) /
             (e.floorTime * e.floorTime * (e.time / e.floorTime + Math.PI / 4))
         )
       );
-      setStiffness(stiffnesses);
-
+      setStiffness(validStiffnesses);
       const avgFloorTime =
         localJumpTimes.reduce((acc, time) => acc + time.floorTime, 0) /
         localJumpTimes.length;
       const avgPerformance =
-        performances.reduce((acc, time) => acc + time, 0) / performances.length;
+        validPerformances.reduce((acc, time) => acc + time, 0) /
+        validPerformances.length;
       const avgStiffness =
-        stiffnesses.reduce((acc, time) => acc + time, 0) / stiffnesses.length;
+        validStiffnesses.reduce((acc, time) => acc + time, 0) /
+        validStiffnesses.length;
       setData({
         avgFlightTime: avgFlightTime,
         avgHeightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
@@ -328,11 +390,11 @@ function TestInProgress({
         avgPerformance: avgPerformance,
         avgStiffness: avgStiffness,
       });
-      setPerformanceDrop(getPerformanceDrop(performances));
+      setPerformanceDrop(getPerformanceDrop(validPerformances));
       setStatus("Finalizado");
-
       return;
     }
+
     setData({
       avgFlightTime: avgFlightTime,
       avgHeightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
@@ -345,23 +407,26 @@ function TestInProgress({
       setIsBlurred(true);
       return;
     }
-    if (study.type === "bosco") {
-      setBoscoResults({
-        ...boscoResults,
-        [tests[pointer]]: {
-          ...boscoResults[tests[pointer]],
-          avgFlightTime: data.avgFlightTime,
-          avgHeightReached: ((9.81 * data.avgFlightTime ** 2) / 8) * 100,
-          times: jumpTimes,
-        },
-      });
-    }
+    const updatedBoscoResults = {
+      ...boscoResults,
+      [tests[pointer]]: {
+        avgFlightTime: data.avgFlightTime,
+        avgHeightReached: ((9.81 * data.avgFlightTime ** 2) / 8) * 100,
+        takeoffFoot: "both",
+        times: jumpTimes,
+        type: tests[pointer],
+      },
+    };
+
     const studyToSave: CompletedStudy = {
-      studyInfo: studyInfoLookup[study.type],
+      studyInfo:
+        study.type === "custom"
+          ? await loadCustomStudyInfo()
+          : studyInfoLookup[study.type],
       date: new Date().toISOString(),
       results:
         study.type === "bosco"
-          ? boscoResults
+          ? updatedBoscoResults
           : study.type === "multipleJumps"
           ? {
               avgFlightTime: data.avgFlightTime,
@@ -379,16 +444,28 @@ function TestInProgress({
               avgFloorTime: data.avgFloorTime,
               performanceDrop: performanceDrop,
             }
-          : study.type === "dropJump"
+          : study.type === "multipleDropJump"
           ? {
-              avgFlightTime: data.avgFlightTime,
-              avgHeightReached: data.avgHeightReached,
-              times: jumpTimes,
-              type: study.type,
+              ...multipleDropJumpResults,
+              dropJumps: [
+                ...multipleDropJumpResults.dropJumps,
+                {
+                  avgHeightReached: data.avgHeightReached,
+                  times: jumpTimes,
+                  avgFlightTime: data.avgFlightTime,
+                  type: "dropJump",
+                  height: study.dropJumpHeights[pointer],
+                  takeoffFoot: study.takeoffFoot,
+                  sensitivity: study.sensitivity,
+                },
+              ],
+              maxAvgHeightReached: Math.max(
+                ...multipleDropJumpResults.dropJumps.map(
+                  (e) => e.avgHeightReached
+                ),
+                data.avgHeightReached
+              ),
               takeoffFoot: study.takeoffFoot,
-              sensitivity: study.sensitivity,
-              height: study.height,
-              heightUnit: study.heightUnit,
             }
           : {
               avgFlightTime: data.avgFlightTime,
@@ -425,6 +502,30 @@ function TestInProgress({
     }
   };
 
+  const loadCustomStudyInfo = async () => {
+    try {
+      const filename = `${naturalToCamelCase(study.name)}.json`;
+      const result = await readJson(filename, "customStudies");
+      if (
+        !result.data ||
+        typeof result.data !== "object" ||
+        !result.data.name ||
+        !result.data.description ||
+        !result.data.preview
+      ) {
+        throw new Error("Invalid custom study data format");
+      }
+      return {
+        name: result.data.name,
+        description: result.data.description,
+        preview: result.data.preview,
+      };
+    } catch (error) {
+      console.error("Failed to load custom study info:", error);
+      return studyInfoLookup[study.type];
+    }
+  };
+
   const handleDelete = (index: number) => {
     const updatedJumpTimes = jumpTimes.map((jump, i) =>
       i === index ? { ...jump, deleted: !jumpTimes[i].deleted } : jump
@@ -448,6 +549,8 @@ function TestInProgress({
             (e.floorTime * e.floorTime * (e.time / e.floorTime + Math.PI / 4))
         )
       );
+      setPerformance(validPerformances);
+      setStiffness(validStiffnesses);
       const avgFloorTime =
         validJumpTimes.reduce((acc, time) => acc + time.floorTime, 0) /
         validJumpTimes.length;
@@ -544,13 +647,10 @@ function TestInProgress({
   };
 
   const onCloseChart = () => {
-    if (chartAnimation !== navAnimations.popupFadeInTop) {
-      return;
-    }
     setChartAnimation(navAnimations.popupFadeOutTop);
     setTimeout(() => {
       setShowChart(false);
-    }, 200);
+    }, 300);
   };
 
   useEffect(() => {
@@ -666,6 +766,21 @@ function TestInProgress({
     }
   }, [status]);
 
+  useEffect(() => {
+    if (flightTimes.length > 0) {
+      setChartData(
+        flightTimes.map((time, i) => ({
+          index: i + 1,
+          flightTime: Number(time.toFixed(1)),
+          floorTime: floorTimes[i] ? Number(floorTimes[i].toFixed(1)) : 0,
+          height: Number((((9.81 * time ** 2) / 8) * 100).toFixed(1)),
+        }))
+      );
+    } else {
+      setChartData([]);
+    }
+  }, [flightTimes, floorTimes]);
+
   return (
     <>
       <div
@@ -686,29 +801,69 @@ function TestInProgress({
           <img src="/close.png" className="h-6 w-6" alt="" />
         </div>
         <p className="self-center text-4xl text-secondary">{t(study.type)}</p>
-        {tests.length > 1 && (
-          <p className="self-center text-3xl mt-8 text-tertiary">
+        {study.type === "bosco" && (
+          <p className="self-center text-2xl mt-8 text-tertiary">
             Test {pointer + 1}:{" "}
-            <span className="text-secondary">{t(tests[pointer])}</span>
+            <span className="text-secondary font-medium">
+              {t(tests[pointer])}
+            </span>
+          </p>
+        )}
+        {study.type === "multipleDropJump" && (
+          <p className="self-center text-2xl mt-8 text-tertiary">
+            Altura de Caída:{" "}
+            <span className="text-secondary font-medium">
+              {study.dropJumpHeights[pointer]} cm
+            </span>
           </p>
         )}
 
-        <div className="w-full flex flex-col self-center">
-          <p
-            className="mt-16 text-2xl text-tertiary"
-            style={{
-              alignSelf: "center",
-            }}
-          >
-            Estado:{" "}
-            <span className="text-secondary font-medium">
-              {displayError
-                ? status
-                : status.includes("Error")
-                ? "Conectando..."
-                : status}
-            </span>
-          </p>
+        <div className="w-full  flex flex-col self-center">
+          {status !== "Finalizado" &&
+          status !== "Súbase a la alfombra" &&
+          study.type === "multipleJumps" ? (
+            <div className="w-full flex mt-16 items-center justify-around">
+              <div className="w-[177px]"></div>
+              <p
+                className=" text-2xl text-tertiary"
+                style={{
+                  alignSelf: "center",
+                }}
+              >
+                Estado:{" "}
+                <span className="text-secondary font-medium">
+                  {displayError
+                    ? status
+                    : status.includes("Error")
+                    ? "Conectando..."
+                    : status}
+                </span>
+              </p>
+              <TonalButton
+                containerStyles="self-center "
+                title="Finalizar Test"
+                icon="closeWhite"
+                onClick={finishTest}
+              />
+            </div>
+          ) : (
+            <p
+              className=" text-2xl mt-16 text-tertiary"
+              style={{
+                alignSelf: "center",
+              }}
+            >
+              Estado:{" "}
+              <span className="text-secondary font-medium">
+                {displayError
+                  ? status
+                  : status.includes("Error")
+                  ? "Conectando..."
+                  : status}
+              </span>
+            </p>
+          )}
+
           {status.includes("Error") && displayError && (
             <div className="mt-4 flex flex-col self-center">
               <p className="text-lg text-gray-600">Por favor:</p>
@@ -743,7 +898,7 @@ function TestInProgress({
             status !== "Finalizado" &&
             study.criteria === "numberOfJumps" &&
             !status.includes("Error") && (
-              <p className="mt-8 text-2xl text-tertiary ml-48">
+              <p className="mt-12 text-2xl text-tertiary self-center">
                 N° de saltos:{" "}
                 <span className="text-secondary font-medium">
                   {criteriaValue} - {study.criteriaValue}
@@ -751,17 +906,133 @@ function TestInProgress({
               </p>
             )}
 
+          {study.type === "multipleJumps" &&
+            status !== "Finalizado" &&
+            chartData.length > 0 && (
+              <div className="w-full" style={{ height: "500px" }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={chartData}
+                    margin={{ top: 20, right: 60, bottom: 60, left: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="index"
+                      label={{
+                        value: "N° de Salto",
+                        position: "bottom",
+                        offset: 0,
+                      }}
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      label={{
+                        value:
+                          displayMetric === "time"
+                            ? "Tiempo (s)"
+                            : displayMetric === "height"
+                            ? "Altura (cm)"
+                            : "Rendimiento (%)",
+                        angle: -90,
+                        position: "insideLeft",
+                      }}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      label={{
+                        value: "Índice Q",
+                        angle: 90,
+                        position: "insideRight",
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "16px",
+                        boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+                      }}
+                    />
+                    <Legend
+                      wrapperStyle={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-around",
+                        width: "100%",
+                        paddingTop: "30px",
+                        marginTop: "20px",
+                      }}
+                      verticalAlign="bottom"
+                      iconType="circle"
+                      layout="horizontal"
+                      align="center"
+                    />
+                    {displayMetric === "time" ? (
+                      <>
+                        <Bar
+                          yAxisId="left"
+                          dataKey="flightTime"
+                          fill="#e81d23"
+                          name="Tiempo de Vuelo"
+                          barSize={20}
+                          animationDuration={500}
+                          animationEasing="ease"
+                        />
+                        <Bar
+                          yAxisId="left"
+                          dataKey="floorTime"
+                          fill="#FFC1C1"
+                          name="Tiempo de Piso"
+                          barSize={20}
+                          animationDuration={500}
+                          animationEasing="ease"
+                        />
+                      </>
+                    ) : displayMetric === "height" ? (
+                      <Bar
+                        yAxisId="left"
+                        dataKey="height"
+                        fill="#e81d23"
+                        name="Altura"
+                        barSize={20}
+                        animationDuration={500}
+                        animationEasing="ease"
+                      />
+                    ) : (
+                      <Bar
+                        yAxisId="left"
+                        dataKey="performance"
+                        fill="#e81d23"
+                        name="Rendimiento"
+                        barSize={20}
+                        animationDuration={500}
+                        animationEasing="ease"
+                      />
+                    )}
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="qIndex"
+                      stroke="#ff7300"
+                      name="Índice Q"
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           {status === "Finalizado" && <div className="mt-4">{tableJSX}</div>}
         </div>
 
-        {(status === "Listo para saltar" || status === "Saltando") && (
-          <TonalButton
-            containerStyles="self-center mt-20"
-            title="Finalizar Test"
-            icon="closeWhite"
-            onClick={finishTest}
-          />
-        )}
+        {status !== "Finalizado" &&
+          status !== "Súbase a la alfombra" &&
+          study.type !== "multipleJumps" && (
+            <TonalButton
+              containerStyles="self-center mt-16"
+              title="Finalizar Test"
+              icon="closeWhite"
+              onClick={finishTest}
+            />
+          )}
+
         {status === "Finalizado" && (
           <>
             {study.type === "multipleJumps" && (
@@ -787,20 +1058,39 @@ function TestInProgress({
                 </p>
               </>
             )}
-            <div className="flex items-center justify-around w-full mt-16 mb-8">
+            <div className="flex items-center justify-around w-full my-8">
               <OutlinedButton
                 title="Rehacer Test"
                 icon="again"
                 onClick={redoTest}
               />
+
+              {study.type === "multipleDropJump" &&
+                multipleDropJumpResults?.dropJumps?.length > 1 && (
+                  <TonalButton
+                    title="Ver Gráfico"
+                    onClick={displayChart}
+                    containerStyles="mx-4"
+                  />
+                )}
               <TonalButton
                 title={
-                  pointer === tests.length - 1
-                    ? "Guardar Test"
-                    : "Siguiente Test"
+                  study.type === "bosco" && pointer < tests.length - 1
+                    ? "Siguiente Test"
+                    : study.type === "multipleDropJump" &&
+                      pointer < study.dropJumpHeights.length - 1
+                    ? "Siguiente Altura"
+                    : "Guardar Test"
                 }
                 icon="check"
-                onClick={pointer === tests.length - 1 ? saveTest : nextTest}
+                onClick={
+                  study.type === "bosco" && pointer < tests.length - 1
+                    ? nextTest
+                    : study.type === "multipleDropJump" &&
+                      pointer < study.dropJumpHeights.length - 1
+                    ? nextTest
+                    : saveTest
+                }
               />
             </div>
           </>
@@ -813,9 +1103,7 @@ function TestInProgress({
             <OutlinedButton
               title="Rehacer Test"
               icon="again"
-              onClick={() => {
-                setStatus("Súbase a la alfombra");
-              }}
+              onClick={resetTest}
               containerStyles="self-center mt-20 mb-8"
             />
           </>
@@ -857,17 +1145,27 @@ function TestInProgress({
           </div>
         </div>
       )}
-      {showChart && (
+      {showChart && study.type === "multipleJumps" && (
         <ChartDisplay
           setShowChart={setShowChart}
           jumpTimes={jumpTimes}
           setShowTable={setShowTable}
+          chartAnimation={chartAnimation}
           onClose={onCloseChart}
           displayTable={displayTable}
-          chartAnimation={chartAnimation}
           performance={performance}
         />
       )}
+      {showChart &&
+        study.type === "multipleDropJump" &&
+        multipleDropJumpResults && (
+          <MultipleDropJumpChartDisplay
+            setShowChart={setShowChart}
+            dropJumps={multipleDropJumpResults.dropJumps}
+            chartAnimation={chartAnimation}
+            onClose={onCloseChart}
+          />
+        )}
     </>
   );
 }

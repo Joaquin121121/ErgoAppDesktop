@@ -12,7 +12,7 @@ import BoscoStudyCard from "../components/BoscoStudyCard";
 import navAnimations from "../styles/animations.module.css";
 import scrollBarStyles from "../styles/scrollbar.module.css";
 import ChartDisplay from "../components/MultipleJumpsChartDisplay";
-
+import MultipleDropJumpChartDisplay from "../components/MultipleDropJumpChartDisplay";
 function CompletedStudyInfo({
   isExpanded,
   animation,
@@ -61,6 +61,10 @@ function CompletedStudyInfo({
   const [blockAnimation, setBlockAnimation] = useState(false);
   const [showTable, setShowTable] = useState(false);
   const [showChart, setShowChart] = useState(false);
+  const [showDropJumpChart, setShowDropJumpChart] = useState(false);
+  const [dropJumpChartAnimation, setDropJumpChartAnimation] = useState(
+    navAnimations.popupFadeInTop
+  );
   const [performanceDrop, setPerformanceDrop] = useState(
     getPerformanceDrop(performance)
   );
@@ -76,7 +80,15 @@ function CompletedStudyInfo({
     <table className="w-full mt-8">
       <thead className="w-full">
         <tr className="flex justify-around items-center w-full">
-          <th className="text-2xl w-20 font-normal text-tertiary">Saltos</th>
+          <th
+            className={`text-2xl w-${
+              studyInfo.results.type === "multipleDropJump" ? "60" : "40"
+            } font-normal text-tertiar"`}
+          >
+            {studyInfo.results.type === "multipleDropJump"
+              ? "Altura de Caída"
+              : "Saltos"}
+          </th>
           <th className="text-2xl w-52 font-normal text-tertiary">
             Tiempo de Vuelo
           </th>
@@ -96,7 +108,15 @@ function CompletedStudyInfo({
               </th>
             </>
           )}
-          <th className="text-2xl w-24 font-normal text-tertiary">Eliminar</th>
+          {studyInfo.results.type === "multipleDropJump" ? (
+            <th className="text-2xl w-36 font-normal text-tertiary">
+              Ver Detalle
+            </th>
+          ) : (
+            <th className="text-2xl w-24 font-normal text-tertiary">
+              Eliminar
+            </th>
+          )}
         </tr>
       </thead>
       <tbody
@@ -106,82 +126,119 @@ function CompletedStudyInfo({
           overflowY: "auto",
         }}
       >
-        {jumpTimes?.map(
-          (e, i) =>
-            ((!showDeleted && !e.deleted) || showDeleted) && (
+        {studyInfo.results.type === "multipleDropJump"
+          ? studyInfo.results.dropJumps.map((e, i) => (
               <tr
                 key={i}
-                className="text-tertiary border border-transparent text-xl flex rounded-2xl justify-around items-center w-full hover:text-secondary hover:bg-lightRed  hover:border-secondary transition-all 300s ease-linear"
+                className="text-tertiary border border-transparent text-xl flex rounded-2xl justify-around items-center w-full hover:text-secondary hover:bg-lightRed  hover:border-secondary hover:cursor-pointer transition-all 300s ease-linear"
               >
-                <td
-                  className="text-inherit w-20 flex items-center justify-center"
-                  style={{
-                    opacity: e.deleted && "60%",
-                    color: e.deleted && "#9E9E9E",
-                  }}
-                >
-                  {i + 1}
+                <td className="text-inherit w-60 flex items-center justify-center">
+                  {e.height} cm
                 </td>
-                <td
-                  className="text-inherit w-52 flex items-center justify-center"
-                  style={{ opacity: e.deleted && "60%" }}
-                >
-                  {e.time ? `${e.time.toFixed(1)} s` : "-"}
+                <td className="text-inherit w-52 flex items-center justify-center">
+                  {e.avgFlightTime.toFixed(2)} s
                 </td>
-                {study.results && study.results.type === "multipleJumps" && (
-                  <td
-                    className="text-inherit w-52 flex items-center justify-center"
-                    style={{ opacity: e.deleted && "60%" }}
-                  >
-                    {e.floorTime ? `${e.floorTime.toFixed(1)} s` : "-"}
-                  </td>
-                )}
-                <td
-                  className="text-inherit opacity w-36 flex items-center justify-center"
-                  style={{ opacity: e.deleted && "60%" }}
-                >
-                  {e.time
-                    ? `${(((9.81 * e.time ** 2) / 8) * 100).toFixed(1)} cm`
-                    : "-"}
-                </td>
-                {study.results && study.results.type === "multipleJumps" && (
-                  <>
-                    <td
-                      className="text-inherit opacity w-36 flex items-center justify-center"
-                      style={{ opacity: e.deleted && "60%" }}
-                    >
-                      {stiffness?.[i] ? `${stiffness[i].toFixed(1)} N/m` : "-"}
-                    </td>
-                    <td
-                      className="text-inherit opacity w-36 flex items-center justify-center"
-                      style={{ opacity: e.deleted && "60%" }}
-                    >
-                      {performance?.[i] ? `${performance[i].toFixed(1)}%` : "-"}
-                    </td>
-                  </>
-                )}
-                <td className="w-24 flex items-center justify-center ">
-                  <img
-                    src={`/${e.deleted ? "undo" : "close"}.png`}
-                    className="h-6 w-6 hover:opacity-70 transition-all cursor-pointer duration-200"
-                    alt=""
-                    onClick={() => {
-                      handleDelete(i);
-                    }}
-                  />
+                <td className="text-inherit w-36 flex items-center justify-center">
+                  {e.avgHeightReached.toFixed(2)} cm
+                </td>{" "}
+                <td className="w-36 text-secondary flex items-center justify-center ">
+                  Ver Detalle
                 </td>
               </tr>
-            )
-        )}
+            ))
+          : jumpTimes?.map(
+              (e, i) =>
+                ((!showDeleted && !e.deleted) || showDeleted) && (
+                  <tr
+                    key={i}
+                    className="text-tertiary border border-transparent text-xl flex rounded-2xl justify-around items-center w-full hover:text-secondary hover:bg-lightRed  hover:border-secondary transition-all 300s ease-linear"
+                  >
+                    <td
+                      className={`text-inherit w-40 flex items-center justify-center `}
+                      style={{
+                        opacity: e.deleted && "60%",
+                        color: e.deleted && "#9E9E9E",
+                      }}
+                    >
+                      {i + 1}
+                    </td>
+                    <td
+                      className="text-inherit w-52 flex items-center justify-center"
+                      style={{ opacity: e.deleted && "60%" }}
+                    >
+                      {e.time ? `${e.time.toFixed(1)} s` : "-"}
+                    </td>
+                    {study.results &&
+                      study.results.type === "multipleJumps" && (
+                        <td
+                          className="text-inherit w-52 flex items-center justify-center"
+                          style={{ opacity: e.deleted && "60%" }}
+                        >
+                          {e.floorTime ? `${e.floorTime.toFixed(1)} s` : "-"}
+                        </td>
+                      )}
+                    <td
+                      className="text-inherit opacity w-36 flex items-center justify-center"
+                      style={{ opacity: e.deleted && "60%" }}
+                    >
+                      {e.time
+                        ? `${(((9.81 * e.time ** 2) / 8) * 100).toFixed(1)} cm`
+                        : "-"}
+                    </td>
+                    {study.results &&
+                      study.results.type === "multipleJumps" && (
+                        <>
+                          <td
+                            className="text-inherit opacity w-36 flex items-center justify-center"
+                            style={{ opacity: e.deleted && "60%" }}
+                          >
+                            {stiffness?.[i]
+                              ? `${stiffness[i].toFixed(1)} N/m`
+                              : "-"}
+                          </td>
+                          <td
+                            className="text-inherit opacity w-36 flex items-center justify-center"
+                            style={{ opacity: e.deleted && "60%" }}
+                          >
+                            {performance?.[i]
+                              ? `${performance[i].toFixed(1)}%`
+                              : "-"}
+                          </td>
+                        </>
+                      )}
+
+                    <td className="w-24 flex items-center justify-center ">
+                      <img
+                        src={`/${e.deleted ? "undo" : "close"}.png`}
+                        className="h-6 w-6 hover:opacity-70 transition-all cursor-pointer duration-200"
+                        alt=""
+                        onClick={() => {
+                          handleDelete(i);
+                        }}
+                      />
+                    </td>
+                  </tr>
+                )
+            )}
       </tbody>
       <tfoot className="w-full block">
         <tr className="text-darkGray border border-transparent text-xl flex rounded-2xl justify-around items-center w-full hover:text-secondary hover:bg-lightRed hover:border-secondary transition-all 300ms linear">
-          <td className="text-secondary w-20 flex items-center justify-center">
-            Promedios
+          <td
+            className={`text-secondary w-${
+              studyInfo.results.type === "multipleDropJump" ? "60" : "40"
+            } flex items-center justify-center`}
+          >
+            {studyInfo.results.type === "multipleDropJump"
+              ? "Máximos"
+              : "Promedios"}
           </td>
           <td className="text-secondary w-52 flex items-center justify-center">
-            {data?.avgFlightTime && !Number.isNaN(data.avgFlightTime)
-              ? `${data.avgFlightTime.toFixed(1)} s`
+            {studyInfo.results.type === "multipleDropJump"
+              ? `${Math.max(
+                  ...studyInfo.results.dropJumps.map((e) => e.avgFlightTime)
+                ).toFixed(2)} s`
+              : data?.avgFlightTime && !Number.isNaN(data.avgFlightTime)
+              ? `${data.avgFlightTime.toFixed(2)} s`
               : "-"}
           </td>
           {study.results && study.results.type === "multipleJumps" && (
@@ -192,7 +249,11 @@ function CompletedStudyInfo({
             </td>
           )}
           <td className="text-secondary w-36 flex items-center justify-center">
-            {data?.avgHeightReached && !Number.isNaN(data.avgHeightReached)
+            {studyInfo.results.type === "multipleDropJump"
+              ? studyInfo.results.maxAvgHeightReached
+                ? `${studyInfo.results.maxAvgHeightReached.toFixed(2)} cm`
+                : "-"
+              : data?.avgHeightReached && !Number.isNaN(data.avgHeightReached)
               ? `${data.avgHeightReached.toFixed(1)} cm`
               : "-"}
           </td>
@@ -210,13 +271,11 @@ function CompletedStudyInfo({
               </td>
             </>
           )}
-          <td className="w-24 opacity-0 flex items-center justify-center">
-            <img
-              src="/close.png"
-              className="h-6 w-6 hover:opacity-70 transition-all duration-200"
-              alt=""
-            />
-          </td>
+          {studyInfo.results.type === "multipleDropJump" ? (
+            <td className="w-36"></td>
+          ) : (
+            <td className="w-24"></td>
+          )}
         </tr>
       </tfoot>
     </table>
@@ -292,6 +351,16 @@ function CompletedStudyInfo({
         setTimeout(() => {
           setShowTable(false);
         }, 200);
+      } else if (showDropJumpChart) {
+        setDropJumpChartAnimation(navAnimations.popupFadeOutTop);
+        setTimeout(() => {
+          setShowDropJumpChart(false);
+        }, 200);
+      } else if (showChart) {
+        setChartAnimation(navAnimations.popupFadeOutTop);
+        setTimeout(() => {
+          setShowChart(false);
+        }, 200);
       } else if (
         event.key === "Backspace" &&
         !["INPUT", "TEXTAREA", "SELECT"].includes(
@@ -350,6 +419,11 @@ function CompletedStudyInfo({
   const displayChart = () => {
     setChartAnimation(navAnimations.popupFadeInTop);
     setShowChart(true);
+  };
+
+  const displayDropJumpChart = () => {
+    setDropJumpChartAnimation(navAnimations.popupFadeInTop);
+    setShowDropJumpChart(true);
   };
 
   const saveChanges = async () => {
@@ -426,14 +500,22 @@ function CompletedStudyInfo({
   };
 
   const compare = () => {
-    if (studyInfo.results.type !== "bosco") {
-      return;
+    if (studyInfo.results.type === "bosco") {
+      setNavAnimation(navAnimations.fadeOutLeft);
+      customNavigate("forward", "completedStudyInfo", "compareThreeStudies");
+      setTimeout(() => {
+        navigate("/compareThreeStudies?date=" + studyInfo.date);
+      }, 300);
+    } else if (studyInfo.results.type === "multipleDropJump") {
+      displayDropJumpChart();
     }
-    setNavAnimation(navAnimations.fadeOutLeft);
-    customNavigate("forward", "completedStudyInfo", "compareThreeStudies");
+  };
+
+  const onCloseDropJumpChart = () => {
+    setDropJumpChartAnimation(navAnimations.popupFadeOutTop);
     setTimeout(() => {
-      navigate("/compareThreeStudies?date=" + studyInfo.date);
-    }, 300);
+      setShowDropJumpChart(false);
+    }, 200);
   };
 
   useEffect(() => {
@@ -508,6 +590,8 @@ function CompletedStudyInfo({
     } else {
       onBlurChange(false);
     }
+    console.log("Bosco Study: ", !!boscoStudy);
+    console.log("isBosco: ", studyInfo.results.type === "bosco");
   }, [showTable, showChart]);
 
   return (
@@ -519,8 +603,9 @@ function CompletedStudyInfo({
         style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
       >
         <div className="w-full flex justify-center gap-x-16 items-center">
-          {studyInfo.results.type === "bosco" && !boscoStudy && (
-            <div className="w-[158px]"></div>
+          {((studyInfo.results.type === "bosco" && !boscoStudy) ||
+            studyInfo.results.type === "multipleDropJump") && (
+            <div className="w-[158px]" />
           )}
           <p className="text-3xl text-dark self-center my-10 text-tertiary">
             Resultados del{" "}
@@ -528,7 +613,8 @@ function CompletedStudyInfo({
               {t(boscoStudy ? boscoStudy : study.studyInfo.name)}
             </span>
           </p>
-          {studyInfo.results.type === "bosco" && !boscoStudy && (
+          {((studyInfo.results.type === "bosco" && !boscoStudy) ||
+            studyInfo.results.type === "multipleDropJump") && (
             <TonalButton icon="compare" title="Comparar" onClick={compare} />
           )}
           {deletedElements && (
@@ -569,7 +655,7 @@ function CompletedStudyInfo({
           </>
         ) : (
           <div
-            className={`w-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col px-16 ${
+            className={`w-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col  ${
               (isBlurred || showTable || showChart) &&
               "blur-md pointer-events-none"
             } transition-all 300 ease-in-out ${animation}`}
@@ -578,23 +664,16 @@ function CompletedStudyInfo({
             <div className="self-center">
               {study.results && study.results.type !== "multipleJumps" && (
                 <p className="mt-16 text-xl text-tertiary">
-                  {(study.results && study.results.type === "dropJump") ||
-                  boscoStudy === "dropJump" ? (
-                    <>
-                      Altura de Caída:{" "}
-                      <span className="text-secondary">
-                        {study.results.height} {study.results.heightUnit}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      Carga Añadida:{" "}
-                      <span className="text-secondary">
-                        {boscoStudy ? study.load : study.results.load}{" "}
-                        {boscoStudy ? study.loadUnit : study.results.loadUnit}
-                      </span>
-                    </>
-                  )}
+                  {study.results &&
+                    study.results.type !== "multipleDropJump" && (
+                      <>
+                        Carga Añadida:{" "}
+                        <span className="text-secondary">
+                          {boscoStudy ? study.load : study.results.load}{" "}
+                          {boscoStudy ? study.loadUnit : study.results.loadUnit}
+                        </span>
+                      </>
+                    )}
                 </p>
               )}
               {study.results && study.results.type === "multipleJumps" && (
@@ -695,6 +774,14 @@ function CompletedStudyInfo({
           chartAnimation={chartAnimation}
           displayTable={displayTable}
           performance={performance}
+        />
+      )}
+      {showDropJumpChart && studyInfo.results.type === "multipleDropJump" && (
+        <MultipleDropJumpChartDisplay
+          setShowChart={setShowDropJumpChart}
+          dropJumps={studyInfo.results.dropJumps}
+          chartAnimation={dropJumpChartAnimation}
+          onClose={onCloseDropJumpChart}
         />
       )}
     </>

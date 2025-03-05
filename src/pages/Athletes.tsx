@@ -16,6 +16,7 @@ interface FilterState {
   age: string[];
   gender: string[];
   discipline: string[];
+  institution: string[];
 }
 
 function Athletes({
@@ -36,6 +37,7 @@ function Athletes({
   const [isBlurred, setIsBlurred] = useState(false);
   const [searchBarFocus, setSearchBarFocus] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [institutions, setInstitutions] = useState<string[]>([]);
   const [filterTextPosition, setFilterTextPosition] = useState({
     left: 0,
     top: 0,
@@ -45,6 +47,7 @@ function Athletes({
     age: [],
     gender: [],
     discipline: [],
+    institution: [],
   });
 
   const [keyToCompare, setKeyToCompare] = useState("");
@@ -92,6 +95,9 @@ function Athletes({
       discipline: (): boolean =>
         selectedFilters.discipline.length === 0 ||
         selectedFilters.discipline.includes(athlete.discipline),
+      institution: (): boolean =>
+        selectedFilters.institution.length === 0 ||
+        selectedFilters.institution.includes(athlete.institution),
     };
 
     return Object.values(validations).every((validation) => validation());
@@ -110,6 +116,11 @@ function Athletes({
         }
       );
       setLoadedAthletes(formattedAthletes);
+      setInstitutions(
+        Array.from(
+          new Set(parsedAthletes.map((athlete) => athlete.institution))
+        )
+      );
     } catch (error) {
       console.log(error);
     }
@@ -186,6 +197,7 @@ function Athletes({
       age: [],
       gender: [],
       discipline: [],
+      institution: [],
     });
   };
 
@@ -236,7 +248,9 @@ function Athletes({
         className={`flex-1 relative flex flex-col items-center ${
           (isBlurred || athleteToDelete.length) && "blur-md pointer-events-none"
         } transition-all duration-300 ease-in-out ${animation}`}
-        style={{ paddingLeft: isExpanded ? "100px" : "32px" }}
+        style={{
+          paddingLeft: isExpanded ? "100px" : "32px",
+        }}
       >
         {/* <div className="absolute w-16 h-16 top-8 right-8 bg-gray rounded-full"></div> */}
         <div className="flex mt-12">
@@ -392,6 +406,7 @@ function Athletes({
           selectedFilters={selectedFilters}
           setSelectedFilters={setSelectedFilters}
           resetFilters={resetFilters}
+          institutions={institutions}
         />
       )}
     </>

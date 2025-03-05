@@ -117,8 +117,6 @@ function Studies({
     }
   };
   const onClick = (key) => {
-    console.log(filteredStudies);
-    console.log(filteredStudies.find((array) => array[0] === key)?.[1]);
     setStudy(filteredStudies.find((array) => array[0] === key)?.[1]);
     customNavigate("forward", "studies", "startTest");
     setTimeout(() => {

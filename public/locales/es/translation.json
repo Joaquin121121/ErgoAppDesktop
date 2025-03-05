@@ -75,5 +75,8 @@
   "performance": "Rendimiento",
   "qIndex": "Q-Index",
   "height": "Altura",
-  "years": "años"
+  "years": "años",
+  "heights": "Alturas",
+  "maxAvgHeightReached": "Altura Máxima",
+  "multipleDropJump": "Drop Jump"
 }

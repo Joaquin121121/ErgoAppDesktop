@@ -132,17 +132,11 @@ function CompareTwoStudies({
         return {};
       case "height":
         if (
-          study1.results.type === "dropJump" &&
-          study2.results.type === "dropJump"
+          study1.results.type === "multipleDropJump" &&
+          study2.results.type === "multipleDropJump"
         ) {
-          const height1 =
-            study1.results.heightUnit === "cm"
-              ? study1.results.height
-              : ftToCm(study1.results.height);
-          const height2 =
-            study2.results.heightUnit === "cm"
-              ? study2.results.height
-              : ftToCm(study2.results.height);
+          const height1 = study1.results.maxAvgHeightReached;
+          const height2 = study2.results.maxAvgHeightReached;
           return {
             color: height1 > height2 ? "#00A859" : "#e81d23",
           };
@@ -190,17 +184,11 @@ function CompareTwoStudies({
         return {};
       case "height":
         if (
-          study1.results.type === "dropJump" &&
-          study2.results.type === "dropJump"
+          study1.results.type === "multipleDropJump" &&
+          study2.results.type === "multipleDropJump"
         ) {
-          const height1 =
-            study1.results.heightUnit === "cm"
-              ? Number(study1.results.height)
-              : ftToCm(study1.results.height);
-          const height2 =
-            study2.results.heightUnit === "cm"
-              ? Number(study2.results.height)
-              : ftToCm(study2.results.height);
+          const height1 = study1.results.maxAvgHeightReached;
+          const height2 = study2.results.maxAvgHeightReached;
           const diff = ((height1 - height2) / height2) * 100;
 
           return {
@@ -347,8 +335,20 @@ function CompareTwoStudies({
         study1.results.type !== "bosco" &&
         study2.results.type !== "bosco" && (
           <ComparisonChartDisplay
-            jumpTimesA={study1.results.times}
-            jumpTimesB={study2.results.times}
+            jumpTimesA={
+              study1.results.type === "multipleDropJump"
+                ? study1.results.dropJumps.map((jump) => {
+                    return { time: jump.avgFlightTime, deleted: false };
+                  })
+                : study1.results.times
+            }
+            jumpTimesB={
+              study2.results.type === "multipleDropJump"
+                ? study2.results.dropJumps.map((jump) => {
+                    return { time: jump.avgFlightTime, deleted: false };
+                  })
+                : study2.results.times
+            }
             setShowChart={setShowChart}
             chartAnimation={chartAnimation}
             onClose={onCloseChart}

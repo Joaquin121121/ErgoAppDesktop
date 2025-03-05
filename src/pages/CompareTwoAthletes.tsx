@@ -314,6 +314,11 @@ function CompareTwoAthletes({
                   Alturas Promedio:{" "}
                   <span className="text-secondary">{t(test)} </span>test
                 </div>
+              ) : test === "multipleDropJump" ? (
+                <div key={test} className="w-60 text-xl text-center">
+                  Altura Maxima:{" "}
+                  <span className="text-secondary">{t(test)}</span>
+                </div>
               ) : (
                 <div key={test} className="w-60 text-xl text-center">
                   Altura Promedio:{" "}
@@ -388,11 +393,18 @@ function CompareTwoAthletes({
                     <span
                       style={compare(
                         "heightReached",
-                        study1.results.avgHeightReached,
-                        study2.results.avgHeightReached
+                        study1.results.type === "multipleDropJump"
+                          ? study1.results.maxAvgHeightReached
+                          : study1.results.avgHeightReached,
+                        study2.results.type === "multipleDropJump"
+                          ? study2.results.maxAvgHeightReached
+                          : study2.results.avgHeightReached
                       )}
                     >
-                      {study1.results.avgHeightReached.toFixed(1)} cm
+                      {study1.results.type === "multipleDropJump"
+                        ? study1.results.maxAvgHeightReached.toFixed(1)
+                        : study1.results.avgHeightReached.toFixed(1)}{" "}
+                      cm
                     </span>
                   </div>
                 )
@@ -461,23 +473,35 @@ function CompareTwoAthletes({
                   style={{
                     color: getDiff(
                       "heightReached",
-                      study1.results.avgHeightReached,
-                      study2.results.avgHeightReached
+                      study1.results.type === "multipleDropJump"
+                        ? study1.results.maxAvgHeightReached
+                        : study1.results.avgHeightReached,
+                      study2.results.type === "multipleDropJump"
+                        ? study2.results.maxAvgHeightReached
+                        : study2.results.avgHeightReached
                     ).color,
                   }}
                 >
                   {
                     getDiff(
                       `heightReached`,
-                      study1.results.avgHeightReached,
-                      study2.results.avgHeightReached
+                      study1.results.type === "multipleDropJump"
+                        ? study1.results.maxAvgHeightReached
+                        : study1.results.avgHeightReached,
+                      study2.results.type === "multipleDropJump"
+                        ? study2.results.maxAvgHeightReached
+                        : study2.results.avgHeightReached
                     ).icon
                   }{" "}
                   {
                     getDiff(
                       `heightReached`,
-                      study1.results.avgHeightReached,
-                      study2.results.avgHeightReached
+                      study1.results.type === "multipleDropJump"
+                        ? study1.results.maxAvgHeightReached
+                        : study1.results.avgHeightReached,
+                      study2.results.type === "multipleDropJump"
+                        ? study2.results.maxAvgHeightReached
+                        : study2.results.avgHeightReached
                     ).content
                   }
                 </div>
@@ -547,11 +571,18 @@ function CompareTwoAthletes({
                     <span
                       style={compare(
                         "heightReached",
-                        study2.results.avgHeightReached,
-                        study1.results.avgHeightReached
+                        study2.results.type === "multipleDropJump"
+                          ? study2.results.maxAvgHeightReached
+                          : study2.results.avgHeightReached,
+                        study1.results.type === "multipleDropJump"
+                          ? study1.results.maxAvgHeightReached
+                          : study1.results.avgHeightReached
                       )}
                     >
-                      {study2.results.avgHeightReached.toFixed(1)} cm
+                      {study2.results.type === "multipleDropJump"
+                        ? study2.results.maxAvgHeightReached.toFixed(1)
+                        : study2.results.avgHeightReached.toFixed(1)}{" "}
+                      cm
                     </span>
                   </div>
                 )

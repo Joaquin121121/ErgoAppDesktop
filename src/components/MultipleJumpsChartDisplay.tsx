@@ -35,37 +35,15 @@ function MultipleJumpsChartDisplay({
 }) {
   const validJumpTimes = jumpTimes.filter((e) => !e.deleted);
 
-  // Add DEL key event listener
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
-      if (
-        event.key === "Backspace" &&
-        !["INPUT", "TEXTAREA", "SELECT"].includes(
-          document.activeElement.tagName
-        )
-      ) {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    // Cleanup function to remove event listener
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
   const timesData = validJumpTimes.map((jumpTime, i) => ({
-    index: i,
+    index: i + 1,
     flightTime: Number(jumpTime.time.toFixed(1)),
     floorTime: Number(jumpTime.floorTime.toFixed(1)),
     qIndex: Number((jumpTime.time / jumpTime.floorTime).toFixed(2)),
   }));
 
   const heightData = validJumpTimes.map((jumpTime, i) => ({
-    index: i,
+    index: i + 1,
     height: Number((((9.81 * jumpTime.time ** 2) / 8) * 100).toFixed(1)),
     qIndex: Number((jumpTime.time / jumpTime.floorTime).toFixed(2)),
   }));
@@ -79,7 +57,7 @@ function MultipleJumpsChartDisplay({
   const performanceData = performance.map(
     (performance, i) =>
       !jumpTimes[i].deleted && {
-        index: i,
+        index: i + 1,
         performance: Number(performance.toFixed(1)),
         qIndex: Number(
           (validJumpTimes[i].time / validJumpTimes[i].floorTime).toFixed(2)

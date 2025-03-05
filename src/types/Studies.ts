@@ -37,17 +37,17 @@ interface AbalakovStudy extends BaseStudy {
   sensitivity: number;
 }
 
-export interface DropJumpStudy extends BaseStudy {
-  type: "dropJump";
+export interface MultipleDropJumpStudy extends BaseStudy {
   takeoffFoot: "right" | "left" | "both";
-  height: string;
   heightUnit: HeightUnit;
   sensitivity: number;
+  type: "multipleDropJump";
+  dropJumpHeights: string[];
 }
 
 interface BoscoStudy extends BaseStudy {
   type: "bosco";
-  studies: ("cmj" | "squatJump" | "abalakov")[];
+  studies: ("squatJump" | "cmj" | "abalakov")[];
   // Bosco-specific properties
 }
 
@@ -74,7 +74,7 @@ export type Study =
   | CMJStudy
   | SquatJumpStudy
   | AbalakovStudy
-  | DropJumpStudy
+  | MultipleDropJumpStudy
   | BoscoStudy
   | MultipleJumpsStudy
   | NewStudy;
@@ -84,7 +84,7 @@ export interface Studies {
   cmj: CMJStudy;
   squatJump: SquatJumpStudy;
   abalakov: AbalakovStudy;
-  dropJump: DropJumpStudy;
+  multipleDropJump: MultipleDropJumpStudy;
   bosco: BoscoStudy;
   multipleJumps: MultipleJumpsStudy;
 }
@@ -126,14 +126,14 @@ const availableStudies: Studies = {
       equipment: ["Alfombra de Contacto"],
     },
   },
-  dropJump: {
-    type: "dropJump",
+  multipleDropJump: {
+    type: "multipleDropJump",
     name: "Drop Jump",
     description: "Salto de Caída",
     takeoffFoot: "both",
-    height: "20",
     heightUnit: "cm",
     sensitivity: 10,
+    dropJumpHeights: [],
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
@@ -142,7 +142,7 @@ const availableStudies: Studies = {
     type: "bosco",
     name: "BOSCO Test",
     description: "Combinación de Tests",
-    studies: ["cmj", "squatJump", "abalakov"],
+    studies: ["squatJump", "cmj", "abalakov"],
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
@@ -177,11 +177,14 @@ export interface JumpTime {
   time: number;
   deleted: boolean;
   floorTime?: number;
+  stiffness?: number;
+  performance?: number;
 }
 
 export interface StudyData {
   avgFlightTime: number;
   avgHeightReached: number;
+  maxAvgHeightReached?: number;
   avgFloorTime?: number;
   avgPerformance?: number;
   avgStiffness?: number;
@@ -230,7 +233,14 @@ export interface MultipleJumpsResult extends BaseResult {
 export interface DropJumpResult extends BaseResult {
   type: "dropJump";
   height: string;
-  heightUnit: "cm" | "ft";
+}
+
+export interface MultipleDropJumpResult {
+  type: "multipleDropJump";
+  dropJumps: DropJumpResult[];
+  heightUnit: HeightUnit;
+  maxAvgHeightReached: number;
+  takeoffFoot: "right" | "left" | "both";
 }
 
 export interface BoscoResult {
@@ -247,7 +257,7 @@ export interface CompletedStudy {
     | CMJResult
     | BoscoResult
     | MultipleJumpsResult
-    | DropJumpResult
+    | MultipleDropJumpResult
     | AbalakovResult
     | SquatJumpResult
     | CustomStudyResult;
@@ -264,6 +274,7 @@ export const units = {
   performance: "%",
   time: "s",
   height: "cm",
+  maxAvgHeightReached: "cm",
 };
 
 export const studyInfoLookup = {
@@ -288,7 +299,7 @@ export const studyInfoLookup = {
       equipment: ["Alfombra de Contacto"],
     },
   },
-  dropJump: {
+  multipleDropJump: {
     name: "Drop Jump",
     description: "Salto de Caída",
     preview: {
@@ -312,12 +323,7 @@ export const studyInfoLookup = {
 } satisfies Record<keyof Studies, BaseStudy>;
 
 const criterion1 = ["takeoffFoot", "load", "avgFlightTime", "avgHeightReached"];
-const criterion2 = [
-  "takeoffFoot",
-  "height",
-  "avgFlightTime",
-  "avgHeightReached",
-];
+const criterion2 = ["maxAvgHeightReached", "takeoffFoot"];
 
 const criterion3 = [
   "takeoffFoot",
@@ -333,7 +339,7 @@ export const criterionLookup = {
   cmj: criterion1,
   squatJump: criterion1,
   abalakov: criterion1,
-  dropJump: criterion2,
+  multipleDropJump: criterion2,
   bosco: criterion4,
   multipleJumps: criterion3,
 } satisfies Record<keyof Studies, string[]>;
@@ -342,7 +348,7 @@ export const validComparisons = {
   cmj: ["cmj", "squatJump", "abalakov"],
   squatJump: ["cmj", "squatJump", "abalakov"],
   abalakov: ["cmj", "squatJump", "abalakov"],
-  dropJump: ["dropJump"],
+  multipleDropJump: ["multipleDropJump"],
   multipleJumps: ["multipleJumps"],
 };
 

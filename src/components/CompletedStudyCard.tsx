@@ -28,7 +28,7 @@ function CompletedStudyCard({
   const { t } = useTranslation();
 
   const cmjDisplayKeys = ["load", "avgHeightReached", "takeoffFoot"];
-  const dropJumpDisplayKeys = ["height", "avgHeightReached", "takeoffFoot"];
+  const dropJumpDisplayKeys = ["heights", "maxAvgHeightReached", "takeoffFoot"];
   const multipleJumpsDisplayKeys = [
     "avgStiffness",
     "avgHeightReached",
@@ -95,14 +95,19 @@ function CompletedStudyCard({
                   </p>
                 </div>
               ))
-            : study.results.type === "dropJump"
+            : study.results.type === "multipleDropJump"
             ? dropJumpDisplayKeys.map((key) => (
                 <div key={key}>
                   <p className="text-lg text-darkGray mb-8">
                     -{t(key)}:{" "}
                     <span className="text-tertiary font-medium">
-                      {key === "height" && study.results.type === "dropJump"
-                        ? `${study.results.height} ${study.results.heightUnit}`
+                      {key === "heights" &&
+                      study.results.type === "multipleDropJump"
+                        ? study.results.dropJumps
+                            .map((jump) => jump.height)
+                            .join(", ") +
+                          " " +
+                          study.results.heightUnit
                         : typeof study.results[key] === "number"
                         ? study.results[key].toFixed(1) +
                           " " +
