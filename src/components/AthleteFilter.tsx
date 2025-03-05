@@ -11,6 +11,7 @@ interface FilterState {
   gender: string[];
   discipline: string[];
   institution: string[];
+  category: string[];
 }
 
 interface AthleteFilterProps {
@@ -19,6 +20,7 @@ interface AthleteFilterProps {
   setSelectedFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   resetFilters: () => void;
   institutions: string[];
+  categories: string[];
 }
 
 function AthleteFilter({
@@ -27,6 +29,7 @@ function AthleteFilter({
   setSelectedFilters,
   resetFilters,
   institutions,
+  categories,
 }: AthleteFilterProps) {
   const { t } = useTranslation();
   const [processedDisciplines, setProcessedDisciplines] =
@@ -150,6 +153,21 @@ function AthleteFilter({
               {option}
             </button>
           ))
+        ) : criterion === "category" ? (
+          selectedFilters.discipline.length > 0 &&
+          options.map((option, index) => (
+            <button
+              key={index}
+              className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+                selectedFilters[criterion].includes(option)
+                  ? "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+                  : ""
+              }`}
+              onClick={() => toggleFilter(criterion, option)}
+            >
+              {option}
+            </button>
+          ))
         ) : (
           options.map(
             (option) =>
@@ -192,6 +210,9 @@ function AthleteFilter({
       {renderFilterSection("institution", institutions)}
       {renderFilterSection("discipline", [])}{" "}
       {/* Empty array since we use AutocompleteDropdown */}
+      {selectedFilters.discipline.length > 0 &&
+        categories.length > 0 &&
+        renderFilterSection("category", categories)}
       <div className="flex w-full items-center justify-center gap-x-24 mt-8">
         <OutlinedButton
           title="Restablecer Filtros"

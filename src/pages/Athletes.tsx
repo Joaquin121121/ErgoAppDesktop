@@ -17,6 +17,7 @@ interface FilterState {
   gender: string[];
   discipline: string[];
   institution: string[];
+  category: string[];
 }
 
 function Athletes({
@@ -38,6 +39,7 @@ function Athletes({
   const [searchBarFocus, setSearchBarFocus] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [institutions, setInstitutions] = useState<string[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [filterTextPosition, setFilterTextPosition] = useState({
     left: 0,
     top: 0,
@@ -48,6 +50,7 @@ function Athletes({
     gender: [],
     discipline: [],
     institution: [],
+    category: [],
   });
 
   const [keyToCompare, setKeyToCompare] = useState("");
@@ -70,6 +73,24 @@ function Athletes({
   const { resetAthlete, setAthlete } = useStudyContext();
   const filterButtonRef = useRef(null);
   const { setAthleteToCompare1, setAthleteToCompare2 } = useAthleteComparison();
+
+  // Effect to update categories when discipline changes
+  useEffect(() => {
+    if (selectedFilters.discipline.length === 0) {
+      setCategories([]);
+      return;
+    }
+
+    const filteredAthletes = loadedAthletes.filter(([_, athlete]) =>
+      selectedFilters.discipline.includes(athlete.discipline)
+    );
+
+    const uniqueCategories = Array.from(
+      new Set(filteredAthletes.map(([_, athlete]) => athlete.category))
+    );
+
+    setCategories(uniqueCategories);
+  }, [selectedFilters.discipline, loadedAthletes]);
 
   // Updated validation function to handle multiple criteria
   const validateAthlete = (athlete: Athlete): boolean => {
@@ -98,6 +119,9 @@ function Athletes({
       institution: (): boolean =>
         selectedFilters.institution.length === 0 ||
         selectedFilters.institution.includes(athlete.institution),
+      category: (): boolean =>
+        selectedFilters.category.length === 0 ||
+        selectedFilters.category.includes(athlete.category),
     };
 
     return Object.values(validations).every((validation) => validation());
@@ -198,6 +222,7 @@ function Athletes({
       gender: [],
       discipline: [],
       institution: [],
+      category: [],
     });
   };
 
@@ -304,13 +329,37 @@ function Athletes({
                   placeholder="Buscar atleta..."
                 />
               </div>
-              <OutlinedButton
-                title="Filtrar"
-                onClick={handleFilter}
-                containerStyles="ml-8"
-                icon="filter"
-                ref={filterButtonRef}
-              />
+              {Object.values(selectedFilters).some(
+                (value) => Array.isArray(value) && value.length > 0
+              ) ? (
+                <div className="flex ml-8 flex-col gap-y-2 items-center">
+                  <div className="w-[182px] h-6 " />
+                  <OutlinedButton
+                    title="Filtrar"
+                    onClick={handleFilter}
+                    icon="filter"
+                    ref={filterButtonRef}
+                  />
+                  <div
+                    className="flex items-center cursor-pointer"
+                    onClick={resetFilters}
+                  >
+                    <p className="text-secondary hover:text-lightRed transition-all duration-300 ease-in-out">
+                      Restablecer Filtros
+                    </p>
+                    <img src="/reset.png" alt="" className="h-5 w-5 ml-4" />
+                  </div>
+                </div>
+              ) : (
+                <OutlinedButton
+                  title="Filtrar"
+                  onClick={handleFilter}
+                  containerStyles="ml-8"
+                  icon="filter"
+                  ref={filterButtonRef}
+                />
+              )}
+
               <TonalButton
                 title="Comparar"
                 onClick={() => {
@@ -320,24 +369,6 @@ function Athletes({
                 icon="compare"
               />
             </>
-          )}
-
-          {Object.values(selectedFilters).some(
-            (value) => Array.isArray(value) && value.length > 0
-          ) && (
-            <div
-              className="fixed  flex items-center cursor-pointer transform -translate-x-1/2 "
-              style={{
-                left: `${filterTextPosition.left}px`,
-                top: `${filterTextPosition.top}px`,
-              }}
-              onClick={resetFilters}
-            >
-              <p className="text-secondary hover:text-lightRed transition-all duration-300 ease-in-out">
-                Restablecer Filtros
-              </p>
-              <img src="/reset.png" alt="" className="h-5 w-5 ml-4" />
-            </div>
           )}
         </div>
         <div className="grid grid-cols-3 gap-x-[5%] gap-y-16 w-full  px-36">
@@ -407,6 +438,7 @@ function Athletes({
           setSelectedFilters={setSelectedFilters}
           resetFilters={resetFilters}
           institutions={institutions}
+          categories={categories}
         />
       )}
     </>
