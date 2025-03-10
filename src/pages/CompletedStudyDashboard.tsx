@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import navAnimations from "../styles/animations.module.css";
@@ -49,6 +49,34 @@ function CompletedStudyDashboard({
 
   const showChart = () => {};
 
+  const onClose = () => {
+    customNavigate("back", "completedStudyDashboard", "athleteStudies");
+    setTimeout(() => {
+      navigate("/athleteStudies");
+    }, 300);
+  };
+
+  // Add DEL key event listener
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
   const tableJSX = (
     <table className="w-full mt-8 border-collapse">
       <thead className="w-full">
@@ -150,7 +178,7 @@ function CompletedStudyDashboard({
 
   return (
     <div
-      className={`flex-1  relative flex flex-col items-center transition-all duration-300 ease-in-out `}
+      className={`flex-1  relative flex flex-col items-center transition-all duration-300 ease-in-out ${animation}`}
       style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
     >
       <p className="text-4xl text-secondary mt-8">{study.studyInfo.name}</p>
@@ -158,9 +186,10 @@ function CompletedStudyDashboard({
         Realizado por {athlete.name} el {getFormattedDate(date)} a las{" "}
         {getFormattedTime(date)}
       </p>
+
       <div className="w-full flex justify-around">
         <div
-          className={`w-[35%] h-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col items-center transition-all 300 ease-in-out ${animation}`}
+          className={`w-[35%] h-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col items-center transition-all 300 ease-in-out `}
         >
           <div className="flex gap-x-8 mt-4 items-center">
             <p className="text-secondary text-2xl">Resultados</p>
@@ -238,7 +267,7 @@ function CompletedStudyDashboard({
           />
         </div>
         <div
-          className={`w-[55%] h-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col px-16  transition-all 300 ease-in-out ${animation}`}
+          className={`w-[55%] h-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col px-16  transition-all 300 ease-in-out`}
         >
           <div className="flex self-center gap-x-8 mt-4 items-center">
             <p className="text-secondary text-2xl">
@@ -248,6 +277,13 @@ function CompletedStudyDashboard({
           </div>
         </div>
       </div>
+      <TonalButton
+        title="Volver"
+        icon="backWhite"
+        onClick={onClose}
+        inverse
+        containerStyles="mt-16 self-center"
+      />
     </div>
   );
 }
