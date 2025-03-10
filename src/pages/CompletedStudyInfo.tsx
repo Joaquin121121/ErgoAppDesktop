@@ -166,7 +166,7 @@ function CompletedStudyInfo({
                       className="text-inherit w-52 flex items-center justify-center"
                       style={{ opacity: e.deleted && "60%" }}
                     >
-                      {e.time ? `${e.time.toFixed(1)} s` : "-"}
+                      {e.time ? `${e.time.toFixed(2)} s` : "-"}
                     </td>
                     {study.results &&
                       study.results.type === "multipleJumps" && (
@@ -174,7 +174,7 @@ function CompletedStudyInfo({
                           className="text-inherit w-52 flex items-center justify-center"
                           style={{ opacity: e.deleted && "60%" }}
                         >
-                          {e.floorTime ? `${e.floorTime.toFixed(1)} s` : "-"}
+                          {e.floorTime ? `${e.floorTime.toFixed(2)} s` : "-"}
                         </td>
                       )}
                     <td
@@ -182,7 +182,7 @@ function CompletedStudyInfo({
                       style={{ opacity: e.deleted && "60%" }}
                     >
                       {e.time
-                        ? `${(((9.81 * e.time ** 2) / 8) * 100).toFixed(1)} cm`
+                        ? `${(((9.81 * e.time ** 2) / 8) * 100).toFixed(2)} cm`
                         : "-"}
                     </td>
                     {study.results &&
@@ -193,7 +193,7 @@ function CompletedStudyInfo({
                             style={{ opacity: e.deleted && "60%" }}
                           >
                             {stiffness?.[i]
-                              ? `${stiffness[i].toFixed(1)} N/m`
+                              ? `${stiffness[i].toFixed(2)} N/m`
                               : "-"}
                           </td>
                           <td
@@ -201,7 +201,7 @@ function CompletedStudyInfo({
                             style={{ opacity: e.deleted && "60%" }}
                           >
                             {performance?.[i]
-                              ? `${performance[i].toFixed(1)}%`
+                              ? `${performance[i].toFixed(2)}%`
                               : "-"}
                           </td>
                         </>
@@ -244,7 +244,7 @@ function CompletedStudyInfo({
           {study.results && study.results.type === "multipleJumps" && (
             <td className="text-secondary w-52 flex items-center justify-center">
               {data?.avgFloorTime && !Number.isNaN(data.avgFloorTime)
-                ? `${data.avgFloorTime.toFixed(1)} s`
+                ? `${data.avgFloorTime.toFixed(2)} s`
                 : "-"}
             </td>
           )}
@@ -254,19 +254,19 @@ function CompletedStudyInfo({
                 ? `${studyInfo.results.maxAvgHeightReached.toFixed(2)} cm`
                 : "-"
               : data?.avgHeightReached && !Number.isNaN(data.avgHeightReached)
-              ? `${data.avgHeightReached.toFixed(1)} cm`
+              ? `${data.avgHeightReached.toFixed(2)} cm`
               : "-"}
           </td>
           {study.results && study.results.type === "multipleJumps" && (
             <>
               <td className="text-secondary w-36 flex items-center justify-center">
                 {data?.avgStiffness && !Number.isNaN(data.avgStiffness)
-                  ? `${data.avgStiffness.toFixed(1)} N/m`
+                  ? `${data.avgStiffness.toFixed(2)} N/m`
                   : "-"}
               </td>
               <td className="text-secondary w-36 flex items-center justify-center">
                 {data?.avgPerformance && !Number.isNaN(data.avgPerformance)
-                  ? `${data.avgPerformance.toFixed(1)} %`
+                  ? `${data.avgPerformance.toFixed(2)} %`
                   : "-"}
               </td>
             </>
@@ -294,7 +294,7 @@ function CompletedStudyInfo({
 
       const max = Math.max(...validFlightTimes);
       const validPerformances = validFlightTimes.map((e) =>
-        Number(((e / max) * 100).toFixed(1))
+        Number(((e / max) * 100).toFixed(2))
       );
       const validStiffnesses = validJumpTimes.map((e) =>
         Number(
@@ -694,7 +694,7 @@ function CompletedStudyInfo({
                   <p className="self-center text-xl mt-12 text-tertiary">
                     Caída de Rendimiento por Fatiga:{" "}
                     <span className="text-secondary font-medium">
-                      {performanceDrop?.toFixed(1)}%
+                      {performanceDrop?.toFixed(2)}%
                     </span>
                   </p>
                 </>

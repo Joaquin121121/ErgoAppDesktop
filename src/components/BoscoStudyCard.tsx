@@ -23,13 +23,13 @@ function BoscoStudyCard({
         <p className="text-xl text-tertiary mt-8">
           Altura Promedio:{" "}
           <span className="text-secondary">
-            {study.avgHeightReached.toFixed(1)} cm
+            {study.avgHeightReached.toFixed(2)} cm
           </span>
         </p>
         <p className="text-xl text-tertiary mt-4">
           Vuelo Promedio:{" "}
           <span className="text-secondary">
-            {study.avgFlightTime.toFixed(1)} s
+            {study.avgFlightTime.toFixed(2)} s
           </span>
         </p>
       </div>

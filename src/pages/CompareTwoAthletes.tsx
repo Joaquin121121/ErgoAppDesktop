@@ -101,7 +101,7 @@ function CompareTwoAthletes({
       case "heightReached":
         const heightReachedDiff = ((athlete1 - athlete2) / athlete2) * 100;
         const absHeightReachedDiff = Math.abs(
-          Number(heightReachedDiff.toFixed(1))
+          Number(heightReachedDiff.toFixed(2))
         );
         return {
           color:
@@ -124,7 +124,7 @@ function CompareTwoAthletes({
         const weight2 = parseFloat(athlete2.weight);
         const weightDiff = ((weight2 - weight1) / weight1) * 100;
         // Fix: Convert to number before passing to Math.abs
-        const absWeightDiff = Math.abs(Number(weightDiff.toFixed(1)));
+        const absWeightDiff = Math.abs(Number(weightDiff.toFixed(2)));
         if (absWeightDiff === 0) {
           return {};
         }
@@ -145,7 +145,7 @@ function CompareTwoAthletes({
             : ftToCm(athlete2.height);
         const heightDiff = ((height2 - height1) / height1) * 100;
         // Fix: Convert to number before passing to Math.abs
-        const absHeightDiff = Math.abs(Number(heightDiff.toFixed(1)));
+        const absHeightDiff = Math.abs(Number(heightDiff.toFixed(2)));
         if (absHeightDiff === 0) {
           return {};
         }
@@ -158,7 +158,7 @@ function CompareTwoAthletes({
       case "heightReached":
         const heightReachedDiff = ((athlete2 - athlete1) / athlete1) * 100;
         const absHeightReachedDiff = Math.abs(
-          Number(heightReachedDiff.toFixed(1))
+          Number(heightReachedDiff.toFixed(2))
         );
         if (absHeightReachedDiff === 0) {
           return {};
@@ -356,7 +356,7 @@ function CompareTwoAthletes({
                         study2.results.squatJump.avgHeightReached
                       )}
                     >
-                      {study1.results.squatJump.avgHeightReached.toFixed(1)} cm
+                      {study1.results.squatJump.avgHeightReached.toFixed(2)} cm
                     </span>
                   </p>
                   <p className="text-xl">
@@ -368,7 +368,7 @@ function CompareTwoAthletes({
                         study2.results.cmj.avgHeightReached
                       )}
                     >
-                      {study1.results.cmj.avgHeightReached.toFixed(1)} cm
+                      {study1.results.cmj.avgHeightReached.toFixed(2)} cm
                     </span>
                   </p>
                   <p className="text-xl">
@@ -380,7 +380,7 @@ function CompareTwoAthletes({
                         study2.results.abalakov.avgHeightReached
                       )}
                     >
-                      {study1.results.abalakov.avgHeightReached.toFixed(1)} cm
+                      {study1.results.abalakov.avgHeightReached.toFixed(2)} cm
                     </span>
                   </p>
                 </div>
@@ -400,8 +400,8 @@ function CompareTwoAthletes({
                       )}
                     >
                       {study1.results.type === "multipleDropJump"
-                        ? study1.results.maxAvgHeightReached.toFixed(1)
-                        : study1.results.avgHeightReached.toFixed(1)}{" "}
+                        ? study1.results.maxAvgHeightReached.toFixed(2)
+                        : study1.results.avgHeightReached.toFixed(2)}{" "}
                       cm
                     </span>
                   </div>
@@ -534,7 +534,7 @@ function CompareTwoAthletes({
                         study1.results.squatJump.avgHeightReached
                       )}
                     >
-                      {study2.results.squatJump.avgHeightReached.toFixed(1)} cm
+                      {study2.results.squatJump.avgHeightReached.toFixed(2)} cm
                     </span>
                   </p>
                   <p className="text-xl">
@@ -546,7 +546,7 @@ function CompareTwoAthletes({
                         study1.results.cmj.avgHeightReached
                       )}
                     >
-                      {study2.results.cmj.avgHeightReached.toFixed(1)} cm
+                      {study2.results.cmj.avgHeightReached.toFixed(2)} cm
                     </span>
                   </p>
                   <p className="text-xl">
@@ -558,7 +558,7 @@ function CompareTwoAthletes({
                         study1.results.abalakov.avgHeightReached
                       )}
                     >
-                      {study2.results.abalakov.avgHeightReached.toFixed(1)} cm
+                      {study2.results.abalakov.avgHeightReached.toFixed(2)} cm
                     </span>
                   </p>
                 </div>
@@ -578,8 +578,8 @@ function CompareTwoAthletes({
                       )}
                     >
                       {study2.results.type === "multipleDropJump"
-                        ? study2.results.maxAvgHeightReached.toFixed(1)
-                        : study2.results.avgHeightReached.toFixed(1)}{" "}
+                        ? study2.results.maxAvgHeightReached.toFixed(2)
+                        : study2.results.avgHeightReached.toFixed(2)}{" "}
                       cm
                     </span>
                   </div>

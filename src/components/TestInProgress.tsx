@@ -12,6 +12,7 @@ import {
   JumpTime,
   StudyData,
   MultipleDropJumpResult,
+  DropJumpResult,
 } from "../types/Studies";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase, getPerformanceDrop } from "../utils/utils";
@@ -183,14 +184,14 @@ function TestInProgress({
               className="text-inherit w-52 flex items-center justify-center"
               style={{ opacity: e.deleted && "60%" }}
             >
-              {e.time ? `${e.time.toFixed(1)} s` : "-"}
+              {e.time ? `${e.time.toFixed(2)} s` : "-"}
             </td>
             {study.type === "multipleJumps" && (
               <td
                 className="text-inherit w-52 flex items-center justify-center"
                 style={{ opacity: e.deleted && "60%" }}
               >
-                {e.floorTime ? `${e.floorTime.toFixed(1)} s` : "-"}
+                {e.floorTime ? `${e.floorTime.toFixed(2)} s` : "-"}
               </td>
             )}
             <td
@@ -198,7 +199,7 @@ function TestInProgress({
               style={{ opacity: e.deleted && "60%" }}
             >
               {e.time
-                ? `${(((9.81 * e.time ** 2) / 8) * 100).toFixed(1)} cm`
+                ? `${(((9.81 * e.time ** 2) / 8) * 100).toFixed(2)} cm`
                 : "-"}
             </td>
             {study.type === "multipleJumps" && (
@@ -207,13 +208,13 @@ function TestInProgress({
                   className="text-inherit opacity w-36 flex items-center justify-center"
                   style={{ opacity: e.deleted && "60%" }}
                 >
-                  {e.stiffness ? `${e.stiffness.toFixed(1)} N/m` : "-"}
+                  {e.stiffness ? `${e.stiffness.toFixed(2)} N/m` : "-"}
                 </td>
                 <td
                   className="text-inherit opacity w-36 flex items-center justify-center"
                   style={{ opacity: e.deleted && "60%" }}
                 >
-                  {e.performance ? `${e.performance.toFixed(1)}%` : "-"}
+                  {e.performance ? `${e.performance.toFixed(2)}%` : "-"}
                 </td>
               </>
             )}
@@ -237,31 +238,31 @@ function TestInProgress({
           </td>
           <td className="text-secondary w-52 flex items-center justify-center">
             {data?.avgFlightTime && !Number.isNaN(data.avgFlightTime)
-              ? `${data.avgFlightTime.toFixed(1)} s`
+              ? `${data.avgFlightTime.toFixed(2)} s`
               : "-"}
           </td>
           {study.type === "multipleJumps" && (
             <td className="text-secondary w-52 flex items-center justify-center">
               {data?.avgFloorTime && !Number.isNaN(data.avgFloorTime)
-                ? `${data.avgFloorTime.toFixed(1)} s`
+                ? `${data.avgFloorTime.toFixed(2)} s`
                 : "-"}
             </td>
           )}
           <td className="text-secondary w-36 flex items-center justify-center">
             {data?.avgHeightReached && !Number.isNaN(data.avgHeightReached)
-              ? `${data.avgHeightReached.toFixed(1)} cm`
+              ? `${data.avgHeightReached.toFixed(2)} cm`
               : "-"}
           </td>
           {study.type === "multipleJumps" && (
             <>
               <td className="text-secondary w-36 flex items-center justify-center">
                 {data?.avgStiffness && !Number.isNaN(data.avgStiffness)
-                  ? `${data.avgStiffness.toFixed(1)} N/m`
+                  ? `${data.avgStiffness.toFixed(2)} N/m`
                   : "-"}
               </td>
               <td className="text-secondary w-36 flex items-center justify-center">
                 {data?.avgPerformance && !Number.isNaN(data.avgPerformance)
-                  ? `${data.avgPerformance.toFixed(1)} %`
+                  ? `${data.avgPerformance.toFixed(2)} %`
                   : "-"}
               </td>
             </>
@@ -343,7 +344,7 @@ function TestInProgress({
       deleted: false,
       time: jump,
       floorTime: processedFloorTimes[i],
-      performance: Number(((jump / Math.max(...flightTimes)) * 100).toFixed(1)),
+      performance: Number(((jump / Math.max(...flightTimes)) * 100).toFixed(2)),
       stiffness: Number(
         (Math.PI * (jump + processedFloorTimes[i])) /
           (processedFloorTimes[i] *
@@ -376,7 +377,7 @@ function TestInProgress({
 
       const max = Math.max(...validFlightTimes);
       const validPerformances = validFlightTimes.map((e) =>
-        Number(((e / max) * 100).toFixed(1))
+        Number(((e / max) * 100).toFixed(2))
       );
       setPerformance(validPerformances);
 
@@ -423,7 +424,7 @@ function TestInProgress({
         type: tests[pointer],
       },
     };
-    let dropJumps;
+    let dropJumps: DropJumpResult[];
 
     if (study.type === "multipleDropJump") {
       dropJumps = [
@@ -482,11 +483,7 @@ function TestInProgress({
                   multipleDropJumpResults.dropJumps.findIndex(
                     (jump) =>
                       jump.avgHeightReached ===
-                      Math.max(
-                        ...multipleDropJumpResults.dropJumps.map(
-                          (e) => e.avgHeightReached
-                        )
-                      )
+                      Math.max(...dropJumps.map((e) => e.avgHeightReached))
                   )
                 ],
             }
@@ -501,6 +498,7 @@ function TestInProgress({
               loadUnit: study.loadUnit,
             },
     };
+    console.log(studyToSave);
     const newAthleteState = {
       ...athlete,
       completedStudies: [...athlete.completedStudies, studyToSave],
@@ -564,7 +562,7 @@ function TestInProgress({
 
       const max = Math.max(...validFlightTimes);
       const validPerformances = validFlightTimes.map((e) =>
-        Number(((e / max) * 100).toFixed(1))
+        Number(((e / max) * 100).toFixed(2))
       );
       const validStiffnesses = validJumpTimes.map((e) =>
         Number(
@@ -794,9 +792,9 @@ function TestInProgress({
       setChartData(
         flightTimes.map((time, i) => ({
           index: i + 1,
-          flightTime: Number(time.toFixed(1)),
-          floorTime: floorTimes[i] ? Number(floorTimes[i].toFixed(1)) : 0,
-          height: Number((((9.81 * time ** 2) / 8) * 100).toFixed(1)),
+          flightTime: Number(time.toFixed(2)),
+          floorTime: floorTimes[i] ? Number(floorTimes[i].toFixed(2)) : 0,
+          height: Number((((9.81 * time ** 2) / 8) * 100).toFixed(2)),
         }))
       );
     } else {
@@ -1076,7 +1074,7 @@ function TestInProgress({
                 <p className="self-center text-xl mt-12 text-tertiary">
                   Caída de Rendimiento por Fatiga:{" "}
                   <span className="text-secondary font-medium">
-                    {performanceDrop?.toFixed(1)}%
+                    {performanceDrop?.toFixed(2)}%
                   </span>
                 </p>
               </>
@@ -1094,6 +1092,7 @@ function TestInProgress({
                     title="Ver Gráfico"
                     onClick={displayChart}
                     containerStyles="mx-4"
+                    icon="studies"
                   />
                 )}
               <TonalButton

@@ -57,13 +57,13 @@ function ComparisonChartDisplay({
   const timesData = Array.from({ length: maxLength }, (_, i) => ({
     index: i,
     timeA: validJumpTimesA[i]
-      ? Number(validJumpTimesA[i].time.toFixed(1))
+      ? Number(validJumpTimesA[i].time.toFixed(2))
       : null,
     timeB: validJumpTimesB[i]
-      ? Number(validJumpTimesB[i].time.toFixed(1))
+      ? Number(validJumpTimesB[i].time.toFixed(2))
       : null,
     timeC: validJumpTimesC[i]
-      ? Number(validJumpTimesC[i].time.toFixed(1))
+      ? Number(validJumpTimesC[i].time.toFixed(2))
       : null,
     stiffnessA: stiffnessA?.[i] || null,
     stiffnessB: stiffnessB?.[i] || null,
@@ -73,13 +73,13 @@ function ComparisonChartDisplay({
   const heightData = Array.from({ length: maxLength }, (_, i) => ({
     index: i,
     heightA: validJumpTimesA[i]
-      ? Number((((9.81 * validJumpTimesA[i].time ** 2) / 8) * 100).toFixed(1))
+      ? Number((((9.81 * validJumpTimesA[i].time ** 2) / 8) * 100).toFixed(2))
       : null,
     heightB: validJumpTimesB[i]
-      ? Number((((9.81 * validJumpTimesB[i].time ** 2) / 8) * 100).toFixed(1))
+      ? Number((((9.81 * validJumpTimesB[i].time ** 2) / 8) * 100).toFixed(2))
       : null,
     heightC: validJumpTimesC[i]
-      ? Number((((9.81 * validJumpTimesC[i].time ** 2) / 8) * 100).toFixed(1))
+      ? Number((((9.81 * validJumpTimesC[i].time ** 2) / 8) * 100).toFixed(2))
       : null,
     stiffnessA: stiffnessA?.[i] || null,
     stiffnessB: stiffnessB?.[i] || null,

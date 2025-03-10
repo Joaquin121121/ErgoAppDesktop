@@ -68,19 +68,19 @@ function BoscoComparisonChart({
   const heightData = [
     {
       name: t(type1),
-      value: Number(avgHeightReachedA.toFixed(1)),
+      value: Number(avgHeightReachedA.toFixed(2)),
       fill: "#e81d23",
     },
     {
       name: t(type2),
-      value: Number(avgHeightReachedB.toFixed(1)),
+      value: Number(avgHeightReachedB.toFixed(2)),
       fill: "#FFC1C1",
     },
     ...(avgHeightReachedC
       ? [
           {
             name: t(type3!),
-            value: Number(avgHeightReachedC.toFixed(1)),
+            value: Number(avgHeightReachedC.toFixed(2)),
             fill: "#FF7F7F",
           },
         ]
@@ -90,19 +90,19 @@ function BoscoComparisonChart({
   const timeData = [
     {
       name: t(type1),
-      value: Number(avgFlightTimeA.toFixed(1)),
+      value: Number(avgFlightTimeA.toFixed(2)),
       fill: "#e81d23",
     },
     {
       name: t(type2),
-      value: Number(avgFlightTimeB.toFixed(1)),
+      value: Number(avgFlightTimeB.toFixed(2)),
       fill: "#FFC1C1",
     },
     ...(avgFlightTimeC
       ? [
           {
             name: t(type3!),
-            value: Number(avgFlightTimeC.toFixed(1)),
+            value: Number(avgFlightTimeC.toFixed(2)),
             fill: "#FF7F7F",
           },
         ]

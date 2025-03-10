@@ -120,11 +120,11 @@ function CompareTwoStudies({
       case "performanceDrop":
         return {
           color:
-            Number(study1.results[criterion].toFixed(1)) ===
-            Number(study2.results[criterion].toFixed(1))
+            Number(study1.results[criterion].toFixed(2)) ===
+            Number(study2.results[criterion].toFixed(2))
               ? ""
-              : Number(study1.results[criterion].toFixed(1)) >
-                Number(study2.results[criterion].toFixed(1))
+              : Number(study1.results[criterion].toFixed(2)) >
+                Number(study2.results[criterion].toFixed(2))
               ? "#e81d23"
               : "#00A859",
         };
@@ -144,11 +144,11 @@ function CompareTwoStudies({
       default:
         return {
           color:
-            Number(study1.results[criterion].toFixed(1)) ===
-            Number(study2.results[criterion].toFixed(1))
+            Number(study1.results[criterion].toFixed(2)) ===
+            Number(study2.results[criterion].toFixed(2))
               ? ""
-              : Number(study1.results[criterion].toFixed(1)) >
-                Number(study2.results[criterion].toFixed(1))
+              : Number(study1.results[criterion].toFixed(2)) >
+                Number(study2.results[criterion].toFixed(2))
               ? "#00A859"
               : "#e81d23",
         };
@@ -166,7 +166,7 @@ function CompareTwoStudies({
     switch (criterion) {
       case "performanceDrop":
         return {
-          content: `${study1.results[criterion].toFixed(1)}%`,
+          content: `${study1.results[criterion].toFixed(2)}%`,
           icon:
             study1.results[criterion] > study2.results[criterion]
               ? "▲"
@@ -192,21 +192,21 @@ function CompareTwoStudies({
           const diff = ((height1 - height2) / height2) * 100;
 
           return {
-            content: `${diff.toFixed(1)}%`,
+            content: `${diff.toFixed(2)}%`,
             icon: diff > 0 ? "▲" : diff < 0 ? "▼" : "",
             color: diff > 0 ? "#00A859" : diff < 0 ? "#e81d23" : "",
           };
         }
       default:
-        const val1 = Number(study1.results[criterion].toFixed(1));
-        const val2 = Number(study2.results[criterion].toFixed(1));
+        const val1 = Number(study1.results[criterion].toFixed(2));
+        const val2 = Number(study2.results[criterion].toFixed(2));
         if (!isNaN(val1) && !isNaN(val2)) {
           const diff = ((val2 - val1) / val1) * 100;
           if (diff === 0) {
             return {};
           }
           return {
-            content: `${diff.toFixed(1)}%`,
+            content: `${diff.toFixed(2)}%`,
             icon: diff > 0 ? "▲" : diff < 0 ? "▼" : "",
             color: diff > 0 ? "#00A859" : diff < 0 ? "#e81d23" : "",
           };
@@ -265,7 +265,7 @@ function CompareTwoStudies({
                 >
                   {typeof study1.results[criterion] === "number" &&
                   study1.results[criterion] !== 0
-                    ? study1.results[criterion].toFixed(1)
+                    ? study1.results[criterion].toFixed(2)
                     : t(study1.results[criterion])}
                   {study1.results[`${criterion}Unit`]
                     ? ` ${study1.results[`${criterion}Unit`]}`
@@ -304,10 +304,10 @@ function CompareTwoStudies({
                   style={compare(criterion, study2, study1)}
                 >
                   {criterion === "performanceDrop"
-                    ? study2.results[criterion].toFixed(1) + "%"
+                    ? study2.results[criterion].toFixed(2) + "%"
                     : typeof study2.results[criterion] === "number" &&
                       study2.results[criterion] !== 0
-                    ? study2.results[criterion].toFixed(1)
+                    ? study2.results[criterion].toFixed(2)
                     : t(study2.results[criterion])}
                   {study2.results[`${criterion}Unit`]
                     ? ` ${study2.results[`${criterion}Unit`]}`

@@ -4,6 +4,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import navAnimations from "../styles/animations.module.css";
 import { useStudyContext } from "../contexts/StudyContext";
 import { CompletedStudy, boscoTests } from "../types/Studies";
+import OutlinedButton from "../components/OutlinedButton";
+import TonalButton from "../components/TonalButton";
 interface CompletedStudyDashboardProps {
   customNavigate: (
     direction: "back" | "forward",
@@ -43,12 +45,16 @@ function CompletedStudyDashboard({
     return `${hours}:${minutes}`;
   };
 
+  const showTable = () => {};
+
+  const showChart = () => {};
+
   const tableJSX = (
     <table className="w-full mt-8 border-collapse">
       <thead className="w-full">
         <tr className="flex justify-around items-center w-full border-b  border-gray">
           {study.results.type === "multipleDropJump" ? (
-            <th className="text-2xl w-40 font-normal text-tertiary border-r border-gray">
+            <th className="text-2xl w-52 font-normal text-tertiary border-r border-gray">
               Altura de Caída
             </th>
           ) : study.results.type === "bosco" ? (
@@ -87,7 +93,7 @@ function CompletedStudyDashboard({
                 </td>
                 <td className="text-inherit w-52 flex items-center justify-center">
                   {study.results[test].avgHeightReached
-                    ? `${study.results[test].avgHeightReached.toFixed(1)} cm`
+                    ? `${study.results[test].avgHeightReached.toFixed(2)} cm`
                     : "-"}
                 </td>
               </tr>
@@ -98,12 +104,14 @@ function CompletedStudyDashboard({
                 key={i}
                 className="mt-2 text-tertiary text-xl flex  justify-around items-center w-full border-b border-gray"
               >
-                <td className="text-inherit w-40 flex items-center justify-center border-r border-gray">
-                  {dropJump.height}
+                <td className="text-inherit w-52 flex items-center justify-center border-r border-gray">
+                  {dropJump.height}{" "}
+                  {study.results.type === "multipleDropJump" &&
+                    study.results.heightUnit}
                 </td>
                 <td className="text-inherit w-52 flex items-center justify-center">
                   {dropJump.avgHeightReached
-                    ? `${dropJump.avgHeightReached.toFixed(1)} cm`
+                    ? `${dropJump.avgHeightReached.toFixed(2)} cm`
                     : "-"}
                 </td>
               </tr>
@@ -117,7 +125,7 @@ function CompletedStudyDashboard({
                   {i + 1}
                 </td>
                 <td className="text-inherit w-52 flex items-center justify-center">
-                  {Number((((9.81 * time.time ** 2) / 8) * 100).toFixed(1))}
+                  {Number((((9.81 * time.time ** 2) / 8) * 100).toFixed(2))} cm
                 </td>
               </tr>
             ))}
@@ -125,13 +133,13 @@ function CompletedStudyDashboard({
       {study.results.type !== "multipleDropJump" &&
         study.results.type !== "bosco" && (
           <tfoot className="w-full block">
-            <tr className="text-darkGray text-xl flex  justify-around items-center w-full linear border-b border-gray">
+            <tr className="text-darkGray mt-2 text-xl flex  justify-around items-center w-full linear border-b border-gray">
               <td className="text-secondary w-40 flex items-center justify-center border-r border-gray">
                 Promedio
               </td>
               <td className="text-secondary w-52 flex items-center justify-center">
                 {study.results
-                  ? `${study.results.avgHeightReached.toFixed(1)} cm`
+                  ? `${study.results.avgHeightReached.toFixed(2)} cm`
                   : "-"}
               </td>
             </tr>
@@ -166,13 +174,13 @@ function CompletedStudyDashboard({
                   <p className="mt-8 text-lg">
                     Stiffness Promedio:{" "}
                     <span className="text-secondary">
-                      {study.results.avgStiffness.toFixed(1)} N/m
+                      {study.results.avgStiffness.toFixed(2)} N/m
                     </span>
                   </p>
                   <p className="mt-2 text-lg">
                     Caída de Rendimiento:{" "}
                     <span className="text-secondary">
-                      {study.results.performanceDrop.toFixed(1)}%
+                      {study.results.performanceDrop.toFixed(2)}%
                     </span>
                   </p>
                 </>
@@ -191,10 +199,10 @@ function CompletedStudyDashboard({
                     </span>
                   </p>
 
-                  <p className="mt-8 text-lg">
-                    Altura de Caída con Mayor Altura de Salto:{" "}
+                  <p className="mt-2 text-lg">
+                    Altura de Caída con Salto Máximo:{" "}
                     <span className="text-secondary">
-                      {study.results.bestHeight}
+                      {study.results.bestHeight} {study.results.heightUnit}
                     </span>
                   </p>
                 </>
@@ -216,6 +224,18 @@ function CompletedStudyDashboard({
               )}
             </>
           )}
+          <OutlinedButton
+            containerStyles="mt-8"
+            title="Ver Tabla"
+            onClick={showTable}
+            icon="tableRed"
+          />
+          <TonalButton
+            containerStyles="my-4 "
+            title="Ver Gráfico"
+            icon="studies"
+            onClick={showChart}
+          />
         </div>
         <div
           className={`w-[55%] h-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col px-16  transition-all 300 ease-in-out ${animation}`}

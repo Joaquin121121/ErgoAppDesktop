@@ -37,14 +37,14 @@ function MultipleJumpsChartDisplay({
 
   const timesData = validJumpTimes.map((jumpTime, i) => ({
     index: i + 1,
-    flightTime: Number(jumpTime.time.toFixed(1)),
-    floorTime: Number(jumpTime.floorTime.toFixed(1)),
+    flightTime: Number(jumpTime.time.toFixed(2)),
+    floorTime: Number(jumpTime.floorTime.toFixed(2)),
     qIndex: Number((jumpTime.time / jumpTime.floorTime).toFixed(2)),
   }));
 
   const heightData = validJumpTimes.map((jumpTime, i) => ({
     index: i + 1,
-    height: Number((((9.81 * jumpTime.time ** 2) / 8) * 100).toFixed(1)),
+    height: Number((((9.81 * jumpTime.time ** 2) / 8) * 100).toFixed(2)),
     qIndex: Number((jumpTime.time / jumpTime.floorTime).toFixed(2)),
   }));
 
@@ -58,7 +58,7 @@ function MultipleJumpsChartDisplay({
     (performance, i) =>
       !jumpTimes[i].deleted && {
         index: i + 1,
-        performance: Number(performance.toFixed(1)),
+        performance: Number(performance.toFixed(2)),
         qIndex: Number(
           (validJumpTimes[i].time / validJumpTimes[i].floorTime).toFixed(2)
         ),

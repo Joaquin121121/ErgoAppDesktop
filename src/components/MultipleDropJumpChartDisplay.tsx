@@ -31,7 +31,7 @@ function MultipleDropJumpChartDisplay({
   // Prepare data for the charts
   const heightData = dropJumps.map((jump, i) => ({
     index: i,
-    height: Number(jump.avgHeightReached.toFixed(1)),
+    height: Number(jump.avgHeightReached.toFixed(2)),
     dropHeight: jump.height,
     label: `${jump.height} cm`,
   }));

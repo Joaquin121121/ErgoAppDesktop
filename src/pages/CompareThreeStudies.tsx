@@ -122,11 +122,11 @@ function CompareThreeStudies({
       default:
         return {
           color:
-            Number(study1[criterion].toFixed(1)) ===
-            Number(study2[criterion].toFixed(1))
+            Number(study1[criterion].toFixed(2)) ===
+            Number(study2[criterion].toFixed(2))
               ? ""
-              : Number(study1[criterion].toFixed(1)) >
-                Number(study2[criterion].toFixed(1))
+              : Number(study1[criterion].toFixed(2)) >
+                Number(study2[criterion].toFixed(2))
               ? "#00A859"
               : "#e81d23",
         };
@@ -177,7 +177,7 @@ function CompareThreeStudies({
                 >
                   {typeof squatJump[criterion] === "number" &&
                   squatJump[criterion] !== 0
-                    ? squatJump[criterion].toFixed(1)
+                    ? squatJump[criterion].toFixed(2)
                     : t(squatJump[criterion])}
                   {squatJump[`${criterion}Unit`]
                     ? ` ${squatJump[`${criterion}Unit`]}`
@@ -201,7 +201,7 @@ function CompareThreeStudies({
                   style={compare(criterion, cmj, squatJump)}
                 >
                   {typeof cmj[criterion] === "number" && cmj[criterion] !== 0
-                    ? cmj[criterion].toFixed(1)
+                    ? cmj[criterion].toFixed(2)
                     : t(cmj[criterion])}
                   {cmj[`${criterion}Unit`]
                     ? ` ${cmj[`${criterion}Unit`]}`
@@ -224,7 +224,7 @@ function CompareThreeStudies({
                 >
                   {typeof abalakov[criterion] === "number" &&
                   abalakov[criterion] !== 0
-                    ? abalakov[criterion].toFixed(1)
+                    ? abalakov[criterion].toFixed(2)
                     : t(abalakov[criterion])}
                   {abalakov[`${criterion}Unit`]
                     ? ` ${abalakov[`${criterion}Unit`]}`

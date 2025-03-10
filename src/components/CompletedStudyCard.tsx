@@ -68,7 +68,7 @@ function CompletedStudyCard({
             <p key={key} className="text-lg text-darkGray mb-8">
               -{t(key)}:{" "}
               <span className="text-tertiary font-medium">
-                {study.results[key].avgHeightReached?.toFixed(1)}{" "}
+                {study.results[key].avgHeightReached?.toFixed(2)}{" "}
                 {units.heightReached}
               </span>
             </p>
@@ -83,7 +83,7 @@ function CompletedStudyCard({
                     -{t(key)}:{" "}
                     <span className="text-tertiary font-medium">
                       {typeof study.results[key] === "number"
-                        ? study.results[key].toFixed(1) +
+                        ? study.results[key].toFixed(2) +
                           " " +
                           (study.results[`${key}Unit`]
                             ? study.results[`${key}Unit`]
@@ -107,7 +107,7 @@ function CompletedStudyCard({
                           " " +
                           study.results.heightUnit
                         : typeof study.results[key] === "number"
-                        ? study.results[key].toFixed(1) +
+                        ? study.results[key].toFixed(2) +
                           " " +
                           (study.results[`${key}Unit`]
                             ? study.results[`${key}Unit`]
@@ -125,7 +125,7 @@ function CompletedStudyCard({
                       {typeof study.results[key] === "number"
                         ? (study.results[key] === 0
                             ? 0
-                            : study.results[key].toFixed(1)) +
+                            : study.results[key].toFixed(2)) +
                           " " +
                           (study.results[`${key}Unit`]
                             ? study.results[`${key}Unit`]
