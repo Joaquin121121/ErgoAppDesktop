@@ -48,6 +48,7 @@ export interface MultipleDropJumpStudy extends BaseStudy {
 interface BoscoStudy extends BaseStudy {
   type: "bosco";
   studies: ("squatJump" | "cmj" | "abalakov")[];
+  sensitivity: number;
   // Bosco-specific properties
 }
 
@@ -99,7 +100,7 @@ const availableStudies: Studies = {
     takeoffFoot: "both",
     load: 0,
     loadUnit: "kgs",
-    sensitivity: 10,
+    sensitivity: 100,
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
@@ -111,7 +112,7 @@ const availableStudies: Studies = {
     takeoffFoot: "both",
     load: 0,
     loadUnit: "kgs",
-    sensitivity: 10,
+    sensitivity: 100,
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
@@ -123,7 +124,7 @@ const availableStudies: Studies = {
     takeoffFoot: "both",
     load: 0,
     loadUnit: "kgs",
-    sensitivity: 10,
+    sensitivity: 100,
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
@@ -134,7 +135,7 @@ const availableStudies: Studies = {
     description: "Salto de Caída",
     takeoffFoot: "both",
     heightUnit: "cm",
-    sensitivity: 10,
+    sensitivity: 100,
     dropJumpHeights: [],
     preview: {
       equipment: ["Alfombra de Contacto"],
@@ -148,6 +149,7 @@ const availableStudies: Studies = {
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
+    sensitivity: 100,
   },
   multipleJumps: {
     type: "multipleJumps",
@@ -156,7 +158,7 @@ const availableStudies: Studies = {
     takeoffFoot: "both",
     criteria: "numberOfJumps",
     criteriaValue: 30,
-    sensitivity: 10,
+    sensitivity: 100,
     preview: {
       equipment: ["Alfombra de Contacto"],
     },
@@ -164,8 +166,7 @@ const availableStudies: Studies = {
 };
 export const availableEquipment = [
   "Alfombra de Contacto",
-  "Encoder Lineal",
-  "Plataforma de Fuerza",
+  "Fotocélula",
 ] as const;
 
 export const statsToMeasure = [

@@ -61,6 +61,7 @@ function TestInProgress({
   const [pointer, setPointer] = useState(0);
   const [errorTimeout, setErrorTimeout] = useState(null);
   const [displayError, setDisplayError] = useState(false);
+  const [ignoreJump, setIgnoreJump] = useState(false);
   const { serialData, error, startSerialListener, logs, isConnected } =
     useSerialMonitor();
   const { study, setStudy, athlete, setAthlete } = useStudyContext();
@@ -728,10 +729,14 @@ function TestInProgress({
     ) {
       setStatus("Saltando");
       if (study.type === "multipleJumps") {
-        setFloorTimes((prevFloorTimes) => [
-          ...prevFloorTimes,
-          getSecondsBetweenDates(startTime, new Date()),
-        ]);
+        if (ignoreJump) {
+          setIgnoreJump(false);
+        } else {
+          setFloorTimes((prevFloorTimes) => [
+            ...prevFloorTimes,
+            getSecondsBetweenDates(startTime, new Date()),
+          ]);
+        }
       }
       setStartTime(new Date());
     }
@@ -742,6 +747,17 @@ function TestInProgress({
       logs[logs.length - 1].data === "Microswitch PRESIONADO"
     ) {
       setStatus("Listo para saltar");
+      /* Sensitivity Implementation */
+      if (
+        getSecondsBetweenDates(startTime, new Date()) <
+        study.sensitivity / 1000
+      ) {
+        if (study.type === "multipleJumps") {
+          setIgnoreJump(true);
+          setStartTime(new Date());
+        }
+        return;
+      }
       setFlightTimes((prevFlightTimes) => [
         ...prevFlightTimes,
         getSecondsBetweenDates(startTime, new Date()),

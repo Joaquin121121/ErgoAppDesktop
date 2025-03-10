@@ -231,7 +231,7 @@ function MultipleJumpsChartDisplay({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="w-full mb-8 flex items-center justify-around">
+      <div className="w-full mb-8 flex items-center justify-center gap-x-16">
         <OutlinedButton title="Volver" icon="back" onClick={onClose} inverse />
 
         {setShowTable && (

@@ -6,6 +6,10 @@ import { useStudyContext } from "../contexts/StudyContext";
 import { CompletedStudy, boscoTests } from "../types/Studies";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
+import useBackspaceNavigation from "../hooks/useBackspaceNavigation";
+import CustomAccordion from "../components/CustomAccordion";
+import { getTrainingSolutions } from "../hooks/getTrainingSolutions";
+
 interface CompletedStudyDashboardProps {
   customNavigate: (
     direction: "back" | "forward",
@@ -14,6 +18,15 @@ interface CompletedStudyDashboardProps {
   ) => void;
   animation: string;
   isExpanded: boolean;
+}
+
+// Training solution interface
+interface TrainingSolution {
+  title: string;
+  info: string;
+  exerciseType: string;
+  exerciseExamples: string[];
+  comparedTo: string;
 }
 
 function CompletedStudyDashboard({
@@ -30,6 +43,31 @@ function CompletedStudyDashboard({
     (e) => (typeof e.date === "string" ? e.date : e.date.toISOString()) === date
   );
 
+  // Training solutions data
+  const trainingSolutions: TrainingSolution[] =
+    getTrainingSolutions(date, study.results.type) || [];
+
+  // Format the accordion items
+  const accordionItems = trainingSolutions.map((solution) => ({
+    title: solution.title,
+    content: (
+      <ul className="list-disc pl-4">
+        <li className="text-tertiary mb-2">{solution.info}</li>
+        <li className="text-tertiary mb-2">{solution.exerciseType}</li>
+        <li className="text-tertiary">
+          Ejemplos de ejercicios:
+          <ul className="list-circle pl-8">
+            {solution.exerciseExamples.map((example, i) => (
+              <li key={i} className="text-tertiary">
+                {example}
+              </li>
+            ))}
+          </ul>
+        </li>
+      </ul>
+    ),
+  }));
+
   const getFormattedDate = (isoString: string) => {
     const date = new Date(isoString);
     const day = date.getDate().toString().padStart(2, "0");
@@ -45,10 +83,6 @@ function CompletedStudyDashboard({
     return `${hours}:${minutes}`;
   };
 
-  const showTable = () => {};
-
-  const showChart = () => {};
-
   const onClose = () => {
     customNavigate("back", "completedStudyDashboard", "athleteStudies");
     setTimeout(() => {
@@ -56,27 +90,15 @@ function CompletedStudyDashboard({
     }, 300);
   };
 
-  // Add DEL key event listener
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
-      if (
-        event.key === "Backspace" &&
-        !["INPUT", "TEXTAREA", "SELECT"].includes(
-          document.activeElement.tagName
-        )
-      ) {
-        onClose();
-      }
-    };
+  const showTest = () => {
+    customNavigate("forward", "completedStudyDashboard", "completedStudyInfo");
+    setTimeout(() => {
+      navigate("/completedStudyInfo?date=" + date);
+    }, 300);
+  };
 
-    window.addEventListener("keydown", handleKeyDown);
+  useBackspaceNavigation(onClose);
 
-    // Cleanup function to remove event listener
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
   const tableJSX = (
     <table className="w-full mt-8 border-collapse">
       <thead className="w-full">
@@ -181,13 +203,24 @@ function CompletedStudyDashboard({
       className={`flex-1  relative flex flex-col items-center transition-all duration-300 ease-in-out ${animation}`}
       style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
     >
-      <p className="text-4xl text-secondary mt-8">{study.studyInfo.name}</p>
-      <p className="mt-2 mb-4 text-xl ">
-        Realizado por {athlete.name} el {getFormattedDate(date)} a las{" "}
-        {getFormattedTime(date)}
-      </p>
+      <div className="flex w-full justify-around items-center">
+        <div className="w-[124px]"></div>
+        <div className="flex flex-col items-center">
+          <p className="text-4xl text-secondary mt-8">{study.studyInfo.name}</p>
+          <p className="mt-2 mb-4 text-xl ">
+            Realizado por {athlete.name} el {getFormattedDate(date)} a las{" "}
+            {getFormattedTime(date)}
+          </p>
+        </div>
+        <TonalButton
+          title="Volver"
+          icon="backWhite"
+          onClick={onClose}
+          inverse
+        />
+      </div>
 
-      <div className="w-full flex justify-around">
+      <div className="w-full flex justify-center gap-x-4">
         <div
           className={`w-[35%] h-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col items-center transition-all 300 ease-in-out `}
         >
@@ -253,21 +286,16 @@ function CompletedStudyDashboard({
               )}
             </>
           )}
-          <OutlinedButton
-            containerStyles="mt-8"
-            title="Ver Tabla"
-            onClick={showTable}
-            icon="tableRed"
-          />
+
           <TonalButton
-            containerStyles="my-4 "
-            title="Ver Gráfico"
-            icon="studies"
-            onClick={showChart}
+            containerStyles="my-8 "
+            title="Ver Test"
+            icon="testWhite"
+            onClick={showTest}
           />
         </div>
         <div
-          className={`w-[55%] h-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col px-16  transition-all 300 ease-in-out`}
+          className={`w-[62%] h-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col px-16 transition-all 300 ease-in-out`}
         >
           <div className="flex self-center gap-x-8 mt-4 items-center">
             <p className="text-secondary text-2xl">
@@ -275,15 +303,17 @@ function CompletedStudyDashboard({
             </p>
             <img src="/lightningRed.png" alt="" className="h-9 w-9" />
           </div>
+
+          {/* Using the new CustomAccordion component */}
+          <div className="w-full mt-4">
+            <CustomAccordion
+              items={accordionItems}
+              initialExpandedIndex={0}
+              showButton={() => {}}
+            />
+          </div>
         </div>
       </div>
-      <TonalButton
-        title="Volver"
-        icon="backWhite"
-        onClick={onClose}
-        inverse
-        containerStyles="mt-16 self-center"
-      />
     </div>
   );
 }

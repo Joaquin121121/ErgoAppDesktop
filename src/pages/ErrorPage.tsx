@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import AutoplayVideo from "../components/AutoplayVideo";
 import navAnimations from "../styles/animations.module.css";
+import useBackspaceNavigation from "../hooks/useBackspaceNavigation";
+
 interface ErrorPageProps {
   animation?: string;
   onReset?: () => void;
@@ -43,6 +45,14 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
       setShowFirstVideo(false);
     }, 2000);
   }, []);
+
+  useBackspaceNavigation(() => {
+    setAnimation(navAnimations.fadeOutRight);
+    setTimeout(() => {
+      customNavigate("back", "error", "studies");
+      handleReturn();
+    }, 300);
+  });
 
   return (
     <div

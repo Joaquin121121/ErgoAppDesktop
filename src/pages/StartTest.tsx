@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import { useStudyContext } from "../contexts/StudyContext";
-import BoscoStudiesList from "../components/BoscoStudiesList";
 import inputStyles from "../styles/inputStyles.module.css";
 import TestInProgress from "../components/TestInProgress";
 import { useTranslation } from "react-i18next";
@@ -335,7 +334,7 @@ function StartTest({
         </p>
         <p className="text-4xl mt-8 text-tertiary">Datos del Atleta</p>
         {athlete.name.length ? (
-          <div className="w-full self-center mt-12 flex items-center justify-center gap-x-16">
+          <div className="w-full self-center mt-8 flex items-center justify-center gap-x-16">
             <p className="text-2xl">
               Atleta Seleccionado:{" "}
               <span className="text-secondary">{athlete.name}</span>
@@ -347,7 +346,7 @@ function StartTest({
             />
           </div>
         ) : (
-          <div className="flex mt-12 justify-around items-center">
+          <div className="flex mt-8 justify-around items-center">
             <OutlinedButton
               large
               title="Buscar Atleta"
@@ -376,10 +375,28 @@ function StartTest({
         <p className="text-4xl mt-16 text-tertiary">
           {study.type === "bosco" ? "Tests a Realizar" : "Datos del Test"}
         </p>
-        <div className="px-8 mt-8">
-          {study.type !== "bosco" && (
+        <div className="px-8 mt-4">
+          {study.type === "bosco" && (
+            <div className="flex flex-col px-8 relative">
+              <ul className="mt-2">
+                {study.studies.map((studyItem, index) => (
+                  <li key={studyItem} className="w-48 rounded-2xl p-2 mb-1 ">
+                    <p className="text-secondary text-lg">
+                      {index + 1}. {t(studyItem)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {study.type !== "bosco" && study.type !== "multipleJumps" && (
             <div className="flex items-center">
-              <p className="text-tertiary mr-8 w-40 text-lg ">
+              <p
+                className="text-tertiary mr-8 w-40 text-lg text-end"
+                style={{
+                  width: study.type === "multipleDropJump" && "261px",
+                }}
+              >
                 Pie de Despegue
               </p>
               <button
@@ -415,11 +432,16 @@ function StartTest({
             </div>
           )}
           {study.type !== "bosco" && study.type !== "multipleJumps" && (
-            <div className="flex items-center mt-12">
+            <div className="flex items-center mt-8">
               {study.type === "multipleDropJump" ? (
                 <div>
                   <div className="flex items-center">
-                    <p className=" mr-4 text-lg w-70">
+                    <p
+                      className=" mr-8 text-lg w-60"
+                      style={{
+                        width: study.type === "multipleDropJump" && "261px",
+                      }}
+                    >
                       Seleccionar Alturas de Caída
                     </p>
 
@@ -456,11 +478,18 @@ function StartTest({
                       Seleccione una altura de caída
                     </p>
                   )}
-                  <div className="flex items-center mt-12 text-lg">
-                    Añadir Altura
+                  <div className="flex items-center mt-8">
+                    <p
+                      className={"text-lg text-end w-40 mr-12"}
+                      style={{
+                        width: study.type === "multipleDropJump" && "261px",
+                      }}
+                    >
+                      Añadir Altura
+                    </p>
                     <input
                       type="numeric"
-                      className={`bg-offWhite border ml-8  border-gray focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${inputStyles.input}`}
+                      className={`bg-offWhite border pl-2 border-gray focus:outline-secondary rounded-2xl shadow-sm  w-20 h-10 text-tertiary ${inputStyles.input}`}
                       placeholder="70..."
                       value={newHeightQuery}
                       onChange={(e) => {
@@ -476,7 +505,7 @@ function StartTest({
                     </button>
                     <img
                       src="/reset.png"
-                      className="h-7 w-7 ml-8 hover:opacity-70 cursor-pointer "
+                      className="h-7 w-7 ml-4 hover:opacity-70 cursor-pointer "
                       alt=""
                       onClick={() => {
                         setNewHeightQuery("");
@@ -488,7 +517,7 @@ function StartTest({
                 </div>
               ) : (
                 <>
-                  <p className="text-tertiary w-36 text-end mr-12 text-lg">
+                  <p className="text-tertiary w-40 text-end mr-12 text-lg">
                     Carga añadida
                   </p>
 
@@ -585,30 +614,37 @@ function StartTest({
               )}
             </>
           )}
-          {/*  {study.type !== "bosco" && (
-            <div className="flex items-center mt-8 relative w-full">
-              <p className="text-tertiary w-36 text-end mr-12">Sensibilidad</p>
-              <input
-                type="numeric"
-                className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${inputStyles.input}`}
-                placeholder="20..."
-                value={study.sensitivity}
-                onChange={(e) => {
-                  handleInputChange("sensitivity", e.target.value);
-                }}
-              />
-              <div
-                className="flex items-center hover:opacity-70 cursor-pointer absolute right-0"
-                onClick={showInfo}
-              >
-                <img src="/info.png" alt="" className="mr-2 h-6 w-6" />
-                <p className="text-secondary ">Qué es la sensibilidad?</p>
-              </div>
+          <div
+            className="flex items-center mt-8 relative w-full"
+            style={{
+              marginTop: study.type === "bosco" && "24px",
+            }}
+          >
+            <p
+              className="text-tertiary w-40 text-end mr-12 text-lg"
+              style={{
+                width: study.type === "multipleDropJump" && "261px",
+              }}
+            >
+              Sensibilidad
+            </p>
+            <input
+              type="numeric"
+              className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${inputStyles.input}`}
+              placeholder="20..."
+              value={study.sensitivity}
+              onChange={(e) => {
+                handleInputChange("sensitivity", e.target.value);
+              }}
+            />
+            <div
+              className="flex items-center hover:opacity-70 cursor-pointer ml-8"
+              onClick={showInfo}
+            >
+              <img src="/info.png" alt="" className="mr-2 h-6 w-6" />
+              <p className="text-secondary ">Qué es la sensibilidad?</p>
             </div>
-          )} */}
-          {study.type === "bosco" && (
-            <BoscoStudiesList studies={study.studies} setStudy={setStudy} />
-          )}
+          </div>
         </div>
         <TonalButton
           title="Realizar Test"
@@ -618,7 +654,7 @@ function StartTest({
         />
       </div>
       {isBlurred && (
-        <div className="bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-1/4 flex flex-col items-center px-16 py-8">
+        <div className="bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-8 flex flex-col items-center px-16 py-8">
           <div
             className="absolute top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
             onClick={() => {
@@ -629,16 +665,41 @@ function StartTest({
           >
             <img src="/close.png" className="h-6 w-6" alt="" />
           </div>
-          <p className="text-darkGray text-lg font-light mt-8">
-            Los saltos con contramovimiento usan un descenso rápido previo para
-            generar más potencia, lo que requiere un control especial de
-            medición.
+          <p className="self-center mt-8 text-xl">Qué es la sensibilidad?</p>
+          <p className=" mt-8 text-darkGray">
+            La sensibilidad en los tests de saltabilidad es un parámetro de
+            configuración crucial que permite ajustar el umbral de detección de
+            contacto con la alfombra o plataforma de salto. Su función principal
+            es:
           </p>
+          <ul className="list-disc list-inside text-darkGray mt-2">
+            <li>
+              Adaptar la medición a diferentes tipos de usuarios (como niños o
+              personas con descensos muy veloces)
+            </li>
+            <li>
+              Garantizar lecturas precisas en saltos con contramovimiento (CMJ,
+              Abalakov, Maximum Jump)
+            </li>
+            <li>
+              Evitar falsos registros cuando el tiempo de vuelo es muy corto
+            </li>
+          </ul>
+          <p className=" mt-8 text-darkGray">
+            Cuando la alfombra está demasiado sensible, puede registrar
+            incorrectamente los despegues y aterrizajes, especialmente en saltos
+            donde el ciclo de estiramiento-acortamiento es muy rápido. Al
+            ajustar la sensibilidad a valores superiores a los tiempos de vuelo
+            registrados, se permite que la evaluación capture correctamente el
+            rendimiento del salto, proporcionando mediciones más precisas de la
+            altura y tiempo de vuelo.
+          </p>
+
           <TonalButton
             title="Continuar"
             icon="next"
             onClick={hideInfo}
-            containerStyles="mt-12"
+            containerStyles="mt-8"
           />
         </div>
       )}

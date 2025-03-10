@@ -13,6 +13,8 @@ import navAnimations from "../styles/animations.module.css";
 import scrollBarStyles from "../styles/scrollbar.module.css";
 import ChartDisplay from "../components/MultipleJumpsChartDisplay";
 import MultipleDropJumpChartDisplay from "../components/MultipleDropJumpChartDisplay";
+import useBackspaceNavigation from "../hooks/useBackspaceNavigation";
+
 function CompletedStudyInfo({
   isExpanded,
   animation,
@@ -335,53 +337,35 @@ function CompletedStudyInfo({
         setNavAnimation(navAnimations.fadeInLeft);
       }, 300);
     } else {
-      customNavigate("back", "completedStudyInfo", "athleteStudies");
+      customNavigate("back", "completedStudyInfo", "completedStudyDashboard");
       setTimeout(() => {
-        navigate("/athleteStudies");
+        navigate("/completedStudyDashboard?date=" + date);
       }, 300);
     }
   };
 
-  // Add DEL key event listener
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
-      if (showTable) {
-        setTableAnimation(navAnimations.popupFadeOutTop);
-        setTimeout(() => {
-          setShowTable(false);
-        }, 200);
-      } else if (showDropJumpChart) {
-        setDropJumpChartAnimation(navAnimations.popupFadeOutTop);
-        setTimeout(() => {
-          setShowDropJumpChart(false);
-        }, 200);
-      } else if (showChart) {
-        setChartAnimation(navAnimations.popupFadeOutTop);
-        setTimeout(() => {
-          setShowChart(false);
-        }, 200);
-      } else if (
-        event.key === "Backspace" &&
-        !["INPUT", "TEXTAREA", "SELECT"].includes(
-          document.activeElement.tagName
-        )
-      ) {
-        if (study.results && study.results.type === "bosco" && !boscoStudy) {
-          returnToMenu();
-        } else {
-          onClose();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    // Cleanup function to remove event listener
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
+  useBackspaceNavigation(() => {
+    if (showTable) {
+      setTableAnimation(navAnimations.popupFadeOutTop);
+      setTimeout(() => {
+        setShowTable(false);
+      }, 200);
+    } else if (showDropJumpChart) {
+      setDropJumpChartAnimation(navAnimations.popupFadeOutTop);
+      setTimeout(() => {
+        setShowDropJumpChart(false);
+      }, 200);
+    } else if (showChart) {
+      setChartAnimation(navAnimations.popupFadeOutTop);
+      setTimeout(() => {
+        setShowChart(false);
+      }, 200);
+    } else if (study.results && study.results.type === "bosco" && !boscoStudy) {
+      returnToMenu();
+    } else {
+      onClose();
+    }
+  }, [showTable, showDropJumpChart, showChart, boscoStudy]);
 
   const returnToMenu = () => {
     customNavigate("back", "completedStudyInfo", "athleteStudies");
@@ -599,7 +583,7 @@ function CompletedStudyInfo({
       <div
         className={`flex-1 relative flex flex-col items-center transition-all duration-300 ease-in-out ${navAnimation} ${
           (isBlurred || showTable || showChart) && "blur-md pointer-events-none"
-        }`}
+        } ${animation}`}
         style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
       >
         <div className="w-full flex justify-center gap-x-16 items-center">
@@ -658,7 +642,7 @@ function CompletedStudyInfo({
             className={`w-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col  ${
               (isBlurred || showTable || showChart) &&
               "blur-md pointer-events-none"
-            } transition-all 300 ease-in-out ${animation}`}
+            } transition-all 300 ease-in-out `}
           >
             {tableJSX}
             <div className="self-center">

@@ -5,6 +5,7 @@ import { formattedDisciplines } from "../constants/data";
 import AutocompleteDropdown from "./AutocompleteDropdown";
 import OutlinedButton from "./OutlinedButton";
 import TonalButton from "./TonalButton";
+import useBackspaceNavigation from "../hooks/useBackspaceNavigation";
 
 interface FilterState {
   age: string[];
@@ -35,27 +36,7 @@ function AthleteFilter({
   const [processedDisciplines, setProcessedDisciplines] =
     useState(formattedDisciplines);
 
-  // Add DEL key event listener
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
-      if (
-        event.key === "Backspace" &&
-        !["INPUT", "TEXTAREA", "SELECT"].includes(
-          document.activeElement.tagName
-        )
-      ) {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    // Cleanup function to remove event listener
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
+  useBackspaceNavigation(onClose);
 
   const parseLabel = (id: string | number, criterion: keyof FilterState) => {
     const stringId = id.toString();
