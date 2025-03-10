@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useStudyContext } from "../contexts/StudyContext";
-import { CompletedStudy, units } from "../types/Studies";
+import { CompletedStudy, units, boscoTests } from "../types/Studies";
 import { useTranslation } from "react-i18next";
 import { formatDate } from "../utils/utils";
 
@@ -35,8 +35,6 @@ function CompletedStudyCard({
     "takeoffFoot",
   ];
 
-  const boscoDisplayKeys = ["cmj", "abalakov", "squatJump"];
-
   return (
     <div
       className={`bg-white border rounded-2xl shadow-sm hover:shadow-xl flex relative flex-col items-center hover:scale-105 hover:cursor-pointer transition-transform active:opacity-70 duration-300 ease-in-out px-4 py-4 
@@ -66,7 +64,7 @@ function CompletedStudyCard({
 
       {study.results.type === "bosco" ? (
         <div>
-          {boscoDisplayKeys.map((key) => (
+          {boscoTests.map((key) => (
             <p key={key} className="text-lg text-darkGray mb-8">
               -{t(key)}:{" "}
               <span className="text-tertiary font-medium">

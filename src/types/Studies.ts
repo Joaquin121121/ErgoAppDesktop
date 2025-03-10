@@ -51,6 +51,8 @@ interface BoscoStudy extends BaseStudy {
   // Bosco-specific properties
 }
 
+export const boscoTests = ["squatJump", "cmj", "abalakov"];
+
 interface MultipleJumpsStudy extends BaseStudy {
   type: "multipleJumps";
   takeoffFoot: "right" | "left" | "both";
@@ -149,7 +151,7 @@ const availableStudies: Studies = {
   },
   multipleJumps: {
     type: "multipleJumps",
-    name: "Multiple Jumps",
+    name: "Test de Saltos Múltiples",
     description: "Saltos Repetidos Continuos",
     takeoffFoot: "both",
     criteria: "numberOfJumps",
@@ -233,6 +235,7 @@ export interface MultipleJumpsResult extends BaseResult {
 export interface DropJumpResult extends BaseResult {
   type: "dropJump";
   height: string;
+  stiffness: number;
 }
 
 export interface MultipleDropJumpResult {
@@ -241,6 +244,7 @@ export interface MultipleDropJumpResult {
   heightUnit: HeightUnit;
   maxAvgHeightReached: number;
   takeoffFoot: "right" | "left" | "both";
+  bestHeight: string;
 }
 
 export interface BoscoResult {

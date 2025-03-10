@@ -124,6 +124,7 @@ function TestInProgress({
             type: study.type,
             dropJumps: [],
             maxAvgHeightReached: 0,
+            bestHeight: "",
             takeoffFoot: study.takeoffFoot,
           }
         : null
@@ -307,6 +308,7 @@ function TestInProgress({
             height: study.dropJumpHeights[pointer],
             takeoffFoot: study.takeoffFoot,
             sensitivity: study.sensitivity,
+            stiffness: stiffness[pointer],
           },
         ],
         maxAvgHeightReached: 0,
@@ -359,6 +361,16 @@ function TestInProgress({
       setStatus("Error");
       return;
     }
+    let validStiffnesses: number[];
+    if (study.type === "multipleDropJump" || study.type === "multipleJumps") {
+      validStiffnesses = localJumpTimes.map((e) =>
+        Number(
+          (Math.PI * (e.time + e.floorTime)) /
+            (e.floorTime * e.floorTime * (e.time / e.floorTime + Math.PI / 4))
+        )
+      );
+      setStiffness(validStiffnesses);
+    }
     if (study.type === "multipleJumps") {
       const validFlightTimes = localJumpTimes.map((e) => e.time);
 
@@ -367,13 +379,7 @@ function TestInProgress({
         Number(((e / max) * 100).toFixed(1))
       );
       setPerformance(validPerformances);
-      const validStiffnesses = localJumpTimes.map((e) =>
-        Number(
-          (Math.PI * (e.time + e.floorTime)) /
-            (e.floorTime * e.floorTime * (e.time / e.floorTime + Math.PI / 4))
-        )
-      );
-      setStiffness(validStiffnesses);
+
       const avgFloorTime =
         localJumpTimes.reduce((acc, time) => acc + time.floorTime, 0) /
         localJumpTimes.length;
@@ -417,7 +423,23 @@ function TestInProgress({
         type: tests[pointer],
       },
     };
+    let dropJumps;
 
+    if (study.type === "multipleDropJump") {
+      dropJumps = [
+        ...multipleDropJumpResults.dropJumps,
+        {
+          avgHeightReached: data.avgHeightReached,
+          times: jumpTimes,
+          avgFlightTime: data.avgFlightTime,
+          type: "dropJump",
+          height: study.dropJumpHeights[pointer],
+          takeoffFoot: study.takeoffFoot,
+          sensitivity: study.sensitivity,
+          stiffness: stiffness[pointer],
+        },
+      ];
+    }
     const studyToSave: CompletedStudy = {
       studyInfo:
         study.type === "custom"
@@ -447,18 +469,7 @@ function TestInProgress({
           : study.type === "multipleDropJump"
           ? {
               ...multipleDropJumpResults,
-              dropJumps: [
-                ...multipleDropJumpResults.dropJumps,
-                {
-                  avgHeightReached: data.avgHeightReached,
-                  times: jumpTimes,
-                  avgFlightTime: data.avgFlightTime,
-                  type: "dropJump",
-                  height: study.dropJumpHeights[pointer],
-                  takeoffFoot: study.takeoffFoot,
-                  sensitivity: study.sensitivity,
-                },
-              ],
+              dropJumps: dropJumps,
               maxAvgHeightReached: Math.max(
                 ...multipleDropJumpResults.dropJumps.map(
                   (e) => e.avgHeightReached
@@ -466,6 +477,18 @@ function TestInProgress({
                 data.avgHeightReached
               ),
               takeoffFoot: study.takeoffFoot,
+              bestHeight:
+                study.dropJumpHeights[
+                  multipleDropJumpResults.dropJumps.findIndex(
+                    (jump) =>
+                      jump.avgHeightReached ===
+                      Math.max(
+                        ...multipleDropJumpResults.dropJumps.map(
+                          (e) => e.avgHeightReached
+                        )
+                      )
+                  )
+                ],
             }
           : {
               avgFlightTime: data.avgFlightTime,

@@ -220,14 +220,6 @@ function StartTest({
   };
 
   useEffect(() => {
-    if (true) {
-      throw new Error(
-        "Random error in StartTest.tsx for testing error handling"
-      );
-    }
-  }, []);
-
-  useEffect(() => {
     const handleKeyDown = (event) => {
       // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
       if (

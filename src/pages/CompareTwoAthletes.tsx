@@ -5,12 +5,10 @@ import { useTranslation } from "react-i18next";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import { ftToCm } from "../utils/utils";
-import { CompletedStudy } from "../types/Studies";
+import { CompletedStudy, boscoTests } from "../types/Studies";
 
 // Define athlete criteria for comparison
 const athleteCriteria = ["gender", "age", "weight", "height"];
-
-const boscoTests = ["abalakov", "cmj", "squatJump"];
 
 // Define type for testsInCommon
 interface TestsInCommon {

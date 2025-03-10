@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import TonalButton from "../components/TonalButton";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import AutoplayVideo from "../components/AutoPlayVideo";
+import AutoplayVideo from "../components/AutoplayVideo";
 import navAnimations from "../styles/animations.module.css";
 interface ErrorPageProps {
   animation?: string;
@@ -23,6 +23,8 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [animation, setAnimation] = useState(navAnimations.fadeInRight);
+  const [showFirstVideo, setShowFirstVideo] = useState(true);
+
   const handleReturn = () => {
     if (onReset) {
       try {
@@ -36,15 +38,44 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
     navigate("/", { replace: true });
   };
 
+  useEffect(() => {
+    setTimeout(() => {
+      setShowFirstVideo(false);
+    }, 2000);
+  }, []);
+
   return (
     <div
-      className={`flex-1 w-[100vw] h-[100vh] relative flex flex-col items-center transition-all duration-300 ease-in-out `}
+      className={`flex-1 w-[100vw] h-[100vh] relative flex flex-col items-center transition-all duration-300 ease-in-out`}
     >
       <div
         className={`w-[90%] h-[95%] bg-white shadow-sm rounded-2xl mt-8 flex flex-col items-center transition-all 300 ease-in-out ${animation}`}
       >
-        <div className="self-center w-1/2 h-[400px]">
-          <AutoplayVideo src="/error.mp4" width="100%" height="100%" />
+        <div className="self-center w-1/2 h-[400px] relative">
+          <div
+            className={`absolute inset-0 ${
+              showFirstVideo ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <AutoplayVideo
+              src="/error.mp4"
+              width="100%"
+              height="100%"
+              loop={false}
+            />
+          </div>
+          <div
+            className={`absolute inset-0 ${
+              showFirstVideo ? "opacity-0" : "opacity-100"
+            }`}
+          >
+            <AutoplayVideo
+              src="/rainLoop.mov"
+              width="100%"
+              height="100%"
+              loop={true}
+            />
+          </div>
         </div>
         <h1 className="text-2xl text-secondary mb-6 mt-16">
           Hemos encontrado un error inesperado.

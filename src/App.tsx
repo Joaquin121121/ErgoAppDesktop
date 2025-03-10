@@ -27,7 +27,7 @@ import CompareTwoAthletes from "./pages/CompareTwoAthletes";
 import { AthleteComparisonProvider } from "./contexts/AthleteComparisonContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ErrorPage from "./pages/ErrorPage";
-
+import CompletedStudyDashboard from "./pages/CompletedStudyDashboard";
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
@@ -126,6 +126,7 @@ function App() {
     "compareThreeStudies",
     "compareTwoAthletes",
     "error",
+    "completedStudyDashboard",
   ] as const;
   const [animations, setAnimations] = useState(
     Object.fromEntries(keys.map((key) => [key, ""]))
@@ -302,6 +303,14 @@ function App() {
             customNavigate={customNavigate}
           />
         );
+      case "completedStudyDashboard":
+        return (
+          <CompletedStudyDashboard
+            isExpanded={isExpanded}
+            animation={animations.completedStudyDashboard}
+            customNavigate={customNavigate}
+          />
+        );
       default:
         return (
           <NotFound
@@ -465,6 +474,10 @@ function App() {
                       <Route
                         path="/compareTwoAthletes"
                         element={getPageComponent("compareTwoAthletes")}
+                      />
+                      <Route
+                        path="/completedStudyDashboard"
+                        element={getPageComponent("completedStudyDashboard")}
                       />
                       <Route path="*" element={getPageComponent("notFound")} />
                     </Routes>

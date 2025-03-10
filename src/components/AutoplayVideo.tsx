@@ -1,7 +1,19 @@
 import React, { useRef, useEffect } from "react";
 
-const AutoplayVideo = ({ src, width = "100%", height = "auto" }) => {
-  const videoRef = useRef(null);
+interface AutoplayVideoProps {
+  src: string;
+  width?: string | number;
+  height?: string | number;
+  loop?: boolean;
+}
+
+const AutoplayVideo = ({
+  src,
+  width = "100%",
+  height = "auto",
+  loop = false,
+}: AutoplayVideoProps) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     // Ensure video plays automatically when loaded
@@ -19,15 +31,10 @@ const AutoplayVideo = ({ src, width = "100%", height = "auto" }) => {
       width={width}
       height={height}
       autoPlay
-      muted // Muted videos are more likely to autoplay without user interaction
-      playsInline // Better for mobile devices
-      controls={false} // No controls
-      onEnded={() => {
-        // When video ends, it will stay on the last frame
-        if (videoRef.current) {
-          videoRef.current.currentTime = videoRef.current.duration;
-        }
-      }}
+      muted
+      playsInline
+      loop={loop}
+      preload="auto" // Important for seamless looping
     >
       <source src={src} type="video/mp4" />
       Your browser does not support the video tag.
@@ -36,6 +43,3 @@ const AutoplayVideo = ({ src, width = "100%", height = "auto" }) => {
 };
 
 export default AutoplayVideo;
-
-// Usage example:
-// <AutoplayVideo src="/path/to/your/video.mp4" width="640px" height="360px" />

@@ -144,9 +144,9 @@ function AthleteStudies({
       });
       return;
     }
-    customNavigate("forward", "athleteStudies", "completedStudyInfo");
+    customNavigate("forward", "athleteStudies", "completedStudyDashboard");
     setTimeout(() => {
-      navigate("/completedStudyInfo?date=" + date);
+      navigate("/completedStudyDashboard?date=" + date);
     }, 300);
   };
 
