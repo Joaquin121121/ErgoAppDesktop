@@ -29,7 +29,7 @@ function About({
     nextPage: string
   ) => void;
 }) {
-  const { setStudy, resetAthlete } = useStudyContext();
+  const { setStudy, resetAthlete, setSelectedAthletes } = useStudyContext();
 
   const { readDirectoryJsons, deleteJson } = useJsonFiles();
 
@@ -137,6 +137,7 @@ function About({
   useEffect(() => {
     loadCustomStudies();
     resetAthlete();
+    setSelectedAthletes([]);
   }, []);
 
   return (

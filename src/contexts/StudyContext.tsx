@@ -33,6 +33,8 @@ interface StudyContextType {
   athlete: SelectedAthlete;
   setAthlete: (athlete: SelectedAthlete) => void;
   resetAthlete: () => void; // Added reset function
+  selectedAthletes: Athlete[];
+  setSelectedAthletes: (athletes: Athlete[]) => void;
 }
 
 // Create context with initial null values
@@ -42,6 +44,8 @@ const StudyContext = createContext<StudyContextType>({
   athlete: null,
   setAthlete: () => {},
   resetAthlete: () => {}, // Added reset function
+  selectedAthletes: [],
+  setSelectedAthletes: () => {},
 });
 
 export const useStudyContext = () => {
@@ -58,6 +62,7 @@ export const StudyProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [study, setStudy] = useState<SelectedStudy>(null);
   const [athlete, setAthlete] = useState<Athlete>(initialAthlete);
+  const [selectedAthletes, setSelectedAthletes] = useState<Athlete[]>([]);
 
   // Function to set the study with type checking
   const setStudyWithTypeCheck = (newStudy: SelectedStudy) => {
@@ -81,6 +86,8 @@ export const StudyProvider: React.FC<{ children: React.ReactNode }> = ({
         athlete,
         setAthlete,
         resetAthlete, // Added reset function to provider value
+        selectedAthletes,
+        setSelectedAthletes,
       }}
     >
       {children}

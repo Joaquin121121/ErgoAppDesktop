@@ -29,9 +29,11 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const [stateReset, setStateReset] = useState(false);
   const [genderReset, setGenderReset] = useState(false);
   const [disciplineReset, setDisciplineReset] = useState(false);
+  const [multipleSelection, setMultipleSelection] = useState(false);
   const [initialState, setInitialState] = useState("");
   const [originalCountry, setOriginalCountry] = useState("");
   const [isModified, setIsModified] = useState(false);
+  const [multipleAthleteIndex, setMultipleAthleteIndex] = useState(0);
 
   const [errors, setErrors] = useState({
     name: "",
@@ -57,7 +59,13 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const { readDirectoryJsons, saveJson } = useJsonFiles();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { athlete, setAthlete, resetAthlete } = useStudyContext();
+  const {
+    athlete,
+    setAthlete,
+    resetAthlete,
+    selectedAthletes,
+    setSelectedAthletes,
+  } = useStudyContext();
   const [originalAthlete, setOriginalAthlete] = useState(athlete);
 
   const countries = Country.getAllCountries();
@@ -73,6 +81,19 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   );
 
   const handleAthleteSelect = (selectedAthlete) => {
+    if (
+      selectedAthletes.some((athlete) => athlete.name === selectedAthlete.name)
+    ) {
+      const index = selectedAthletes.findIndex(
+        (athlete) => athlete.name === selectedAthlete.name
+      );
+      setMultipleAthleteIndex(index);
+      setAthlete(selectedAthletes[index]);
+      setSelectedAthleteName(selectedAthletes[index].name);
+      setSearchTerm(selectedAthletes[index].name);
+      setShowDropdown(false);
+      return;
+    }
     setSelectedAthleteName(selectedAthlete.name);
     setAthlete(selectedAthlete);
     setOriginalAthlete(selectedAthlete);
@@ -82,12 +103,17 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       getStateByCodeAndCountry(selectedAthlete.state, selectedAthlete.country)
         ?.name || ""
     );
+    if (multipleSelection) {
+      setSelectedAthletes([...selectedAthletes, selectedAthlete]);
+      return;
+    }
   };
 
   const onClose = () => {
     if (!from) {
       resetAthlete();
     }
+    setSelectedAthletes([]);
     customNavigate(
       "back",
       "selectAthlete",
@@ -124,6 +150,12 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     if (inputRef.current) {
       inputRef.current.showPicker();
     }
+  };
+
+  const toggleMultipleSelection = () => {
+    setMultipleSelection(!multipleSelection);
+    setSelectedAthletes(selectedAthleteName.length > 0 ? [athlete] : []);
+    setMultipleAthleteIndex(0);
   };
 
   const handleAthletePointer = (e, athlete) => {
@@ -230,9 +262,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       const result = await readDirectoryJsons("athletes");
       const parsedAthletes = result.files
         .map((item) => {
-          console.log("Raw content:", item.content);
           const transformed = transformToAthlete(item.content);
-          console.log("Transformed athlete:", transformed);
           return transformed;
         })
         .filter((athlete) => athlete !== null);
@@ -283,6 +313,23 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       setErrors({ ...errors, institution: "empty" });
       return;
     }
+    if (multipleSelection) {
+      if (multipleAthleteIndex === selectedAthletes.length - 1) {
+        setSelectedAthleteName("");
+        setSearchTerm("");
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+        setMultipleAthleteIndex(multipleAthleteIndex + 1);
+
+        return;
+      }
+      setAthlete(selectedAthletes[multipleAthleteIndex + 1]);
+      setSelectedAthleteName(selectedAthletes[multipleAthleteIndex + 1].name);
+      setSearchTerm(selectedAthletes[multipleAthleteIndex + 1].name);
+      setMultipleAthleteIndex(multipleAthleteIndex + 1);
+      return;
+    }
 
     try {
       const result = await saveJson(
@@ -301,9 +348,11 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   };
 
   const getButtonTitle = () => {
-    if (!selectedAthleteName) return "Volver";
+    if (!selectedAthleteName && !multipleSelection) return "Volver";
     if (from && isModified) return "Guardar Cambios";
-    return isModified ? "Guardar y Continuar" : "Continuar";
+    return isModified
+      ? `${multipleSelection ? "Siguiente" : "Guardar y Continuar"}`
+      : `${multipleSelection ? "Siguiente" : "Continuar"}`;
   };
 
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -365,6 +414,11 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     if (searchInputRef.current) {
       searchInputRef.current.focus();
     }
+  }, []);
+
+  useEffect(() => {
+    setSelectedAthletes([]);
+    setMultipleAthleteIndex(0);
   }, []);
 
   useEffect(() => {
@@ -481,98 +535,135 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
 
         <p className="text-3xl text-secondary self-center -mt-10">
           {from ? "Datos del" : "Buscar"} Atleta
+          {multipleSelection && "s"}{" "}
+          {multipleSelection &&
+            `(${
+              selectedAthleteName.length > 0
+                ? multipleAthleteIndex + 1
+                : multipleAthleteIndex
+            }/${selectedAthletes.length})`}
         </p>
 
         {!from && (
-          <div className="relative w-2/5 self-center">
+          <div className="w-full flex mt-8 items-center justify-center gap-x-16">
             <div
-              className={`h-12 rounded-2xl bg-offWhite shadow-sm flex items-center mt-8 px-4 ${
-                searchBarFocus && "border border-secondary"
-              }`}
-            >
-              <img src="/search.png" alt="Buscar" className="h-8 w-8 mr-8" />
-              <input
-                type="text"
-                ref={searchInputRef}
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setShowDropdown(true);
-                }}
-                onKeyDown={(e) => {
-                  if (!showDropdown || !filteredAthletes.length) return;
-
-                  switch (e.key) {
-                    case "ArrowDown":
-                      e.preventDefault();
-                      setSelectedIndex((prev) =>
-                        prev < filteredAthletes.length - 1 ? prev + 1 : prev
-                      );
-                      break;
-
-                    case "ArrowUp":
-                      e.preventDefault();
-                      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
-                      break;
-
-                    case "Enter":
-                      e.preventDefault();
-                      if (selectedIndex >= 0) {
-                        handleAthleteSelect(filteredAthletes[selectedIndex]);
-                      }
-                      break;
-
-                    default:
-                      break;
-                  }
-                }}
-                className="flex-1 h-full focus:outline-none text-lg bg-offWhite text-tertiary"
-                onFocus={() => {
-                  setSearchBarFocus(true);
-                  setShowDropdown(true);
-                }}
-                onBlur={() => {
-                  setSearchBarFocus(false);
-                  // Only hide dropdown if we're not using keyboard navigation
-                  if (selectedIndex === -1) {
-                    setTimeout(() => setShowDropdown(false), 200);
-                  }
-                }}
-                placeholder="Buscar atleta..."
-              />
-            </div>
-
-            {showDropdown && searchTerm && (
+              style={{ width: multipleSelection ? "310px" : "219.25px" }}
+            ></div>
+            <div className="relative w-2/5 self-center">
               <div
-                ref={dropdownRef}
-                className="absolute w-full mt-2 bg-white rounded-lg shadow-lg max-h-64 overflow-y-auto z-50"
-                role="listbox"
-                tabIndex={-1}
-                onKeyDown={handleKeyDown}
+                className={`h-12 rounded-2xl bg-offWhite shadow-sm flex items-center  px-4 ${
+                  searchBarFocus && "border border-secondary"
+                }`}
               >
-                {filteredAthletes.length > 0 ? (
-                  filteredAthletes.map((athlete, index) => (
-                    <div
-                      key={index}
-                      role="option"
-                      aria-selected={selectedIndex === index}
-                      className={`px-4 py-2 cursor-pointer ${
-                        selectedIndex === index
-                          ? "bg-lightRed text-secondary"
-                          : "text-tertiary hover:bg-lightRed hover:text-secondary"
-                      }`}
-                      onPointerDown={(e) => handleAthletePointer(e, athlete)}
-                      style={{ touchAction: "none" }} // Prevent default touch actions
-                    >
-                      {athlete.name}
-                    </div>
-                  ))
-                ) : (
-                  <div className="px-4 py-2 text-darkGray">
-                    No hay ningun atleta de nombre '{searchTerm}'
-                  </div>
-                )}
+                <img src="/search.png" alt="Buscar" className="h-8 w-8 mr-8" />
+                <input
+                  type="text"
+                  ref={searchInputRef}
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setShowDropdown(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (!showDropdown || !filteredAthletes.length) return;
+
+                    switch (e.key) {
+                      case "ArrowDown":
+                        e.preventDefault();
+                        setSelectedIndex((prev) =>
+                          prev < filteredAthletes.length - 1 ? prev + 1 : prev
+                        );
+                        break;
+                      case "Escape":
+                        e.preventDefault();
+                        setShowDropdown(false);
+                        break;
+
+                      case "ArrowUp":
+                        e.preventDefault();
+                        setSelectedIndex((prev) =>
+                          prev > 0 ? prev - 1 : prev
+                        );
+                        break;
+
+                      case "Enter":
+                        e.preventDefault();
+                        if (selectedIndex >= 0) {
+                          handleAthleteSelect(filteredAthletes[selectedIndex]);
+                        }
+                        break;
+
+                      default:
+                        break;
+                    }
+                  }}
+                  className="flex-1 h-full focus:outline-none text-lg bg-offWhite text-tertiary"
+                  onFocus={() => {
+                    setSearchBarFocus(true);
+                    setShowDropdown(true);
+                  }}
+                  onBlur={() => {
+                    setSearchBarFocus(false);
+                    // Only hide dropdown if we're not using keyboard navigation
+                    if (selectedIndex === -1) {
+                      setTimeout(() => setShowDropdown(false), 200);
+                    }
+                  }}
+                  placeholder={`Buscar atleta${
+                    multipleSelection ? "s" : ""
+                  }...`}
+                />
               </div>
+
+              {showDropdown && searchTerm && (
+                <div
+                  ref={dropdownRef}
+                  className="absolute w-full mt-2 bg-white rounded-lg shadow-lg max-h-64 overflow-y-auto z-50"
+                  role="listbox"
+                  tabIndex={-1}
+                  onKeyDown={handleKeyDown}
+                >
+                  {filteredAthletes.length > 0 ? (
+                    filteredAthletes.map((athlete, index) => (
+                      <div
+                        key={index}
+                        role="option"
+                        aria-selected={selectedIndex === index}
+                        className={`px-4 py-2 cursor-pointer ${
+                          selectedIndex === index
+                            ? "bg-lightRed text-secondary"
+                            : "text-tertiary hover:bg-lightRed hover:text-secondary"
+                        }`}
+                        onPointerDown={(e) => handleAthletePointer(e, athlete)}
+                        style={{ touchAction: "none" }} // Prevent default touch actions
+                      >
+                        {athlete.name}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-2 text-darkGray">
+                      No hay ningun atleta de nombre '{searchTerm}'
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {multipleSelection ? (
+              <OutlinedButton
+                title="Desactivar Selección Múltiple"
+                onClick={() => {
+                  toggleMultipleSelection();
+                }}
+                icon="close"
+              />
+            ) : (
+              <TonalButton
+                title="Selección Múltiple"
+                onClick={() => {
+                  toggleMultipleSelection();
+                }}
+                icon="people"
+              />
             )}
           </div>
         )}
@@ -581,16 +672,8 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
           <div className="flex mt-8 items-center self-center">
             <p className="text-lg text-tertiary ">
               Atleta seleccionado:{" "}
-              <span className="text-secondary">{selectedAthleteName}</span>
+              <span className="text-secondary">{selectedAthleteName} </span>
             </p>
-            {/*   <OutlinedButton
-              title={allowEdit ? "Guardar" : "Editar"}
-              icon={allowEdit ? "checkRed" : "pencil"}
-              onClick={() => {
-                setAllowEdit(!allowEdit);
-              }}
-              containerStyles="h-8 ml-8"
-            /> */}
           </div>
         )}
         {selectedAthleteName.length > 0 && (
@@ -885,13 +968,66 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
           </div>
         )}
         {(!from || (from && isModified)) && (
-          <TonalButton
-            title={getButtonTitle()}
-            icon={selectedAthleteName ? "check" : "backWhite"}
-            containerStyles="self-center my-8"
-            onClick={selectedAthleteName ? onSave : onClose}
-            inverse={!selectedAthleteName}
-          />
+          <div className="w-full justify-center gap-x-16 items-center flex my-8">
+            {multipleSelection && selectedAthleteName.length > 0 && (
+              <div className="w-[239.71px]"></div>
+            )}
+            {multipleSelection && (
+              <>
+                <OutlinedButton
+                  title="Volver"
+                  icon="back"
+                  inverse
+                  onClick={() => {
+                    if (multipleAthleteIndex === 0) {
+                      return;
+                    }
+                    setAthlete(selectedAthletes[multipleAthleteIndex - 1]);
+
+                    setSelectedAthleteName(
+                      selectedAthletes[multipleAthleteIndex - 1].name
+                    );
+                    setSearchTerm(
+                      selectedAthletes[multipleAthleteIndex - 1].name
+                    );
+                    setMultipleAthleteIndex(
+                      (multipleAthleteIndex) => multipleAthleteIndex - 1
+                    );
+                  }}
+                />
+              </>
+            )}
+            {!(multipleSelection && !selectedAthleteName) && (
+              <TonalButton
+                title={getButtonTitle()}
+                icon={
+                  selectedAthleteName
+                    ? multipleSelection
+                      ? "next"
+                      : "check"
+                    : "backWhite"
+                }
+                containerStyles="self-center"
+                onClick={selectedAthleteName ? onSave : onClose}
+                inverse={!selectedAthleteName}
+              />
+            )}
+
+            {multipleSelection && (
+              <TonalButton
+                title="Guardar y Continuar"
+                icon="save"
+                onClick={() => {
+                  customNavigate("forward", "selectAthlete", "startTest");
+                  resetAthlete();
+                  setTimeout(() => {
+                    navigate("/startTest");
+                  }, 300);
+                }}
+                containerStyles="ml-16"
+              />
+            )}
+          </div>
         )}
 
         {from && (

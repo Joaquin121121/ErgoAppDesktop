@@ -13,6 +13,8 @@ import {
   StudyData,
   MultipleDropJumpResult,
   DropJumpResult,
+  criterionLookup,
+  boscoTests,
 } from "../types/Studies";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase, getPerformanceDrop } from "../utils/utils";
@@ -35,6 +37,12 @@ import {
 } from "recharts";
 import { ComposedChart } from "recharts";
 
+interface MultipleAthletesTest {
+  athleteName: string;
+  test: CompletedStudy;
+  testType: string;
+}
+
 function TestInProgress({
   setTestInProgress,
   onBlurChange,
@@ -52,6 +60,10 @@ function TestInProgress({
   tests: string[];
   setSelectedOption: (selectedOption: string) => void;
 }) {
+  const [multipleAthletesTests, setMultipleAthletesTests] = useState<
+    MultipleAthletesTest[]
+  >([]);
+  const [selectedAthletePointer, setSelectedAthletePointer] = useState(0);
   const [isBlurred, setIsBlurred] = useState(false);
   const [status, setStatus] = useState("Súbase a la alfombra");
   const [data, setData] = useState<StudyData>({
@@ -64,7 +76,8 @@ function TestInProgress({
   const [ignoreJump, setIgnoreJump] = useState(false);
   const { serialData, error, startSerialListener, logs, isConnected } =
     useSerialMonitor();
-  const { study, setStudy, athlete, setAthlete } = useStudyContext();
+  const { study, setStudy, athlete, setAthlete, selectedAthletes } =
+    useStudyContext();
   const { saveJson, readJson } = useJsonFiles();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -132,6 +145,9 @@ function TestInProgress({
         : null
     );
   const [chartData, setChartData] = useState<any[]>([]);
+
+  // Add this state to track when finishTest completes its updates
+  const [testFinished, setTestFinished] = useState(false);
 
   const tableJSX = (
     <table className="w-full mt-8">
@@ -280,6 +296,124 @@ function TestInProgress({
     </table>
   );
 
+  const previousAthlete = () => {
+    const relevantTest = multipleAthletesTests[selectedAthletePointer - 1].test;
+    const parsedJumpTimes =
+      relevantTest.results.type === "bosco"
+        ? relevantTest.results[boscoTests[pointer]].times
+        : relevantTest.results.type === "multipleDropJump"
+        ? relevantTest.results.dropJumps[pointer].times
+        : relevantTest.results.times;
+    setJumpTimes(parsedJumpTimes);
+    setFlightTimes(parsedJumpTimes.map((e) => e.time));
+    setFloorTimes(parsedJumpTimes.map((e) => e.floorTime));
+    setPerformance(parsedJumpTimes.map((e) => e.performance));
+    setStiffness(parsedJumpTimes.map((e) => e.stiffness));
+    setData(
+      criterionLookup[relevantTest.results.type].map(
+        (criterion) => relevantTest.results[criterion]
+      )
+    );
+    if (relevantTest.results.type === "bosco") {
+      setBoscoResults(relevantTest.results);
+      setPointer(0);
+    }
+    if (relevantTest.results.type === "multipleDropJump") {
+      setMultipleDropJumpResults(relevantTest.results);
+      setPointer(0);
+    }
+
+    setSelectedAthletePointer(selectedAthletePointer - 1);
+  };
+
+  useEffect(() => {
+    console.log("multipleAthletesTests", multipleAthletesTests);
+    console.log("selectedAthletePointer", selectedAthletePointer);
+    console.log("pointer", pointer);
+  }, [multipleAthletesTests, selectedAthletePointer, pointer]);
+
+  const nextAthlete = () => {
+    if (!multipleAthletesTests[selectedAthletePointer + 1]) {
+      resetTest();
+      setSelectedAthletePointer(selectedAthletePointer + 1);
+      setPointer(0);
+      setBoscoResults({
+        type: "bosco",
+        cmj: {
+          avgFlightTime: 0,
+          avgHeightReached: 0,
+          times: [],
+          type: "cmj",
+          takeoffFoot: "both",
+          sensitivity: 0,
+          load: 0,
+          loadUnit: "kgs",
+        },
+        squatJump: {
+          avgFlightTime: 0,
+          avgHeightReached: 0,
+          times: [],
+          type: "squatJump",
+          takeoffFoot: "both",
+          sensitivity: 0,
+          load: 0,
+          loadUnit: "kgs",
+        },
+        abalakov: {
+          avgFlightTime: 0,
+          avgHeightReached: 0,
+          times: [],
+          type: "abalakov",
+          takeoffFoot: "both",
+          sensitivity: 0,
+          load: 0,
+          loadUnit: "kgs",
+        },
+      });
+      setMultipleDropJumpResults(
+        study.type === "multipleDropJump"
+          ? {
+              heightUnit: study.heightUnit,
+              type: study.type,
+              dropJumps: [],
+              maxAvgHeightReached: 0,
+              bestHeight: "",
+              takeoffFoot: study.takeoffFoot,
+            }
+          : null
+      );
+      setSelectedAthletePointer(selectedAthletePointer + 1);
+
+      return;
+    }
+    const relevantTest = multipleAthletesTests[selectedAthletePointer + 1].test;
+    const parsedJumpTimes =
+      relevantTest.results.type === "bosco"
+        ? relevantTest.results[tests[0]].times
+        : relevantTest.results.type === "multipleDropJump"
+        ? relevantTest.results.dropJumps[0].times
+        : relevantTest.results.times;
+    setJumpTimes(parsedJumpTimes);
+    setFlightTimes(parsedJumpTimes.map((e) => e.time));
+    setFloorTimes(parsedJumpTimes.map((e) => e.floorTime));
+    setPerformance(parsedJumpTimes.map((e) => e.performance));
+    setStiffness(parsedJumpTimes.map((e) => e.stiffness));
+    setData(
+      criterionLookup[relevantTest.results.type].map(
+        (criterion) => relevantTest.results[criterion]
+      )
+    );
+    if (relevantTest.results.type === "bosco") {
+      setBoscoResults(relevantTest.results);
+      setPointer(0);
+    }
+    if (relevantTest.results.type === "multipleDropJump") {
+      setMultipleDropJumpResults(relevantTest.results);
+      setPointer(0);
+    }
+    setSelectedAthletePointer(selectedAthletePointer + 1);
+  };
+
   const resetTest = () => {
     setJumpTimes([]);
     setFlightTimes([]);
@@ -296,7 +430,8 @@ function TestInProgress({
     setStatus("Súbase a la alfombra");
   };
 
-  const nextTest = () => {
+  const previousTest = () => {
+    const newPointer = pointer - 1;
     if (study.type === "multipleDropJump") {
       setMultipleDropJumpResults({
         ...multipleDropJumpResults,
@@ -315,6 +450,15 @@ function TestInProgress({
         ],
         maxAvgHeightReached: 0,
       });
+      setJumpTimes(multipleDropJumpResults.dropJumps[newPointer].times);
+      setFlightTimes(
+        multipleDropJumpResults.dropJumps[newPointer].times.map((e) => e.time)
+      );
+      setFloorTimes(
+        multipleDropJumpResults.dropJumps[newPointer].times.map(
+          (e) => e.floorTime
+        )
+      );
     }
     if (study.type === "bosco") {
       setBoscoResults({
@@ -327,10 +471,64 @@ function TestInProgress({
           type: tests[pointer],
         },
       });
+      setJumpTimes(boscoResults[boscoTests[newPointer]].times);
+      setFlightTimes(
+        boscoResults[boscoTests[newPointer]].times.map((e) => e.time)
+      );
     }
-    resetTest();
+    setPointer(newPointer);
+  };
 
-    setPointer(pointer + 1);
+  const nextTest = () => {
+    const newPointer = pointer + 1;
+    if (study.type === "multipleDropJump") {
+      setMultipleDropJumpResults({
+        ...multipleDropJumpResults,
+        dropJumps: [
+          ...multipleDropJumpResults.dropJumps,
+          {
+            avgHeightReached: data.avgHeightReached,
+            times: jumpTimes,
+            avgFlightTime: data.avgFlightTime,
+            type: "dropJump",
+            height: study.dropJumpHeights[pointer],
+            takeoffFoot: study.takeoffFoot,
+            sensitivity: study.sensitivity,
+            stiffness: stiffness[pointer],
+          },
+        ],
+        maxAvgHeightReached: 0,
+      });
+      if (multipleDropJumpResults.dropJumps.length === newPointer) {
+        resetTest();
+      } else {
+        setJumpTimes(multipleDropJumpResults.dropJumps[newPointer].times);
+        setFlightTimes(
+          multipleDropJumpResults.dropJumps[newPointer].times.map((e) => e.time)
+        );
+      }
+    }
+    if (study.type === "bosco") {
+      setBoscoResults({
+        ...boscoResults,
+        [tests[pointer]]: {
+          avgFlightTime: data.avgFlightTime,
+          avgHeightReached: ((9.81 * data.avgFlightTime ** 2) / 8) * 100,
+          takeoffFoot: "both",
+          times: jumpTimes,
+          type: tests[pointer],
+        },
+      });
+      if (boscoResults[tests[newPointer]].times.length > 0) {
+        setJumpTimes(boscoResults[tests[newPointer]].times);
+        setFlightTimes(
+          boscoResults[tests[newPointer]].times.map((e) => e.time)
+        );
+      } else {
+        resetTest();
+      }
+    }
+    setPointer(newPointer);
   };
 
   const finishTest = () => {
@@ -400,6 +598,7 @@ function TestInProgress({
       });
       setPerformanceDrop(getPerformanceDrop(validPerformances));
       setStatus("Finalizado");
+      setTestFinished(true); // Signal that all updates are complete
       return;
     }
 
@@ -408,8 +607,10 @@ function TestInProgress({
       avgHeightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
     });
     setStatus("Finalizado");
+    setTestFinished(true); // Signal that all updates are complete
   };
 
+  /* Also works as nextAthlete */
   const saveTest = async () => {
     if (!jumpTimes.length || Number.isNaN(data.avgFlightTime)) {
       setIsBlurred(true);
@@ -500,10 +701,35 @@ function TestInProgress({
             },
     };
     console.log(studyToSave);
+
+    if (selectedAthletes.length > 0) {
+      setMultipleAthletesTests(
+        selectedAthletePointer === multipleAthletesTests.length
+          ? [
+              ...multipleAthletesTests,
+              {
+                athleteName: selectedAthletes[selectedAthletePointer].name,
+                test: studyToSave,
+                testType: studyToSave.results.type,
+              },
+            ]
+          : multipleAthletesTests.map((e, i) =>
+              i === selectedAthletePointer
+                ? {
+                    athleteName: selectedAthletes[selectedAthletePointer].name,
+                    test: studyToSave,
+                    testType: studyToSave.results.type,
+                  }
+                : e
+            )
+      );
+      return;
+    }
     const newAthleteState = {
       ...athlete,
       completedStudies: [...athlete.completedStudies, studyToSave],
     };
+
     try {
       const result = await saveJson(
         `${naturalToCamelCase(athlete.name)}.json`,
@@ -518,6 +744,34 @@ function TestInProgress({
       setSelectedOption("athletes");
       setTimeout(() => {
         navigate("/athleteStudies");
+      }, 300);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const saveAllTests = async () => {
+    try {
+      selectedAthletes.forEach(async (athlete, index) => {
+        const newAthleteState = {
+          ...athlete,
+          completedStudies: [
+            ...athlete.completedStudies,
+            multipleAthletesTests[index].test,
+          ],
+        };
+        await saveJson(
+          `${naturalToCamelCase(athlete.name)}.json`,
+          newAthleteState,
+          "athletes"
+        );
+      });
+      setTestInProgress(false);
+      onBlurChange(false);
+      customNavigate("back", "startTest", "athletes");
+      setSelectedOption("athletes");
+      setTimeout(() => {
+        navigate("/athletes");
       }, 300);
     } catch (error) {
       console.log(error);
@@ -818,6 +1072,14 @@ function TestInProgress({
     }
   }, [flightTimes, floorTimes]);
 
+  // Add this useEffect near other useEffect hooks
+  useEffect(() => {
+    if (testFinished && selectedAthletes.length > 0) {
+      saveTest();
+      setTestFinished(false); // Reset for next time
+    }
+  }, [testFinished]);
+
   return (
     <>
       <div
@@ -828,7 +1090,7 @@ function TestInProgress({
         style={{
           width: study.type === "multipleJumps" ? "1400px" : "50%",
           left: study.type === "multipleJumps" ? "5%" : "25%",
-          top: study.type === "multipleJumps" ? "2%" : "12%",
+          top: study.type === "multipleJumps" ? "2%" : "0%",
         }}
       >
         <div
@@ -838,6 +1100,15 @@ function TestInProgress({
           <img src="/close.png" className="h-6 w-6" alt="" />
         </div>
         <p className="self-center text-4xl text-secondary">{t(study.type)}</p>
+
+        {selectedAthletes.length > 0 && (
+          <p className="text-2xl self-center my-4">
+            {selectedAthletes[selectedAthletePointer].name}{" "}
+            <span className="text-darkGray">
+              {selectedAthletePointer + 1}/{selectedAthletes.length}
+            </span>
+          </p>
+        )}
         {study.type === "bosco" && (
           <p className="self-center text-2xl mt-8 text-tertiary">
             Test {pointer + 1}:{" "}
@@ -847,7 +1118,7 @@ function TestInProgress({
           </p>
         )}
         {study.type === "multipleDropJump" && (
-          <p className="self-center text-2xl mt-8 text-tertiary">
+          <p className="self-center text-2xl mt-4 text-tertiary">
             Altura de Caída:{" "}
             <span className="text-secondary font-medium">
               {study.dropJumpHeights[pointer]} cm
@@ -885,7 +1156,7 @@ function TestInProgress({
             </div>
           ) : (
             <p
-              className=" text-2xl mt-16 text-tertiary"
+              className=" text-2xl mt-8 text-tertiary"
               style={{
                 alignSelf: "center",
               }}
@@ -1095,7 +1366,7 @@ function TestInProgress({
                 </p>
               </>
             )}
-            <div className="flex items-center justify-around w-full my-8">
+            <div className="flex items-center justify-center gap-x-4 w-full my-8">
               <OutlinedButton
                 title="Rehacer Test"
                 icon="again"
@@ -1111,26 +1382,80 @@ function TestInProgress({
                     icon="studies"
                   />
                 )}
-              <TonalButton
-                title={
-                  study.type === "bosco" && pointer < tests.length - 1
-                    ? "Siguiente Test"
-                    : study.type === "multipleDropJump" &&
-                      pointer < study.dropJumpHeights.length - 1
-                    ? "Siguiente Altura"
-                    : "Guardar Test"
-                }
-                icon="check"
-                onClick={
-                  study.type === "bosco" && pointer < tests.length - 1
-                    ? nextTest
-                    : study.type === "multipleDropJump" &&
-                      pointer < study.dropJumpHeights.length - 1
-                    ? nextTest
-                    : saveTest
-                }
-              />
             </div>
+
+            <div className="flex items-center justify-center gap-x-8">
+              {tests.length > 1 && pointer > 0 && (
+                <OutlinedButton
+                  title="Test Anterior"
+                  icon="back"
+                  onClick={previousTest}
+                  inverse
+                />
+              )}
+              {((study.type === "bosco" && pointer < tests.length - 1) ||
+                (study.type === "multipleDropJump" &&
+                  pointer < study.dropJumpHeights.length - 1) ||
+                (study.type !== "bosco" &&
+                  study.type !== "multipleDropJump")) && (
+                <TonalButton
+                  title={
+                    study.type === "bosco"
+                      ? "Siguiente Test"
+                      : study.type === "multipleDropJump"
+                      ? "Siguiente Altura"
+                      : "Guardar Test"
+                  }
+                  icon={
+                    study.type === "bosco" || study.type === "multipleDropJump"
+                      ? "next"
+                      : "check"
+                  }
+                  onClick={
+                    study.type === "bosco" && pointer < tests.length - 1
+                      ? nextTest
+                      : study.type === "multipleDropJump" &&
+                        pointer < study.dropJumpHeights.length - 1
+                      ? nextTest
+                      : saveTest
+                  }
+                />
+              )}
+            </div>
+            {selectedAthletes.length > 0 && (
+              <>
+                <div className="flex items-center justify-around w-full my-8">
+                  {selectedAthletePointer > 0 && (
+                    <OutlinedButton
+                      title="Atleta Anterior"
+                      icon="back"
+                      onClick={previousAthlete}
+                    />
+                  )}
+                  {(pointer === tests.length - 1 ||
+                    (study.type === "multipleDropJump" &&
+                      pointer === study.dropJumpHeights.length - 1)) && (
+                    <TonalButton
+                      title={
+                        selectedAthletePointer === selectedAthletes.length - 1
+                          ? "Guardar Test"
+                          : "Atleta Siguiente"
+                      }
+                      icon={
+                        selectedAthletePointer === selectedAthletes.length - 1
+                          ? "save"
+                          : "next"
+                      }
+                      onClick={
+                        selectedAthletePointer === selectedAthletes.length - 1
+                          ? saveAllTests
+                          : nextAthlete
+                      }
+                    />
+                  )}
+                </div>
+              </>
+            )}
           </>
         )}
         {status === "Error" && (

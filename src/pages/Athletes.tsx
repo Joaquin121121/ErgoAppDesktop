@@ -70,7 +70,7 @@ function Athletes({
   const [athleteToDelete, setAthleteToDelete] = useState("");
 
   const { readDirectoryJsons, deleteJson } = useJsonFiles();
-  const { resetAthlete, setAthlete } = useStudyContext();
+  const { resetAthlete, setAthlete, setSelectedAthletes } = useStudyContext();
   const filterButtonRef = useRef(null);
   const { setAthleteToCompare1, setAthleteToCompare2 } = useAthleteComparison();
 
@@ -230,6 +230,7 @@ function Athletes({
   useEffect(() => {
     loadAthletes();
     resetAthlete();
+    setSelectedAthletes([]);
   }, []);
 
   useEffect(() => {

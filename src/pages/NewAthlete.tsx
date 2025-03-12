@@ -62,7 +62,8 @@ function NewAthlete({
   });
 
   const { saveJson, readDirectoryJsons } = useJsonFiles();
-  const { athlete, setAthlete, resetAthlete } = useStudyContext();
+  const { athlete, setAthlete, resetAthlete, setSelectedAthletes } =
+    useStudyContext();
 
   // Store previous values for conversion calculations
   const [prevHeight, setPrevHeight] = useState<string>("");
@@ -527,6 +528,8 @@ function NewAthlete({
         );
         console.log(result.message);
       }
+      setSelectedAthletes([...localAthletesToSave]);
+      resetAthlete();
       customNavigate("back", "newAthlete", from ? "athletes" : "startTest");
       setTimeout(() => {
         navigate(from ? "/athletes" : "/startTest");

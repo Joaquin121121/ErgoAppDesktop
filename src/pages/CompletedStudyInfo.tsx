@@ -337,10 +337,7 @@ function CompletedStudyInfo({
         setNavAnimation(navAnimations.fadeInLeft);
       }, 300);
     } else {
-      customNavigate("back", "completedStudyInfo", "completedStudyDashboard");
-      setTimeout(() => {
-        navigate("/completedStudyDashboard?date=" + date);
-      }, 300);
+      returnToMenu();
     }
   };
 
@@ -368,10 +365,9 @@ function CompletedStudyInfo({
   }, [showTable, showDropJumpChart, showChart, boscoStudy]);
 
   const returnToMenu = () => {
-    customNavigate("back", "completedStudyInfo", "athleteStudies");
-    setNavAnimation(navAnimations.fadeOutRight);
+    customNavigate("back", "completedStudyInfo", "completedStudyDashboard");
     setTimeout(() => {
-      navigate("/athleteStudies");
+      navigate("/completedStudyDashboard?date=" + date);
     }, 300);
   };
 

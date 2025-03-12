@@ -36,7 +36,14 @@ function StartTest({
   ) => void;
   setSelectedOption: (selectedOption: string) => void;
 }) {
-  const { study, setStudy, athlete, resetAthlete } = useStudyContext();
+  const {
+    study,
+    setStudy,
+    athlete,
+    resetAthlete,
+    selectedAthletes,
+    setSelectedAthletes,
+  } = useStudyContext();
 
   const [isBlurred, setIsBlurred] = useState(false);
   const [testInProgress, setTestInProgress] = useState(false);
@@ -82,7 +89,7 @@ function StartTest({
   };
 
   const startTest = () => {
-    if (athlete.name.length === 0) {
+    if (athlete.name.length === 0 && selectedAthletes.length === 0) {
       setNoAthlete(true);
       return;
     }
@@ -341,7 +348,27 @@ function StartTest({
             </p>
             <OutlinedButton
               title="Cambiar"
-              onClick={resetAthlete}
+              onClick={() => {
+                resetAthlete();
+                setSelectedAthletes([]);
+              }}
+              icon="reset"
+            />
+          </div>
+        ) : selectedAthletes.length > 0 ? (
+          <div className="w-full self-center mt-8 flex items-center justify-center gap-x-16">
+            <p className="text-2xl" style={{ width: "800px" }}>
+              Atletas Seleccionados:{" "}
+              <span className="text-secondary">
+                {selectedAthletes.map((athlete) => athlete.name).join(", ")}
+              </span>
+            </p>
+            <OutlinedButton
+              title="Cambiar"
+              onClick={() => {
+                resetAthlete();
+                setSelectedAthletes([]);
+              }}
               icon="reset"
             />
           </div>
@@ -372,13 +399,16 @@ function StartTest({
           </p>
         )}
 
-        <p className="text-4xl mt-16 text-tertiary">
+        <p
+          className="text-4xl mt-16 text-tertiary"
+          style={{ marginBottom: study.type !== "bosco" && "32px" }}
+        >
           {study.type === "bosco" ? "Tests a Realizar" : "Datos del Test"}
         </p>
-        <div className="px-8 mt-4">
+        <div className="px-8">
           {study.type === "bosco" && (
             <div className="flex flex-col px-8 relative">
-              <ul className="mt-2">
+              <ul className="mt-4 -mb-2">
                 {study.studies.map((studyItem, index) => (
                   <li key={studyItem} className="w-48 rounded-2xl p-2 mb-1 ">
                     <p className="text-secondary text-lg">
@@ -634,7 +664,13 @@ function StartTest({
               placeholder="20..."
               value={study.sensitivity}
               onChange={(e) => {
-                handleInputChange("sensitivity", e.target.value);
+                const value = e.target.value;
+                if (
+                  value === "" ||
+                  (Number(value) <= 500 && !isNaN(Number(value)))
+                ) {
+                  handleInputChange("sensitivity", value);
+                }
               }}
             />
             <div
@@ -666,13 +702,14 @@ function StartTest({
             <img src="/close.png" className="h-6 w-6" alt="" />
           </div>
           <p className="self-center mt-8 text-xl">Qué es la sensibilidad?</p>
-          <p className=" mt-8 text-darkGray">
-            La sensibilidad en los tests de saltabilidad es un parámetro de
-            configuración crucial que permite ajustar el umbral de detección de
-            contacto con la alfombra o plataforma de salto. Su función principal
-            es:
+          <p className=" mt-4">
+            Valor expresado en milisegundos (ms) que establece el umbral mínimo
+            de tiempo de vuelo que debe tener un salto para ser registrado.
+            Todos los saltos con un tiempo de vuelo menor a este valor serán
+            ignorados por el sistema, filtrando así impactos o rebotes no
+            deseados. Su función principal es:
           </p>
-          <ul className="list-disc list-inside text-darkGray mt-2">
+          <ul className="list-disc list-inside  mt-2">
             <li>
               Adaptar la medición a diferentes tipos de usuarios (como niños o
               personas con descensos muy veloces)
@@ -685,15 +722,6 @@ function StartTest({
               Evitar falsos registros cuando el tiempo de vuelo es muy corto
             </li>
           </ul>
-          <p className=" mt-8 text-darkGray">
-            Cuando la alfombra está demasiado sensible, puede registrar
-            incorrectamente los despegues y aterrizajes, especialmente en saltos
-            donde el ciclo de estiramiento-acortamiento es muy rápido. Al
-            ajustar la sensibilidad a valores superiores a los tiempos de vuelo
-            registrados, se permite que la evaluación capture correctamente el
-            rendimiento del salto, proporcionando mediciones más precisas de la
-            altura y tiempo de vuelo.
-          </p>
 
           <TonalButton
             title="Continuar"
