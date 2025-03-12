@@ -185,8 +185,8 @@ export interface JumpTime {
 }
 
 export interface StudyData {
-  avgFlightTime: number;
-  avgHeightReached: number;
+  avgFlightTime?: number;
+  avgHeightReached?: number;
   maxAvgHeightReached?: number;
   avgFloorTime?: number;
   avgPerformance?: number;

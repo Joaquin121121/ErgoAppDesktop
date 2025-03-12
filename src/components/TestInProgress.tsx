@@ -316,10 +316,18 @@ function TestInProgress({
     );
     if (relevantTest.results.type === "bosco") {
       setBoscoResults(relevantTest.results);
+      setData({
+        avgFlightTime: relevantTest.results[boscoTests[0]].avgFlightTime,
+        avgHeightReached: relevantTest.results[boscoTests[0]].avgHeightReached,
+      });
       setPointer(0);
     }
     if (relevantTest.results.type === "multipleDropJump") {
       setMultipleDropJumpResults(relevantTest.results);
+      setData({
+        avgFlightTime: relevantTest.results.dropJumps[0].avgFlightTime,
+        avgHeightReached: relevantTest.results.dropJumps[0].avgHeightReached,
+      });
       setPointer(0);
     }
 
@@ -405,12 +413,21 @@ function TestInProgress({
     );
     if (relevantTest.results.type === "bosco") {
       setBoscoResults(relevantTest.results);
+      setData({
+        avgFlightTime: relevantTest.results[boscoTests[0]].avgFlightTime,
+        avgHeightReached: relevantTest.results[boscoTests[0]].avgHeightReached,
+      });
       setPointer(0);
     }
     if (relevantTest.results.type === "multipleDropJump") {
       setMultipleDropJumpResults(relevantTest.results);
+      setData({
+        avgFlightTime: relevantTest.results.dropJumps[0].avgFlightTime,
+        avgHeightReached: relevantTest.results.dropJumps[0].avgHeightReached,
+      });
       setPointer(0);
     }
+
     setSelectedAthletePointer(selectedAthletePointer + 1);
   };
 
@@ -459,6 +476,12 @@ function TestInProgress({
           (e) => e.floorTime
         )
       );
+      setData({
+        avgFlightTime:
+          multipleDropJumpResults.dropJumps[newPointer].avgFlightTime,
+        avgHeightReached:
+          multipleDropJumpResults.dropJumps[newPointer].avgHeightReached,
+      });
     }
     if (study.type === "bosco") {
       setBoscoResults({
@@ -471,10 +494,15 @@ function TestInProgress({
           type: tests[pointer],
         },
       });
+
       setJumpTimes(boscoResults[boscoTests[newPointer]].times);
       setFlightTimes(
         boscoResults[boscoTests[newPointer]].times.map((e) => e.time)
       );
+      setData({
+        avgFlightTime: boscoResults[boscoTests[newPointer]].avgFlightTime,
+        avgHeightReached: boscoResults[boscoTests[newPointer]].avgHeightReached,
+      });
     }
     setPointer(newPointer);
   };
@@ -499,13 +527,19 @@ function TestInProgress({
         ],
         maxAvgHeightReached: 0,
       });
-      if (multipleDropJumpResults.dropJumps.length === newPointer) {
+      if (multipleDropJumpResults.dropJumps.length === pointer) {
         resetTest();
       } else {
         setJumpTimes(multipleDropJumpResults.dropJumps[newPointer].times);
         setFlightTimes(
           multipleDropJumpResults.dropJumps[newPointer].times.map((e) => e.time)
         );
+        setData({
+          avgFlightTime:
+            multipleDropJumpResults.dropJumps[newPointer].avgFlightTime,
+          avgHeightReached:
+            multipleDropJumpResults.dropJumps[newPointer].avgHeightReached,
+        });
       }
     }
     if (study.type === "bosco") {
@@ -524,6 +558,10 @@ function TestInProgress({
         setFlightTimes(
           boscoResults[tests[newPointer]].times.map((e) => e.time)
         );
+        setData({
+          avgFlightTime: boscoResults[tests[newPointer]].avgFlightTime,
+          avgHeightReached: boscoResults[tests[newPointer]].avgHeightReached,
+        });
       } else {
         resetTest();
       }
@@ -1397,7 +1435,8 @@ function TestInProgress({
                 (study.type === "multipleDropJump" &&
                   pointer < study.dropJumpHeights.length - 1) ||
                 (study.type !== "bosco" &&
-                  study.type !== "multipleDropJump")) && (
+                  study.type !== "multipleDropJump" &&
+                  selectedAthletes.length === 0)) && (
                 <TonalButton
                   title={
                     study.type === "bosco"
@@ -1430,6 +1469,7 @@ function TestInProgress({
                       title="Atleta Anterior"
                       icon="back"
                       onClick={previousAthlete}
+                      inverse
                     />
                   )}
                   {(pointer === tests.length - 1 ||
@@ -1438,7 +1478,7 @@ function TestInProgress({
                     <TonalButton
                       title={
                         selectedAthletePointer === selectedAthletes.length - 1
-                          ? "Guardar Test"
+                          ? "Guardar Tests"
                           : "Atleta Siguiente"
                       }
                       icon={
