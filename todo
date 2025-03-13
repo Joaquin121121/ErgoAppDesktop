@@ -1,6 +1,6 @@
 MVP
-Tests en batch
 Que la mina salude cuando la apretes
+Ver de mejorar navegacion entre tests bosco y drop jumps. Arreglar graficos de drop jumps, mejorar para mostrar titulos y labels relevantes
 Rehacer comparacion de tests para mantener espaciado constante. Probar formato grilla, boton comparar que muestre graficos, permitir comparar boscos con graficos simples.
 Maximo de tamaño para tablas/habilitar overflow
 Arreglar rendimientos multiple jump tras eliminar un salto
@@ -20,5 +20,6 @@ Si hay tiempo:
 Implementar resumen BOSCO test pre-guardar (despues)
 Personalizar menu de instalacion
 Ordenar tests por ultimo uso
+Decidir que se auto añada vs que se sobreescriba un atleta al ser seleccionado con otro ya seleccionado en seleccion multiple
 
 Pendiente de Marti:

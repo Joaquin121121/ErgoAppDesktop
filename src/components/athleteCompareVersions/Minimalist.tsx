@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { useAthleteComparison } from "../contexts/AthleteComparisonContext";
+import { useAthleteComparison } from "../../contexts/AthleteComparisonContext";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import OutlinedButton from "../components/OutlinedButton";
-import TonalButton from "../components/TonalButton";
-import { ftToCm } from "../utils/utils";
+import OutlinedButton from "../../components/OutlinedButton";
+import TonalButton from "../../components/TonalButton";
+import { ftToCm } from "../../utils/utils";
 import {
   CompletedStudy,
   boscoTests,
   BoscoResult,
   MultipleDropJumpResult,
-} from "../types/Studies";
+} from "../../types/Studies";
 
 // Define athlete criteria for comparison
 const athleteCriteria = ["gender", "age", "weight", "height"];

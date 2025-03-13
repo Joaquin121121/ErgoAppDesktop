@@ -87,7 +87,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
             />
           </div>
         </div>
-        <h1 className="text-2xl text-secondary mb-6 mt-16">
+        <h1 className="text-2xl text-secondary mb-6 mt-32">
           Hemos encontrado un error inesperado.
         </h1>
         <p className="text-lg  mb-12">

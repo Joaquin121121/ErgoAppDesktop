@@ -358,6 +358,37 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const dropdownRef = useRef(null);
 
+  const cancelSelection = () => {
+    if (selectedAthletes.length === 1) {
+      setSelectedAthleteName("");
+      resetAthlete();
+      setSearchTerm("");
+      setSelectedAthletes([]);
+      return;
+    }
+    const newSelectedAthletes = selectedAthletes.filter(
+      (_, i) => i !== multipleAthleteIndex
+    );
+    if (multipleAthleteIndex === newSelectedAthletes.length) {
+      setMultipleAthleteIndex(multipleAthleteIndex - 1);
+    }
+    if (multipleAthleteIndex === 0) {
+      setSelectedAthleteName(
+        newSelectedAthletes[multipleAthleteIndex]?.name || ""
+      );
+      setAthlete(newSelectedAthletes[multipleAthleteIndex]);
+      setSearchTerm(newSelectedAthletes[multipleAthleteIndex]?.name || "");
+    } else {
+      setSearchTerm(newSelectedAthletes[multipleAthleteIndex - 1]?.name || "");
+
+      setSelectedAthleteName(
+        newSelectedAthletes[multipleAthleteIndex - 1]?.name || ""
+      );
+      setAthlete(newSelectedAthletes[multipleAthleteIndex - 1]);
+    }
+    setSelectedAthletes(newSelectedAthletes);
+  };
+
   // Reset selected index when search term changes or dropdown visibility changes
   useEffect(() => {
     setSelectedIndex(-1);
@@ -674,6 +705,14 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
               Atleta seleccionado:{" "}
               <span className="text-secondary">{selectedAthleteName} </span>
             </p>
+            {selectedAthletes.length > 0 && (
+              <OutlinedButton
+                title="Anular Selección"
+                onClick={cancelSelection}
+                icon="close"
+                containerStyles="ml-4"
+              />
+            )}
           </div>
         )}
         {selectedAthleteName.length > 0 && (
@@ -970,7 +1009,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
         {(!from || (from && isModified)) && (
           <div className="w-full justify-center gap-x-16 items-center flex my-8">
             {multipleSelection && selectedAthleteName.length > 0 && (
-              <div className="w-[239.71px]"></div>
+              <div className="w-[239.71px] flex justify-center"></div>
             )}
             {multipleSelection && (
               <>

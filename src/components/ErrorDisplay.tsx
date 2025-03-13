@@ -23,7 +23,10 @@ function ErrorDisplay({ setIsBlurred, redoTest }) {
         />
         <TonalButton
           icon="againWhite"
-          onClick={redoTest}
+          onClick={() => {
+            redoTest();
+            setIsBlurred(false);
+          }}
           title="Rehacer Test"
           containerStyles="w-[25%]"
         />

@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { useAthleteComparison } from "../contexts/AthleteComparisonContext";
+import { useAthleteComparison } from "../../contexts/AthleteComparisonContext";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import OutlinedButton from "../components/OutlinedButton";
-import TonalButton from "../components/TonalButton";
-import { ftToCm } from "../utils/utils";
+import OutlinedButton from "../../components/OutlinedButton";
+import TonalButton from "../../components/TonalButton";
+import { ftToCm } from "../../utils/utils";
 import {
   CompletedStudy,
   boscoTests,
   BoscoResult,
   MultipleDropJumpResult,
-} from "../types/Studies";
+} from "../../types/Studies";
 
 // Define athlete criteria for comparison
 const athleteCriteria = ["gender", "age", "weight", "height"];
@@ -142,8 +142,7 @@ function CompareTwoAthletes({
         return {
           content: `${absWeightDiff}%`,
           icon: weightDiff > 0 ? "▲" : weightDiff < 0 ? "▼" : "",
-          iconColor:
-            weightDiff === 0 ? "" : weightDiff > 0 ? "#00A859" : "#e81d23",
+          color: weightDiff === 0 ? "" : weightDiff > 0 ? "#00A859" : "#e81d23",
         };
       case "height":
         const height1 =
@@ -164,8 +163,7 @@ function CompareTwoAthletes({
         return {
           content: `${absHeightDiff}%`,
           icon: heightDiff > 0 ? "▲" : heightDiff < 0 ? "▼" : "",
-          iconColor:
-            heightDiff === 0 ? "" : heightDiff > 0 ? "#00A859" : "#e81d23",
+          color: heightDiff === 0 ? "" : heightDiff > 0 ? "#00A859" : "#e81d23",
         };
       case "heightReached":
         const heightReachedDiff = ((athlete2 - athlete1) / athlete1) * 100;
@@ -179,7 +177,7 @@ function CompareTwoAthletes({
         return {
           content: `${absHeightReachedDiff}%`,
           icon: heightReachedDiff > 0 ? "▲" : heightReachedDiff < 0 ? "▼" : "",
-          iconColor:
+          color:
             heightReachedDiff === 0
               ? ""
               : heightReachedDiff > 0
@@ -349,27 +347,24 @@ function CompareTwoAthletes({
                   >
                     {getFormattedValue(criterion, athleteToCompare1)}
                   </td>
-                  <td className="text-lg font-light py-4 text-center">
-                    <span
-                      style={{
-                        color: getDiff(
-                          criterion,
-                          athleteToCompare1,
-                          athleteToCompare2
-                        ).iconColor,
-                      }}
-                    >
-                      {
-                        getDiff(criterion, athleteToCompare1, athleteToCompare2)
-                          .icon
-                      }
-                    </span>{" "}
-                    <span className="text-darkGray">
-                      {
-                        getDiff(criterion, athleteToCompare1, athleteToCompare2)
-                          .content
-                      }
-                    </span>
+                  <td
+                    className="text-lg font-light py-4 text-center"
+                    style={{
+                      color: getDiff(
+                        criterion,
+                        athleteToCompare1,
+                        athleteToCompare2
+                      ).color,
+                    }}
+                  >
+                    {
+                      getDiff(criterion, athleteToCompare1, athleteToCompare2)
+                        .icon
+                    }{" "}
+                    {
+                      getDiff(criterion, athleteToCompare1, athleteToCompare2)
+                        .content
+                    }
                   </td>
                   <td
                     className="text-xl text-center py-4 px-4"
@@ -457,39 +452,36 @@ function CompareTwoAthletes({
                                         cm
                                       </span>
                                     </td>
-                                    <td className="text-lg font-light text-center py-2 w-[10%]">
-                                      <span
-                                        style={{
-                                          color: getDiff(
-                                            "heightReached",
-                                            study1.results[boscoTest]
-                                              .avgHeightReached,
-                                            study2.results[boscoTest]
-                                              .avgHeightReached
-                                          ).iconColor,
-                                        }}
-                                      >
-                                        {
-                                          getDiff(
-                                            `heightReached`,
-                                            study1.results[boscoTest]
-                                              .avgHeightReached,
-                                            study2.results[boscoTest]
-                                              .avgHeightReached
-                                          ).icon
-                                        }
-                                      </span>{" "}
-                                      <span className="text-darkGray">
-                                        {
-                                          getDiff(
-                                            `heightReached`,
-                                            study1.results[boscoTest]
-                                              .avgHeightReached,
-                                            study2.results[boscoTest]
-                                              .avgHeightReached
-                                          ).content
-                                        }
-                                      </span>
+                                    <td
+                                      className="text-lg font-light text-center py-2 w-[10%]"
+                                      style={{
+                                        color: getDiff(
+                                          "heightReached",
+                                          study1.results[boscoTest]
+                                            .avgHeightReached,
+                                          study2.results[boscoTest]
+                                            .avgHeightReached
+                                        ).color,
+                                      }}
+                                    >
+                                      {
+                                        getDiff(
+                                          `heightReached`,
+                                          study1.results[boscoTest]
+                                            .avgHeightReached,
+                                          study2.results[boscoTest]
+                                            .avgHeightReached
+                                        ).icon
+                                      }{" "}
+                                      {
+                                        getDiff(
+                                          `heightReached`,
+                                          study1.results[boscoTest]
+                                            .avgHeightReached,
+                                          study2.results[boscoTest]
+                                            .avgHeightReached
+                                        ).content
+                                      }
                                     </td>
                                     <td className="text-xl text-center py-2 px-4 w-[25%]">
                                       <span
@@ -557,18 +549,15 @@ function CompareTwoAthletes({
                             {height1.toFixed(2)} cm
                           </span>
                         </td>
-                        <td className="text-lg font-light text-center py-4 h-14">
-                          <span
-                            style={{
-                              color: getDiff("heightReached", height1, height2)
-                                .iconColor,
-                            }}
-                          >
-                            {getDiff(`heightReached`, height1, height2).icon}
-                          </span>{" "}
-                          <span className="text-darkGray">
-                            {getDiff(`heightReached`, height1, height2).content}
-                          </span>
+                        <td
+                          className="text-lg font-light text-center py-4 h-14"
+                          style={{
+                            color: getDiff("heightReached", height1, height2)
+                              .color,
+                          }}
+                        >
+                          {getDiff(`heightReached`, height1, height2).icon}{" "}
+                          {getDiff(`heightReached`, height1, height2).content}
                         </td>
                         <td className="text-xl text-center py-4 h-14 px-4">
                           <span
