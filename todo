@@ -1,7 +1,7 @@
 MVP
-Que la mina salude cuando la apretes
+Que la mina salude cuando la apretes \*revertir video
 Ver de mejorar navegacion entre tests bosco y drop jumps. Arreglar graficos de drop jumps, mejorar para mostrar titulos y labels relevantes
-Rehacer comparacion de tests para mantener espaciado constante. Probar formato grilla, boton comparar que muestre graficos, permitir comparar boscos con graficos simples.
+Permitir comparar boscos con graficos simples.
 Maximo de tamaño para tablas/habilitar overflow
 Arreglar rendimientos multiple jump tras eliminar un salto
 Pulir grafico de comparacion de drop jumps

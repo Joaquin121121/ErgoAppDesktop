@@ -88,7 +88,7 @@ flowchart TD
         ARM1[Entrada: Abalakov height, CMJ height]
         ARM2[Calcular Contribución]
         ARM3{Contribución <= 10%}
-        ARM4[Mala coordinación de brazos]
+        ARM4[Bajo Nivel de coordinación de brazos]
 
         ARM1 --> ARM2
         ARM2 --> ARM3

@@ -429,7 +429,7 @@ function addArmSwingTrainingSolutions(
   // Arm swing <= 10%
   if (armSwingValue <= 10) {
     trainingSolutions.push({
-      title: "Mala coordinación de brazos",
+      title: "Bajo nivel de coordinación de brazos",
       info: "La inercia que generan los brazos no impulsa el salto vertical. La diferencia de altura esperada es de 10-15%",
       exerciseType: "Ejercicios de coordinación de brazos",
       exerciseExamples: [

@@ -21,7 +21,6 @@ import { naturalToCamelCase, getPerformanceDrop } from "../utils/utils";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ErrorDisplay from "./ErrorDisplay";
-import styles from "../styles/animations.module.css";
 import ChartDisplay from "./MultipleJumpsChartDisplay";
 import MultipleDropJumpChartDisplay from "./MultipleDropJumpChartDisplay";
 import navAnimations from "../styles/animations.module.css";
@@ -1124,7 +1123,7 @@ function TestInProgress({
         className={`bg-white shadow-lg rounded-2xl transition-all duration-300 ease-linear fixed right-8 flex flex-col items-center px-16 py-8 ${
           (isBlurred || showTable || showChart) && "blur-md pointer-events-none"
         }
-        `}
+          `}
         style={{
           width: study.type === "multipleJumps" ? "1400px" : "50%",
           left: study.type === "multipleJumps" ? "5%" : "25%",
@@ -1423,76 +1422,80 @@ function TestInProgress({
             </div>
 
             <div className="flex items-center justify-center gap-x-8">
-              {tests.length > 1 && pointer > 0 && (
-                <OutlinedButton
-                  title="Test Anterior"
-                  icon="back"
-                  onClick={previousTest}
-                  inverse
-                />
-              )}
-              {((study.type === "bosco" && pointer < tests.length - 1) ||
-                (study.type === "multipleDropJump" &&
-                  pointer < study.dropJumpHeights.length - 1) ||
-                (study.type !== "bosco" &&
-                  study.type !== "multipleDropJump" &&
-                  selectedAthletes.length === 0)) && (
-                <TonalButton
-                  title={
-                    study.type === "bosco"
-                      ? "Siguiente Test"
-                      : study.type === "multipleDropJump"
-                      ? "Siguiente Altura"
-                      : "Guardar Test"
-                  }
-                  icon={
-                    study.type === "bosco" || study.type === "multipleDropJump"
-                      ? "next"
-                      : "check"
-                  }
-                  onClick={
-                    study.type === "bosco" && pointer < tests.length - 1
-                      ? nextTest
-                      : study.type === "multipleDropJump" &&
-                        pointer < study.dropJumpHeights.length - 1
-                      ? nextTest
-                      : saveTest
-                  }
-                />
-              )}
+              <OutlinedButton
+                title="Test Anterior"
+                icon="back"
+                onClick={previousTest}
+                inverse
+                disabled={!(tests.length > 1 && pointer > 0)}
+              />
+              <TonalButton
+                title={
+                  study.type === "bosco"
+                    ? "Siguiente Test"
+                    : study.type === "multipleDropJump"
+                    ? "Siguiente Altura"
+                    : "Guardar Test"
+                }
+                icon={
+                  study.type === "bosco" || study.type === "multipleDropJump"
+                    ? "next"
+                    : "check"
+                }
+                onClick={
+                  study.type === "bosco" && pointer < tests.length - 1
+                    ? nextTest
+                    : study.type === "multipleDropJump" &&
+                      pointer < study.dropJumpHeights.length - 1
+                    ? nextTest
+                    : saveTest
+                }
+                disabled={
+                  !(
+                    (study.type === "bosco" && pointer < tests.length - 1) ||
+                    (study.type === "multipleDropJump" &&
+                      pointer < study.dropJumpHeights.length - 1) ||
+                    (study.type !== "bosco" &&
+                      study.type !== "multipleDropJump" &&
+                      selectedAthletes.length === 0)
+                  )
+                }
+              />
             </div>
             {selectedAthletes.length > 0 && (
               <>
                 <div className="flex items-center justify-around w-full my-8">
-                  {selectedAthletePointer > 0 && (
-                    <OutlinedButton
-                      title="Atleta Anterior"
-                      icon="back"
-                      onClick={previousAthlete}
-                      inverse
-                    />
-                  )}
-                  {(pointer === tests.length - 1 ||
-                    (study.type === "multipleDropJump" &&
-                      pointer === study.dropJumpHeights.length - 1)) && (
-                    <TonalButton
-                      title={
-                        selectedAthletePointer === selectedAthletes.length - 1
-                          ? "Guardar Tests"
-                          : "Atleta Siguiente"
-                      }
-                      icon={
-                        selectedAthletePointer === selectedAthletes.length - 1
-                          ? "save"
-                          : "next"
-                      }
-                      onClick={
-                        selectedAthletePointer === selectedAthletes.length - 1
-                          ? saveAllTests
-                          : nextAthlete
-                      }
-                    />
-                  )}
+                  <OutlinedButton
+                    title="Atleta Anterior"
+                    icon="back"
+                    onClick={previousAthlete}
+                    inverse
+                    disabled={!(selectedAthletePointer > 0)}
+                  />
+                  <TonalButton
+                    title={
+                      selectedAthletePointer === selectedAthletes.length - 1
+                        ? "Guardar Tests"
+                        : "Atleta Siguiente"
+                    }
+                    icon={
+                      selectedAthletePointer === selectedAthletes.length - 1
+                        ? "save"
+                        : "next"
+                    }
+                    onClick={
+                      selectedAthletePointer === selectedAthletes.length - 1
+                        ? saveAllTests
+                        : nextAthlete
+                    }
+                    disabled={
+                      !(
+                        pointer === tests.length - 1 ||
+                        (study.type === "multipleDropJump" &&
+                          pointer === study.dropJumpHeights.length - 1)
+                      )
+                    }
+                  />
                 </div>
               </>
             )}
@@ -1521,7 +1524,7 @@ function TestInProgress({
       {showTable && (
         <div
           className={`bg-white shadow-sm border border-gray fixed z-50 rounded-2xl py-2 px-8 w-[1400px]
-             top-8 left-1/2 -translate-x-1/2 flex flex-col items-center pt-12 transition-all duration-300 ease-linear ${tableAnimation}`}
+              top-8 left-1/2 -translate-x-1/2 flex flex-col items-center pt-12 transition-all duration-300 ease-linear ${tableAnimation}`}
         >
           <div
             className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
