@@ -5,12 +5,7 @@ import { useTranslation } from "react-i18next";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import { ftToCm } from "../utils/utils";
-import {
-  CompletedStudy,
-  boscoTests,
-  BoscoResult,
-  MultipleDropJumpResult,
-} from "../types/Studies";
+import { CompletedStudy, boscoTests } from "../types/Studies";
 
 // Define athlete criteria for comparison
 const athleteCriteria = ["gender", "age", "weight", "height"];
@@ -18,21 +13,6 @@ const athleteCriteria = ["gender", "age", "weight", "height"];
 // Define type for testsInCommon
 interface TestsInCommon {
   [testType: string]: [CompletedStudy, CompletedStudy];
-}
-
-// Type guard functions to help TypeScript narrow types
-function isBoscoResult(result: any): result is BoscoResult {
-  return result?.type === "bosco";
-}
-
-function isMultipleDropJumpResult(
-  result: any
-): result is MultipleDropJumpResult {
-  return result?.type === "multipleDropJump";
-}
-
-function hasAvgHeightReached(result: any): boolean {
-  return "avgHeightReached" in result;
 }
 
 function CompareTwoAthletes({
@@ -88,13 +68,18 @@ function CompareTwoAthletes({
         const age1 = calculateAge(athlete1.birthDate);
         const age2 = calculateAge(athlete2.birthDate);
         return {
-          color: age1 === age2 ? "" : age1 > age2 ? "#00A859" : "",
+          color: age1 === age2 ? "" : age1 > age2 ? "#e81d23" : "#00A859",
         };
       case "weight":
         const weight1 = parseFloat(athlete1.weight);
         const weight2 = parseFloat(athlete2.weight);
         return {
-          color: weight1 === weight2 ? "" : weight1 < weight2 ? "" : "#00A859",
+          color:
+            weight1 === weight2
+              ? ""
+              : weight1 < weight2
+              ? "#e81d23"
+              : "#00A859",
         };
       case "height":
         const height1 =
@@ -106,7 +91,12 @@ function CompareTwoAthletes({
             ? parseFloat(athlete2.height)
             : ftToCm(athlete2.height);
         return {
-          color: height1 === height2 ? "" : height1 > height2 ? "#00A859" : "",
+          color:
+            height1 === height2
+              ? ""
+              : height1 > height2
+              ? "#00A859"
+              : "#e81d23",
         };
       case "heightReached":
         const heightReachedDiff = ((athlete1 - athlete2) / athlete2) * 100;
@@ -119,7 +109,7 @@ function CompareTwoAthletes({
               ? ""
               : heightReachedDiff > 0
               ? "#00A859"
-              : "",
+              : "#e81d23",
         };
       default:
         return {};
@@ -142,8 +132,7 @@ function CompareTwoAthletes({
         return {
           content: `${absWeightDiff}%`,
           icon: weightDiff > 0 ? "▲" : weightDiff < 0 ? "▼" : "",
-          iconColor:
-            weightDiff === 0 ? "" : weightDiff > 0 ? "#00A859" : "#e81d23",
+          color: weightDiff === 0 ? "" : weightDiff > 0 ? "#00A859" : "#e81d23",
         };
       case "height":
         const height1 =
@@ -164,8 +153,7 @@ function CompareTwoAthletes({
         return {
           content: `${absHeightDiff}%`,
           icon: heightDiff > 0 ? "▲" : heightDiff < 0 ? "▼" : "",
-          iconColor:
-            heightDiff === 0 ? "" : heightDiff > 0 ? "#00A859" : "#e81d23",
+          color: heightDiff === 0 ? "" : heightDiff > 0 ? "#00A859" : "#e81d23",
         };
       case "heightReached":
         const heightReachedDiff = ((athlete2 - athlete1) / athlete1) * 100;
@@ -179,7 +167,7 @@ function CompareTwoAthletes({
         return {
           content: `${absHeightReachedDiff}%`,
           icon: heightReachedDiff > 0 ? "▲" : heightReachedDiff < 0 ? "▼" : "",
-          iconColor:
+          color:
             heightReachedDiff === 0
               ? ""
               : heightReachedDiff > 0
@@ -310,289 +298,321 @@ function CompareTwoAthletes({
         <p className="text-3xl self-center mb-8 -mt-4">Comparar Atletas</p>
 
         <div className="flex justify-around pr-24">
-          <table className="w-full table-fixed">
-            <colgroup>
-              <col className="w-[20%]" /> {/* Labels column */}
-              <col className="w-[25%]" /> {/* Athlete 1 column */}
-              <col className="w-[10%]" /> {/* Difference column */}
-              <col className="w-[25%]" /> {/* Athlete 2 column */}
-              <col className="w-[20%]" /> {/* Compare button column */}
-            </colgroup>
-            <thead>
-              <tr>
-                <th className="h-9 px-4"></th>
-                <th className="text-2xl font-normal text-secondary text-center px-4">
-                  {athleteToCompare1.name}
-                </th>
-                <th className="h-8"></th>
-                <th className="text-2xl font-normal text-secondary text-center px-4">
-                  {athleteToCompare2.name}
-                </th>
-                <th className="h-8"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Athlete criteria rows */}
-              {athleteCriteria.map((criterion) => (
-                <tr key={criterion} className="h-8 my-8">
-                  <td className="text-center text-xl py-4 px-4">
-                    {t(criterion).charAt(0).toUpperCase() +
-                      t(criterion).slice(1)}
-                  </td>
-                  <td
-                    className="text-xl text-center py-4 px-4"
-                    style={compare(
-                      criterion,
-                      athleteToCompare1,
-                      athleteToCompare2
-                    )}
-                  >
-                    {getFormattedValue(criterion, athleteToCompare1)}
-                  </td>
-                  <td className="text-lg font-light py-4 text-center">
+          <div className="flex flex-col gap-y-8 ">
+            <div className="w-40 h-9"></div>
+
+            {athleteCriteria.map((criterion) => (
+              <div key={criterion} className="w-60 text-center text-xl ">
+                {t(criterion).charAt(0).toUpperCase() + t(criterion).slice(1)}
+              </div>
+            ))}
+            {Object.keys(testsInCommon).map((test) =>
+              test === "bosco" ? (
+                <div key={test} className="w-60 text-center text-xl h-[100px] ">
+                  Alturas Promedio:{" "}
+                  <span className="text-secondary">{t(test)} </span>test
+                </div>
+              ) : test === "multipleDropJump" ? (
+                <div key={test} className="w-60 text-xl text-center">
+                  Altura Maxima:{" "}
+                  <span className="text-secondary">{t(test)}</span>
+                </div>
+              ) : (
+                <div key={test} className="w-60 text-xl text-center">
+                  Altura Promedio:{" "}
+                  <div className="block">
+                    <span className="text-secondary">{t(test)}</span>{" "}
+                    {test !== "multipleJumps" ? "" : "Test"}
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+
+          <div className="flex flex-col gap-y-8">
+            <div className="text-2xl font-normal text-secondary w-64 flex flex-col items-center">
+              {athleteToCompare1.name}
+            </div>
+
+            {athleteCriteria.map((criterion) => (
+              <div
+                key={criterion}
+                className="w-64 text-xl flex flex-col items-center"
+                style={compare(criterion, athleteToCompare1, athleteToCompare2)}
+              >
+                {getFormattedValue(criterion, athleteToCompare1)}
+              </div>
+            ))}
+            {Object.values(testsInCommon).map(([study1, study2]) =>
+              study1.results.type === "bosco" &&
+              study2.results.type === "bosco" ? (
+                <div className="flex flex-col items-center gap-y-2">
+                  <p className="text-xl">
+                    <span className="font-medium">Squat Jump:</span>{" "}
                     <span
+                      style={compare(
+                        "heightReached",
+                        study1.results.squatJump.avgHeightReached,
+                        study2.results.squatJump.avgHeightReached
+                      )}
+                    >
+                      {study1.results.squatJump.avgHeightReached.toFixed(2)} cm
+                    </span>
+                  </p>
+                  <p className="text-xl">
+                    <span className="font-medium">CMJ:</span>{" "}
+                    <span
+                      style={compare(
+                        "heightReached",
+                        study1.results.cmj.avgHeightReached,
+                        study2.results.cmj.avgHeightReached
+                      )}
+                    >
+                      {study1.results.cmj.avgHeightReached.toFixed(2)} cm
+                    </span>
+                  </p>
+                  <p className="text-xl">
+                    <span className="font-medium">Abalakov:</span>{" "}
+                    <span
+                      style={compare(
+                        "heightReached",
+                        study1.results.abalakov.avgHeightReached,
+                        study2.results.abalakov.avgHeightReached
+                      )}
+                    >
+                      {study1.results.abalakov.avgHeightReached.toFixed(2)} cm
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                study1.results.type !== "bosco" &&
+                study2.results.type !== "bosco" && (
+                  <div className="text-xl flex items-center justify-center h-14">
+                    <span
+                      style={compare(
+                        "heightReached",
+                        study1.results.type === "multipleDropJump"
+                          ? study1.results.maxAvgHeightReached
+                          : study1.results.avgHeightReached,
+                        study2.results.type === "multipleDropJump"
+                          ? study2.results.maxAvgHeightReached
+                          : study2.results.avgHeightReached
+                      )}
+                    >
+                      {study1.results.type === "multipleDropJump"
+                        ? study1.results.maxAvgHeightReached.toFixed(2)
+                        : study1.results.avgHeightReached.toFixed(2)}{" "}
+                      cm
+                    </span>
+                  </div>
+                )
+              )
+            )}
+          </div>
+
+          <div className="flex flex-col gap-y-8">
+            <div className="h-8"></div>
+            {athleteCriteria.map((criterion) => (
+              <div
+                key={criterion}
+                className="text-lg font-light h-7"
+                style={{
+                  color: getDiff(
+                    criterion,
+                    athleteToCompare1,
+                    athleteToCompare2
+                  ).color,
+                }}
+              >
+                {getDiff(criterion, athleteToCompare1, athleteToCompare2).icon}{" "}
+                {
+                  getDiff(criterion, athleteToCompare1, athleteToCompare2)
+                    .content
+                }
+              </div>
+            ))}
+            {Object.values(testsInCommon).map(([study1, study2]) =>
+              study1.results.type === "bosco" ||
+              study2.results.type === "bosco" ? (
+                <div className="flex flex-col  gap-y-2">
+                  {boscoTests.map((test) => (
+                    <div
+                      key={test}
+                      className="text-lg font-light h-7 overflow-hidden text-ellipsis whitespace-nowrap"
                       style={{
                         color: getDiff(
-                          criterion,
-                          athleteToCompare1,
-                          athleteToCompare2
-                        ).iconColor,
+                          "heightReached",
+                          study1.results[test].avgHeightReached,
+                          study2.results[test].avgHeightReached
+                        ).color,
                       }}
                     >
                       {
-                        getDiff(criterion, athleteToCompare1, athleteToCompare2)
-                          .icon
-                      }
-                    </span>{" "}
-                    <span className="text-darkGray">
+                        getDiff(
+                          `heightReached`,
+                          study1.results[test].avgHeightReached,
+                          study2.results[test].avgHeightReached
+                        ).icon
+                      }{" "}
                       {
-                        getDiff(criterion, athleteToCompare1, athleteToCompare2)
-                          .content
+                        getDiff(
+                          `heightReached`,
+                          study1.results[test].avgHeightReached,
+                          study2.results[test].avgHeightReached
+                        ).content
                       }
-                    </span>
-                  </td>
-                  <td
-                    className="text-xl text-center py-4 px-4"
-                    style={compare(
-                      criterion,
-                      athleteToCompare2,
-                      athleteToCompare1
-                    )}
-                  >
-                    {getFormattedValue(criterion, athleteToCompare2)}
-                  </td>
-                  <td className="py-4 px-4"></td>
-                </tr>
-              ))}
-
-              {/* Tests rows */}
-              {Object.entries(testsInCommon)
-                // Sort entries to push bosco tests to the end
-                .sort(([testTypeA], [testTypeB]) => {
-                  if (testTypeA === "bosco") return 1;
-                  if (testTypeB === "bosco") return -1;
-                  return 0;
-                })
-                .map(([test, studies]) => {
-                  const [study1, study2] = studies;
-
-                  if (
-                    test === "bosco" &&
-                    isBoscoResult(study1.results) &&
-                    isBoscoResult(study2.results)
-                  ) {
-                    return (
-                      <React.Fragment key={`${test}-section`}>
-                        {/* Add empty row for spacing */}
-                        <tr>
-                          <td colSpan={5} className="py-4"></td>
-                        </tr>
-
-                        {/* Bosco test container - using a wrapper with colSpan to create a container */}
-                        <tr>
-                          <td colSpan={5} className="px-0 py-0">
-                            <div className="border border-offWhite rounded-2xl overflow-hidden mb-4">
-                              <table className="w-full">
-                                {/* Bosco test header row */}
-                                <tr className="bg-gray-50">
-                                  <td
-                                    className="text-center text-xl py-3 px-4"
-                                    colSpan={5}
-                                  >
-                                    <span className="text-secondary font-medium">
-                                      {t(test)}
-                                    </span>{" "}
-                                    Test - Alturas Promedio
-                                  </td>
-                                </tr>
-
-                                {/* Bosco test data rows */}
-                                {boscoTests.map((boscoTest, index) => (
-                                  <tr
-                                    key={`${test}-${boscoTest}`}
-                                    className={`${
-                                      index === boscoTests.length - 1
-                                        ? ""
-                                        : "border-b border-offWhite"
-                                    }`}
-                                  >
-                                    <td className="text-center text-xl py-2 px-4 w-[20%]">
-                                      <span className="font-medium">
-                                        {t(boscoTest)}
-                                      </span>
-                                    </td>
-                                    <td className="text-xl text-center py-2 px-4 w-[25%]">
-                                      <span
-                                        style={compare(
-                                          "heightReached",
-                                          study1.results[boscoTest]
-                                            .avgHeightReached,
-                                          study2.results[boscoTest]
-                                            .avgHeightReached
-                                        )}
-                                      >
-                                        {study1.results[
-                                          boscoTest
-                                        ].avgHeightReached.toFixed(2)}{" "}
-                                        cm
-                                      </span>
-                                    </td>
-                                    <td className="text-lg font-light text-center py-2 w-[10%]">
-                                      <span
-                                        style={{
-                                          color: getDiff(
-                                            "heightReached",
-                                            study1.results[boscoTest]
-                                              .avgHeightReached,
-                                            study2.results[boscoTest]
-                                              .avgHeightReached
-                                          ).iconColor,
-                                        }}
-                                      >
-                                        {
-                                          getDiff(
-                                            `heightReached`,
-                                            study1.results[boscoTest]
-                                              .avgHeightReached,
-                                            study2.results[boscoTest]
-                                              .avgHeightReached
-                                          ).icon
-                                        }
-                                      </span>{" "}
-                                      <span className="text-darkGray">
-                                        {
-                                          getDiff(
-                                            `heightReached`,
-                                            study1.results[boscoTest]
-                                              .avgHeightReached,
-                                            study2.results[boscoTest]
-                                              .avgHeightReached
-                                          ).content
-                                        }
-                                      </span>
-                                    </td>
-                                    <td className="text-xl text-center py-2 px-4 w-[25%]">
-                                      <span
-                                        style={compare(
-                                          "heightReached",
-                                          study2.results[boscoTest]
-                                            .avgHeightReached,
-                                          study1.results[boscoTest]
-                                            .avgHeightReached
-                                        )}
-                                      >
-                                        {study2.results[
-                                          boscoTest
-                                        ].avgHeightReached.toFixed(2)}{" "}
-                                        cm
-                                      </span>
-                                    </td>
-                                    <td className="text-center py-2 px-4 w-[20%]"></td>
-                                  </tr>
-                                ))}
-                              </table>
-                            </div>
-                          </td>
-                        </tr>
-                      </React.Fragment>
-                    );
-                  } else {
-                    // Get height values based on study type
-                    const getHeightValue = (studyResult: any) => {
-                      if (isMultipleDropJumpResult(studyResult)) {
-                        return studyResult.maxAvgHeightReached;
-                      } else if (hasAvgHeightReached(studyResult)) {
-                        return studyResult.avgHeightReached;
-                      }
-                      return 0;
-                    };
-
-                    const height1 = getHeightValue(study1.results);
-                    const height2 = getHeightValue(study2.results);
-
-                    return (
-                      <tr key={test}>
-                        <td className="text-xl text-center py-4 px-4">
-                          {test === "multipleDropJump" ? (
-                            <>
-                              Altura Maxima:{" "}
-                              <span className="text-secondary">{t(test)}</span>
-                            </>
-                          ) : (
-                            <>
-                              Altura Promedio:{" "}
-                              <div className="block">
-                                <span className="text-secondary">
-                                  {t(test)}
-                                </span>{" "}
-                                {test !== "multipleJumps" ? "" : "Test"}
-                              </div>
-                            </>
-                          )}
-                        </td>
-                        <td className="text-xl text-center py-4 h-14 px-4">
-                          <span
-                            style={compare("heightReached", height1, height2)}
-                          >
-                            {height1.toFixed(2)} cm
-                          </span>
-                        </td>
-                        <td className="text-lg font-light text-center py-4 h-14">
-                          <span
-                            style={{
-                              color: getDiff("heightReached", height1, height2)
-                                .iconColor,
-                            }}
-                          >
-                            {getDiff(`heightReached`, height1, height2).icon}
-                          </span>{" "}
-                          <span className="text-darkGray">
-                            {getDiff(`heightReached`, height1, height2).content}
-                          </span>
-                        </td>
-                        <td className="text-xl text-center py-4 h-14 px-4">
-                          <span
-                            style={compare("heightReached", height2, height1)}
-                          >
-                            {height2.toFixed(2)} cm
-                          </span>
-                        </td>
-                        <td className="text-center py-4 h-14 px-4">
-                          <p
-                            className="text-secondary text-lg hover:opacity-70 active:opacity-40 cursor-pointer"
-                            onClick={() => {
-                              compareTest(test);
-                            }}
-                          >
-                            Comparar
-                          </p>
-                        </td>
-                      </tr>
-                    );
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  key={study1.results.type}
+                  className="text-lg font-light h-14 flex items-center justify-center"
+                  style={{
+                    color: getDiff(
+                      "heightReached",
+                      study1.results.type === "multipleDropJump"
+                        ? study1.results.maxAvgHeightReached
+                        : study1.results.avgHeightReached,
+                      study2.results.type === "multipleDropJump"
+                        ? study2.results.maxAvgHeightReached
+                        : study2.results.avgHeightReached
+                    ).color,
+                  }}
+                >
+                  {
+                    getDiff(
+                      `heightReached`,
+                      study1.results.type === "multipleDropJump"
+                        ? study1.results.maxAvgHeightReached
+                        : study1.results.avgHeightReached,
+                      study2.results.type === "multipleDropJump"
+                        ? study2.results.maxAvgHeightReached
+                        : study2.results.avgHeightReached
+                    ).icon
+                  }{" "}
+                  {
+                    getDiff(
+                      `heightReached`,
+                      study1.results.type === "multipleDropJump"
+                        ? study1.results.maxAvgHeightReached
+                        : study1.results.avgHeightReached,
+                      study2.results.type === "multipleDropJump"
+                        ? study2.results.maxAvgHeightReached
+                        : study2.results.avgHeightReached
+                    ).content
                   }
-                })}
-            </tbody>
-          </table>
+                </div>
+              )
+            )}
+          </div>
+
+          <div className="flex flex-col gap-y-8">
+            <div className="text-2xl font-normal text-secondary w-64 flex flex-col items-center">
+              {athleteToCompare2.name}
+            </div>
+
+            {athleteCriteria.map((criterion) => (
+              <div
+                key={criterion}
+                className="w-64 text-xl flex flex-col items-center"
+                style={compare(criterion, athleteToCompare2, athleteToCompare1)}
+              >
+                {getFormattedValue(criterion, athleteToCompare2)}
+              </div>
+            ))}
+            {Object.values(testsInCommon).map(([study1, study2]) =>
+              study2.results.type === "bosco" &&
+              study1.results.type === "bosco" ? (
+                <div className="flex flex-col items-center gap-y-2">
+                  <p className="text-xl">
+                    <span className="font-medium">Squat Jump:</span>{" "}
+                    <span
+                      style={compare(
+                        "heightReached",
+                        study2.results.squatJump.avgHeightReached,
+                        study1.results.squatJump.avgHeightReached
+                      )}
+                    >
+                      {study2.results.squatJump.avgHeightReached.toFixed(2)} cm
+                    </span>
+                  </p>
+                  <p className="text-xl">
+                    <span className="font-medium">CMJ:</span>{" "}
+                    <span
+                      style={compare(
+                        "heightReached",
+                        study2.results.cmj.avgHeightReached,
+                        study1.results.cmj.avgHeightReached
+                      )}
+                    >
+                      {study2.results.cmj.avgHeightReached.toFixed(2)} cm
+                    </span>
+                  </p>
+                  <p className="text-xl">
+                    <span className="font-medium">Abalakov:</span>{" "}
+                    <span
+                      style={compare(
+                        "heightReached",
+                        study2.results.abalakov.avgHeightReached,
+                        study1.results.abalakov.avgHeightReached
+                      )}
+                    >
+                      {study2.results.abalakov.avgHeightReached.toFixed(2)} cm
+                    </span>
+                  </p>
+                </div>
+              ) : (
+                study2.results.type !== "bosco" &&
+                study1.results.type !== "bosco" && (
+                  <div className="text-xl flex items-center justify-center h-14">
+                    <span
+                      style={compare(
+                        "heightReached",
+                        study2.results.type === "multipleDropJump"
+                          ? study2.results.maxAvgHeightReached
+                          : study2.results.avgHeightReached,
+                        study1.results.type === "multipleDropJump"
+                          ? study1.results.maxAvgHeightReached
+                          : study1.results.avgHeightReached
+                      )}
+                    >
+                      {study2.results.type === "multipleDropJump"
+                        ? study2.results.maxAvgHeightReached.toFixed(2)
+                        : study2.results.avgHeightReached.toFixed(2)}{" "}
+                      cm
+                    </span>
+                  </div>
+                )
+              )
+            )}
+          </div>
+          <div className="flex flex-col gap-y-8 ">
+            <div className="w-32 h-8"></div>
+            {athleteCriteria.map(() => (
+              <div className="h-7"></div>
+            ))}
+            {Object.keys(testsInCommon).map((test) =>
+              test === "bosco" ? (
+                <div className="h-[100px]" />
+              ) : (
+                <div
+                  className={`${
+                    test === "bosco" ? "h-[100px]" : "h-14"
+                  } flex items-center justify-center`}
+                >
+                  <p
+                    className="text-secondary text-lg hover:opacity-70 active:opacity-40 cursor-pointer"
+                    onClick={() => {
+                      compareTest(test);
+                    }}
+                  >
+                    Comparar
+                  </p>
+                </div>
+              )
+            )}
+          </div>
         </div>
       </div>
     </div>

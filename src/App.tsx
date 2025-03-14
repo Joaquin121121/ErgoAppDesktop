@@ -41,8 +41,6 @@ const WithLayout = ({
   const options = ["studies", "athletes", "about"];
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [timeoutID, setTimeoutID] = useState<NodeJS.Timeout | null>(null);
-  const [stopVideo, setStopVideo] = useState(false);
 
   return (
     <div className="flex w-screen h-screen bg-offWhite">
@@ -87,7 +85,6 @@ const WithLayout = ({
             )}
           </div>
         ))}
-
         <img
           className={`absolute h-36 w-18 bottom-8 transition-all duration-300 ease-in-out`}
           style={{

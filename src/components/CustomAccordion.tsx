@@ -61,8 +61,8 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
         onClick={onToggle}
         className={`w-full h-16 flex justify-between items-center px-4 cursor-pointer rounded-2xl transition-all duration-300 ease-linear ${
           isExpanded
-            ? "border border-[#e81d23] text-[#e81d23]"
-            : "border border-transparent hover:bg-offWhite"
+            ? "border-2 border-[#e81d23] text-[#e81d23]"
+            : "border-2 border-transparent hover:bg-offWhite"
         }`}
       >
         <p

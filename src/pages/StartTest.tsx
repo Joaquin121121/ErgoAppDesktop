@@ -245,19 +245,6 @@ function StartTest({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
-  useEffect(() => {
-    const sortedHeights = [...selectedDropJumpHeights].sort((a, b) => {
-      const heightA = parseFloat(a);
-      const heightB = parseFloat(b);
-      return heightA - heightB;
-    });
-
-    if (
-      JSON.stringify(sortedHeights) !== JSON.stringify(selectedDropJumpHeights)
-    ) {
-      setSelectedDropJumpHeights(sortedHeights);
-    }
-  }, [selectedDropJumpHeights]);
 
   useEffect(() => {
     setNoAthlete(false);
