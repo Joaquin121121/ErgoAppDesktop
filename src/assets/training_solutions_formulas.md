@@ -42,7 +42,7 @@ Donde:
 
 **Interpretación:**
 
-- Contribución <= 10%: Mala coordinación de brazos (se espera una contribución de 10-15%)
+- Contribución <= 10%: Bajo Nivel de coordinación de brazos (se espera una contribución de 10-15%)
 
 ## Reactive Strength Index (RSI)
 

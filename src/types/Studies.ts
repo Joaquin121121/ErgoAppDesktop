@@ -178,6 +178,7 @@ export const statsToMeasure = [
 
 export interface JumpTime {
   time: number;
+  heightReached: number;
   deleted: boolean;
   floorTime?: number;
   stiffness?: number;
@@ -357,4 +358,9 @@ export const validComparisons = {
   multipleJumps: ["multipleJumps"],
 };
 
+export interface MultipleAthletesTest {
+  athleteName: string;
+  test: CompletedStudy;
+  testType: string;
+}
 export default availableStudies;

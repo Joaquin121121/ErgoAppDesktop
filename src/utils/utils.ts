@@ -1,3 +1,5 @@
+import { LogEntry } from "../hooks/useSerialMonitor";
+
 export function camelToNatural(camelCase: string): string {
   // Handle Spanish characters in addition to regular capitals
   const words = camelCase
@@ -101,3 +103,13 @@ export function ftToCm(heightStr: string): number {
 
   return totalCm;
 }
+
+export const validateLog = (logs: LogEntry[]) => {
+  if (logs.length === 0) return false;
+
+  if (!logs[logs.length - 1]) return false;
+
+  if (!logs[logs.length - 1].data) return false;
+
+  return true;
+};

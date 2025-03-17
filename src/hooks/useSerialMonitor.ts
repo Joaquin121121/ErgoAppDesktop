@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 
-interface LogEntry {
+export interface LogEntry {
   timestamp: string;
   type: "info" | "error";
   message: string;
   data?: any;
 }
 
-interface SerialPortInfo {
+export interface SerialPortInfo {
   port_name: string;
   port_type: string;
   manufacturer?: string;
