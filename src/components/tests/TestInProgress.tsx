@@ -79,7 +79,6 @@ function TestInProgress({
   const [startTime, setStartTime] = useState(new Date());
   const [flightTimes, setFlightTimes] = useState<number[]>([]);
   const [floorTimes, setFloorTimes] = useState<number[]>([]);
-  const [performance, setPerformance] = useState<number[]>([]);
   const [stiffness, setStiffness] = useState<number[]>([]);
   const [jumpTimes, setJumpTimes] = useState<JumpTime[]>([]);
   const [showTable, setShowTable] = useState(false);

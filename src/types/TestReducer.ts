@@ -5,7 +5,14 @@ import {
   StudyData,
   MultipleAthletesTest,
   DropJumpResult,
+  AbalakovResult,
+  CMJResult,
+  SquatJumpResult,
+  LoadUnit,
+  HeightUnit,
 } from "./Studies";
+
+import { Athlete } from "./Athletes";
 
 // State interface
 export interface TestState {
@@ -17,21 +24,45 @@ export interface TestState {
     | "deviceError"
     | "noJumpsError";
   jumpTimes: JumpTime[];
-  data: StudyData;
+  dropJumpHeights: string[];
   startTime: Date;
   ignoreJump: boolean;
   displayError: boolean;
   showTable: boolean;
   showChart: boolean;
   performanceDrop: number;
+  takeoffFoot: "right" | "left" | "both";
   multipleAthletesTests: MultipleAthletesTest[];
-  pointer: number;
-  selectedAthletePointer: number;
+  testPointer: number;
+  athletePointer: number;
   sensitivity: number;
-  testType: "standard" | "multipleDropJump" | "multipleJumps" | null;
+  testType:
+    | "cmj"
+    | "abalakov"
+    | "squatJump"
+    | "multipleDropJump"
+    | "multipleJumps"
+    | "bosco";
   dropJumps: DropJumpResult[];
-  selectedAthletes: string[];
+  boscoResults: {
+    cmj: CMJResult | null;
+    squatJump: SquatJumpResult | null;
+    abalakov: AbalakovResult | null;
+  };
+  selectedAthletes: Athlete[];
   firstJumpFlag: boolean;
+  criterion: "time" | "numberOfJumps";
+  criterionValue: number;
+  avgFlightTime: number;
+  avgHeightReached: number;
+  avgStiffness: number;
+  avgPerformance: number;
+  avgFloorTime: number;
+  load: number;
+  loadUnit: LoadUnit;
+  heightUnit: HeightUnit;
+  maxAvgHeightReached: number;
+  bestHeight: string;
   // Add other state properties as needed
 }
 
@@ -45,4 +76,8 @@ export type TestAction =
   | { type: "TOGGLE_TABLE"; payload: boolean }
   | { type: "TOGGLE_CHART"; payload: boolean }
   | { type: "PROCESS_LOG"; payload: { logData: number; timestamp: Date } }
-  | { type: "CALCULATE_AVERAGES" };
+  | { type: "CALCULATE_AVERAGES" }
+  | { type: "NEXT_ATHLETE" }
+  | { type: "PREVIOUS_ATHLETE" }
+  | { type: "NEXT_TEST" }
+  | { type: "PREVIOUS_TEST" };

@@ -1,21 +1,32 @@
-// hooks/tests/useTestReducer.ts
-
-import { JumpTime } from "../types/Studies";
+import {
+  JumpTime,
+  DropJumpResult,
+  CMJResult,
+  SquatJumpResult,
+  AbalakovResult,
+  boscoTests,
+  initialBoscoResults,
+  BoscoResult,
+  MultipleDropJumpResult,
+  MultipleJumpsResult,
+  MultipleAthletesTest,
+  studyInfoLookup,
+  CompletedStudy,
+} from "../types/Studies";
 import { TestState, TestAction } from "../types/TestReducer";
 import { getPerformanceDrop, getSecondsBetweenDates } from "../utils/utils";
 import useSerialMonitor from "./useSerialMonitor";
 // Initial state
+
 export const initialTestState: TestState = {
   status: "idle",
   jumpTimes: [],
+  dropJumpHeights: [],
   dropJumps: [],
-  data: {
-    avgFlightTime: 0,
-    avgHeightReached: 0,
-    avgFloorTime: 0,
-    avgPerformance: 0,
-    avgStiffness: 0,
-  },
+  boscoResults: initialBoscoResults,
+  takeoffFoot: "left",
+  criterion: "time",
+  criterionValue: 0,
   startTime: new Date(),
   ignoreJump: false,
   displayError: false,
@@ -24,11 +35,21 @@ export const initialTestState: TestState = {
   performanceDrop: 0,
   selectedAthletes: [],
   multipleAthletesTests: [],
-  pointer: 0,
-  selectedAthletePointer: 0,
+  testPointer: 0,
+  athletePointer: 0,
   sensitivity: 100,
-  testType: null,
+  testType: "cmj",
   firstJumpFlag: true,
+  avgFlightTime: 0,
+  avgHeightReached: 0,
+  avgStiffness: 0,
+  avgPerformance: 0,
+  avgFloorTime: 0,
+  maxAvgHeightReached: 0,
+  bestHeight: "0",
+  load: 0,
+  loadUnit: "kgs",
+  heightUnit: "cm",
 };
 
 // Helper functions for calculations
@@ -41,6 +62,109 @@ const calculateStiffness = (flightTime: number, floorTime: number): number => {
     (Math.PI * (flightTime + floorTime)) /
     (floorTime * floorTime * (flightTime / floorTime + Math.PI / 4))
   );
+};
+
+// Helper function to reset state while preserving specified properties
+const createResetState = (
+  currentState: TestState,
+  overrideProps: Partial<TestState> = {}
+): TestState => {
+  // Properties that should be preserved during resets
+  const preservedProps = {
+    selectedAthletes: currentState.selectedAthletes,
+    takeoffFoot: currentState.takeoffFoot,
+    multipleAthletesTests: currentState.multipleAthletesTests,
+    sensitivity: currentState.sensitivity,
+    athletePointer: currentState.athletePointer,
+    testType: currentState.testType,
+    dropJumps: currentState.dropJumps,
+    dropJumpHeights: currentState.dropJumpHeights,
+    testPointer: currentState.testPointer,
+  };
+
+  return {
+    ...initialTestState,
+    ...preservedProps,
+    ...overrideProps,
+  };
+};
+
+const createTest = (currentState: TestState) => {
+  switch (currentState.testType) {
+    case "cmj":
+    case "abalakov":
+    case "squatJump":
+      const standardResults: CMJResult | AbalakovResult | SquatJumpResult = {
+        times: currentState.boscoResults["cmj"].times,
+        avgFlightTime: currentState.avgFlightTime,
+        avgHeightReached: currentState.avgHeightReached,
+        takeoffFoot: currentState.takeoffFoot,
+        sensitivity: currentState.sensitivity,
+        type: currentState.testType,
+        load: currentState.load,
+        loadUnit: currentState.loadUnit,
+      };
+
+      const completedStandardTest: CompletedStudy = {
+        studyInfo: studyInfoLookup[currentState.testType],
+        date: new Date(),
+        results: standardResults,
+      };
+
+      return completedStandardTest;
+    case "bosco":
+      const boscoResults: BoscoResult = {
+        type: currentState.testType,
+        cmj: currentState.boscoResults["cmj"],
+        abalakov: currentState.boscoResults["abalakov"],
+        squatJump: currentState.boscoResults["squatJump"],
+      };
+
+      const completedBoscoTest: CompletedStudy = {
+        studyInfo: studyInfoLookup[currentState.testType],
+        date: new Date(),
+        results: boscoResults,
+      };
+      return completedBoscoTest;
+    case "multipleDropJump":
+      const multipleDropJumpResults: MultipleDropJumpResult = {
+        type: currentState.testType,
+        dropJumps: currentState.dropJumps,
+        takeoffFoot: currentState.takeoffFoot,
+        heightUnit: currentState.heightUnit,
+        maxAvgHeightReached: currentState.maxAvgHeightReached,
+        bestHeight: currentState.bestHeight,
+      };
+
+      const completedMultipleDropJumpsTest: CompletedStudy = {
+        studyInfo: studyInfoLookup[currentState.testType],
+        date: new Date(),
+        results: multipleDropJumpResults,
+      };
+      return completedMultipleDropJumpsTest;
+    case "multipleJumps":
+      const multipleJumpsResults: MultipleJumpsResult = {
+        type: currentState.testType,
+        times: currentState.jumpTimes,
+        avgFlightTime: currentState.avgFlightTime,
+        avgHeightReached: currentState.avgHeightReached,
+        takeoffFoot: currentState.takeoffFoot,
+        sensitivity: currentState.sensitivity,
+        criteria: currentState.criterion,
+        criteriaValue: currentState.criterionValue,
+        avgFloorTime: currentState.avgFloorTime,
+        avgStiffness: currentState.avgStiffness,
+        avgPerformance: currentState.avgPerformance,
+        performanceDrop: currentState.performanceDrop,
+      };
+
+      const completedMultipleJumpsTest: CompletedStudy = {
+        studyInfo: studyInfoLookup[currentState.testType],
+        date: new Date(),
+        results: multipleJumpsResults,
+      };
+      return completedMultipleJumpsTest;
+  }
 };
 
 // The reducer function
@@ -65,16 +189,71 @@ export function testReducer(state: TestState, action: TestAction): TestState {
     }
 
     case "CALCULATE_AVERAGES": {
+      if (state.testType === "bosco") {
+        const validJumpTimes = state.boscoResults[
+          boscoTests[state.testPointer]
+        ].times.filter((jump) => !jump.deleted);
+
+        if (validJumpTimes.length === 0) {
+          return {
+            ...state,
+            avgFlightTime: 0,
+            avgHeightReached: 0,
+          };
+        }
+
+        const avgFlightTime =
+          validJumpTimes.reduce((acc, jump) => acc + jump.time, 0) /
+          validJumpTimes.length;
+
+        // Calculate heights
+        const avgHeightReached = calculateHeight(avgFlightTime);
+
+        return {
+          ...state,
+          avgFlightTime: avgFlightTime,
+          avgHeightReached: avgHeightReached,
+        };
+      }
+      if (state.testType === "multipleDropJump") {
+        const validJumpTimes = state.dropJumps[state.testPointer].times.filter(
+          (jump) => !jump.deleted
+        );
+
+        if (validJumpTimes.length === 0) {
+          return {
+            ...state,
+            avgFlightTime: 0,
+            avgHeightReached: 0,
+          };
+        }
+        const avgFlightTime =
+          validJumpTimes.reduce((acc, jump) => acc + jump.time, 0) /
+          validJumpTimes.length;
+
+        // Calculate heights
+        const avgHeightReached = calculateHeight(avgFlightTime);
+
+        return {
+          ...state,
+          dropJumps: state.dropJumps.map((dropJump, index) =>
+            index === state.testPointer
+              ? {
+                  ...dropJump,
+                  avgFlightTime: avgFlightTime,
+                  avgHeightReached: avgHeightReached,
+                }
+              : dropJump
+          ),
+        };
+      }
       const validJumpTimes = state.jumpTimes.filter((jump) => !jump.deleted);
 
       if (validJumpTimes.length === 0) {
         return {
           ...state,
-          data: {
-            ...state.data,
-            avgFlightTime: 0,
-            avgHeightReached: 0,
-          },
+          avgFlightTime: 0,
+          avgHeightReached: 0,
         };
       }
 
@@ -118,24 +297,19 @@ export function testReducer(state: TestState, action: TestAction): TestState {
         return {
           ...state,
           performanceDrop,
-          data: {
-            avgFlightTime,
-            avgHeightReached,
-            avgFloorTime,
-            avgPerformance,
-            avgStiffness,
-          },
+          avgFlightTime,
+          avgHeightReached,
+          avgFloorTime,
+          avgPerformance,
+          avgStiffness,
         };
       }
 
       // For standard jumps
       return {
         ...state,
-        data: {
-          ...state.data,
-          avgFlightTime,
-          avgHeightReached,
-        },
+        avgFlightTime,
+        avgHeightReached,
       };
     }
 
@@ -147,22 +321,177 @@ export function testReducer(state: TestState, action: TestAction): TestState {
         };
       }
 
+      if (state.testType === "multipleDropJump") {
+        const processedJumpTimes = state.dropJumps[
+          state.testPointer
+        ].times.filter((jump) => jump.time !== 0);
+        const dropJumpResult: DropJumpResult = {
+          type: "dropJump",
+          height: state.dropJumpHeights[state.testPointer],
+          times: processedJumpTimes,
+          avgFlightTime: 0,
+          avgHeightReached: 0,
+          takeoffFoot: "left",
+          sensitivity: state.sensitivity,
+        };
+        return {
+          ...state,
+          status: "finished",
+          dropJumps: [...state.dropJumps, dropJumpResult],
+        };
+      }
+      if (state.testType === "bosco") {
+        const processedJumpTimes = state.boscoResults[
+          boscoTests[state.testPointer]
+        ].times.filter((jump) => !jump.deleted);
+        const currentBoscoTestResult:
+          | CMJResult
+          | SquatJumpResult
+          | AbalakovResult = {
+          type: boscoTests[state.testPointer] as
+            | "cmj"
+            | "squatJump"
+            | "abalakov",
+          load: 0,
+          loadUnit: "kgs",
+          times: processedJumpTimes,
+          avgFlightTime: 0,
+          avgHeightReached: 0,
+          takeoffFoot: "left",
+          sensitivity: state.sensitivity,
+        };
+
+        const updatedBoscoResults = {
+          ...state.boscoResults,
+          [boscoTests[state.testPointer]]: currentBoscoTestResult,
+        };
+        return {
+          ...state,
+          status: "finished",
+          boscoResults: updatedBoscoResults,
+        };
+      }
       const processedJumpTimes = state.jumpTimes.filter(
         (jump) => jump.time !== 0
       );
       return {
         ...state,
         status: "finished",
-        selectedAthletes: [],
+        jumpTimes: processedJumpTimes,
       };
 
     case "RESET_TEST":
-      return {
-        ...initialTestState,
+      if (state.testType === "bosco") {
+        const resetBoscoResults = {
+          ...initialBoscoResults,
+          [boscoTests[state.testPointer]]: {
+            ...initialBoscoResults[boscoTests[state.testPointer]],
+          },
+        };
+        return createResetState(state, {
+          startTime: new Date(),
+          boscoResults: resetBoscoResults,
+        });
+      }
+
+      if (state.testType === "multipleDropJump") {
+        const resetDropJumps = state.dropJumps.map((dropJump, index) =>
+          index === state.testPointer
+            ? dropJump
+            : { ...dropJump, avgFlightTime: 0, avgHeightReached: 0, times: [] }
+        );
+        return createResetState(state, {
+          startTime: new Date(),
+          dropJumps: resetDropJumps,
+        });
+      }
+
+      return createResetState(state, {
         startTime: new Date(),
-        selectedAthletes: state.selectedAthletes,
-        selectedAthletePointer: state.selectedAthletePointer,
-      };
+      });
+
+    case "PREVIOUS_TEST":
+      const previousTestPointer = state.testPointer - 1;
+
+      if (state.testPointer > 0) {
+        return createResetState(state, {
+          testPointer: previousTestPointer,
+          status: "idle",
+        });
+      }
+
+      return { ...state };
+
+    case "NEXT_TEST":
+      const nextTestPointer = state.testPointer + 1;
+
+      if (
+        (state.testType === "bosco" && state.testPointer < boscoTests.length) ||
+        (state.testType === "multipleDropJump" &&
+          state.testPointer < state.dropJumpHeights.length)
+      ) {
+        return createResetState(state, {
+          testPointer: nextTestPointer,
+          status: "idle",
+        });
+      }
+
+      return { ...state };
+
+    case "PREVIOUS_ATHLETE":
+      const previousAthletePointer = state.athletePointer - 1;
+
+      if (state.athletePointer === 0 || state.selectedAthletes.length === 0) {
+        return { ...state };
+      }
+      {
+        const updatedMultipleAthleteTests: MultipleAthletesTest[] =
+          state.multipleAthletesTests.map((test, i) =>
+            i === state.athletePointer
+              ? {
+                  athleteName:
+                    state.selectedAthletes[state.athletePointer].name,
+                  test: createTest(state),
+                  testType: state.testType,
+                }
+              : test
+          );
+
+        return createResetState(state, {
+          status: "finished",
+          athletePointer: previousAthletePointer,
+          multipleAthletesTests: updatedMultipleAthleteTests,
+        });
+      }
+
+    case "NEXT_ATHLETE":
+      const nextAthletePointer = state.athletePointer + 1;
+
+      if (state.athletePointer === state.selectedAthletes.length) {
+        return { ...state };
+      }
+      {
+        const updatedMultipleAthleteTests: MultipleAthletesTest[] =
+          state.multipleAthletesTests.map((test, i) =>
+            i === state.athletePointer
+              ? {
+                  athleteName:
+                    state.selectedAthletes[state.athletePointer].name,
+                  test: createTest(state),
+                  testType: state.testType,
+                }
+              : test
+          );
+
+        return createResetState(state, {
+          status:
+            state.multipleAthletesTests.length === state.athletePointer
+              ? "idle"
+              : "finished",
+          athletePointer: nextAthletePointer,
+          multipleAthletesTests: updatedMultipleAthleteTests,
+        });
+      }
 
     case "SET_IGNORE_JUMP":
       return {
@@ -244,7 +573,7 @@ export function testReducer(state: TestState, action: TestAction): TestState {
             };
           }
           const newJumpTimes = state.jumpTimes.map((jumpTime, index) =>
-            index === state.jumpTimes.length
+            index === state.jumpTimes.length - 1
               ? { ...jumpTime, time: flightTime }
               : jumpTime
           );
@@ -268,6 +597,45 @@ export function testReducer(state: TestState, action: TestAction): TestState {
           performance: 0,
           stiffness: 0,
         };
+
+        if (state.testType === "bosco") {
+          const updatedBoscoTimes = [
+            ...state.boscoResults[boscoTests[state.testPointer]].times,
+            newJumpTime,
+          ];
+          return {
+            ...state,
+            status: "ready",
+            startTime: timestamp,
+            boscoResults: {
+              ...state.boscoResults,
+              [boscoTests[state.testPointer]]: {
+                ...state.boscoResults[boscoTests[state.testPointer]],
+                times: updatedBoscoTimes,
+              },
+            },
+          };
+        }
+
+        if (state.testType === "multipleDropJump") {
+          const updatedDropJumpTimes = [
+            ...state.dropJumps[state.testPointer].times,
+            newJumpTime,
+          ];
+          return {
+            ...state,
+            status: "ready",
+            startTime: timestamp,
+            dropJumps: state.dropJumps.map((dropJump, index) =>
+              index === state.testPointer
+                ? {
+                    ...dropJump,
+                    times: updatedDropJumpTimes,
+                  }
+                : dropJump
+            ),
+          };
+        }
 
         return {
           ...state,

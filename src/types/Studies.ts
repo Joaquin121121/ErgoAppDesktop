@@ -9,8 +9,8 @@ interface BaseStudy {
   preview: BaseStudyPreview;
 }
 
-type LoadUnit = "kgs" | "lbs";
-type HeightUnit = "cm" | "ft";
+export type LoadUnit = "kgs" | "lbs";
+export type HeightUnit = "cm" | "ft";
 
 // Modify the interfaces that have load
 interface CMJStudy extends BaseStudy {
@@ -37,7 +37,7 @@ interface AbalakovStudy extends BaseStudy {
   sensitivity: number;
 }
 
-export interface MultipleDropJumpStudy extends BaseStudy {
+interface MultipleDropJumpStudy extends BaseStudy {
   takeoffFoot: "right" | "left" | "both";
   heightUnit: HeightUnit;
   sensitivity: number;
@@ -227,8 +227,6 @@ export interface MultipleJumpsResult extends BaseResult {
   criteria: "numberOfJumps" | "stiffness" | "time";
   criteriaValue: number | null;
   avgFloorTime: number;
-  stiffness: number[];
-  performance: number[];
   avgStiffness: number;
   avgPerformance: number;
   performanceDrop: number;
@@ -237,7 +235,6 @@ export interface MultipleJumpsResult extends BaseResult {
 export interface DropJumpResult extends BaseResult {
   type: "dropJump";
   height: string;
-  stiffness: number;
 }
 
 export interface MultipleDropJumpResult {
@@ -255,6 +252,43 @@ export interface BoscoResult {
   squatJump: SquatJumpResult;
   abalakov: AbalakovResult;
 }
+
+export const initialBoscoResults: {
+  cmj: CMJResult;
+  squatJump: SquatJumpResult;
+  abalakov: AbalakovResult;
+} = {
+  cmj: {
+    takeoffFoot: "both",
+    type: "cmj",
+    load: 0,
+    loadUnit: "kgs",
+    times: [],
+    avgFlightTime: 0,
+    avgHeightReached: 0,
+    sensitivity: 100,
+  },
+  squatJump: {
+    takeoffFoot: "both",
+    type: "squatJump",
+    load: 0,
+    loadUnit: "kgs",
+    times: [],
+    avgFlightTime: 0,
+    avgHeightReached: 0,
+    sensitivity: 100,
+  },
+  abalakov: {
+    takeoffFoot: null as unknown as "both",
+    type: "abalakov",
+    load: 0,
+    loadUnit: "kgs",
+    times: [],
+    avgFlightTime: 0,
+    avgHeightReached: 0,
+    sensitivity: 100,
+  },
+};
 
 export interface CompletedStudy {
   studyInfo: BaseStudy;
