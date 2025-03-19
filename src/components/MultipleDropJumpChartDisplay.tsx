@@ -10,7 +10,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import TonalButton from "./TonalButton";
-import OutlinedButton from "./OutlinedButton";
 import { DropJumpResult, units } from "../types/Studies";
 import animations from "../styles/animations.module.css";
 import { useTranslation } from "react-i18next";
