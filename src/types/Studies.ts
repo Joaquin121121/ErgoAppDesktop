@@ -1,3 +1,5 @@
+import { TestState } from "./TestReducer";
+
 // Base interfaces
 interface BaseStudyPreview {
   equipment: string[];
@@ -37,7 +39,7 @@ interface AbalakovStudy extends BaseStudy {
   sensitivity: number;
 }
 
-interface MultipleDropJumpStudy extends BaseStudy {
+export interface MultipleDropJumpStudy extends BaseStudy {
   takeoffFoot: "right" | "left" | "both";
   heightUnit: HeightUnit;
   sensitivity: number;
@@ -397,4 +399,83 @@ export interface MultipleAthletesTest {
   test: CompletedStudy;
   testType: string;
 }
+
+export const createTest = (currentState: TestState) => {
+  switch (currentState.testType) {
+    case "cmj":
+    case "abalakov":
+    case "squatJump":
+      const standardResults: CMJResult | AbalakovResult | SquatJumpResult = {
+        times: currentState.boscoResults["cmj"].times,
+        avgFlightTime: currentState.avgFlightTime,
+        avgHeightReached: currentState.avgHeightReached,
+        takeoffFoot: currentState.takeoffFoot,
+        sensitivity: currentState.sensitivity,
+        type: currentState.testType,
+        load: currentState.load,
+        loadUnit: currentState.loadUnit,
+      };
+
+      const completedStandardTest: CompletedStudy = {
+        studyInfo: studyInfoLookup[currentState.testType],
+        date: new Date(),
+        results: standardResults,
+      };
+
+      return completedStandardTest;
+    case "bosco":
+      const boscoResults: BoscoResult = {
+        type: currentState.testType,
+        cmj: currentState.boscoResults["cmj"],
+        abalakov: currentState.boscoResults["abalakov"],
+        squatJump: currentState.boscoResults["squatJump"],
+      };
+
+      const completedBoscoTest: CompletedStudy = {
+        studyInfo: studyInfoLookup[currentState.testType],
+        date: new Date(),
+        results: boscoResults,
+      };
+      return completedBoscoTest;
+    case "multipleDropJump":
+      const multipleDropJumpResults: MultipleDropJumpResult = {
+        type: currentState.testType,
+        dropJumps: currentState.dropJumps,
+        takeoffFoot: currentState.takeoffFoot,
+        heightUnit: currentState.heightUnit,
+        maxAvgHeightReached: currentState.maxAvgHeightReached,
+        bestHeight: currentState.bestHeight,
+      };
+
+      const completedMultipleDropJumpsTest: CompletedStudy = {
+        studyInfo: studyInfoLookup[currentState.testType],
+        date: new Date(),
+        results: multipleDropJumpResults,
+      };
+      return completedMultipleDropJumpsTest;
+    case "multipleJumps":
+      const multipleJumpsResults: MultipleJumpsResult = {
+        type: currentState.testType,
+        times: currentState.jumpTimes,
+        avgFlightTime: currentState.avgFlightTime,
+        avgHeightReached: currentState.avgHeightReached,
+        takeoffFoot: currentState.takeoffFoot,
+        sensitivity: currentState.sensitivity,
+        criteria: currentState.criterion,
+        criteriaValue: currentState.criterionValue,
+        avgFloorTime: currentState.avgFloorTime,
+        avgStiffness: currentState.avgStiffness,
+        avgPerformance: currentState.avgPerformance,
+        performanceDrop: currentState.performanceDrop,
+      };
+
+      const completedMultipleJumpsTest: CompletedStudy = {
+        studyInfo: studyInfoLookup[currentState.testType],
+        date: new Date(),
+        results: multipleJumpsResults,
+      };
+      return completedMultipleJumpsTest;
+  }
+};
+
 export default availableStudies;

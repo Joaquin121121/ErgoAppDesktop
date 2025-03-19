@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
-import { useStudyContext } from "../contexts/StudyContext";
 import inputStyles from "../styles/inputStyles.module.css";
-import TestInProgress from "../components/TestInProgress";
+import StandardTest from "../components/tests/test-types/StandardTest";
 import { useTranslation } from "react-i18next";
 import { VALIDATION_LIMITS } from "../constants/data";
-import { MultipleDropJumpStudy } from "../types/Studies";
+import { boscoTests } from "../types/Studies";
+import { useTestContext } from "../contexts/TestContext";
 
 const initialDropJumpHeights = [
   { cm: "20", ft: "0'8" },
@@ -25,43 +25,25 @@ function StartTest({
   animation,
   customNavigate,
   setSelectedOption,
-}: {
-  isExpanded: boolean;
-  onBlurChange: (isBlurred: boolean) => void;
-  animation: string;
-  customNavigate: (
-    direction: "back" | "forward",
-    page: string,
-    nextPage: string
-  ) => void;
-  setSelectedOption: (selectedOption: string) => void;
 }) {
-  const {
-    study,
-    setStudy,
-    athlete,
-    resetAthlete,
-    selectedAthletes,
-    setSelectedAthletes,
-  } = useStudyContext();
+  // Use the test context to access state and dispatch
+  const { state, dispatch } = useTestContext();
 
+  // Local UI state
   const [isBlurred, setIsBlurred] = useState(false);
   const [testInProgress, setTestInProgress] = useState(false);
   const [noAthlete, setNoAthlete] = useState(false);
-  const [prevHeight, setPrevHeight] = useState("");
   const [prevHeightUnit, setPrevHeightUnit] = useState(
-    study.type === "multipleDropJump" ? study.heightUnit : ""
+    state.testType === "multipleDropJump" ? state.heightUnit : ""
   );
   const [noDropJumpHeights, setNoDropJumpHeights] = useState(false);
   const [dropJumpHeights, setDropJumpHeights] = useState(
     initialDropJumpHeights
   );
   const [newHeightQuery, setNewHeightQuery] = useState("");
-
   const [selectedDropJumpHeights, setSelectedDropJumpHeights] = useState([]);
 
   const navigate = useNavigate();
-
   const { t } = useTranslation();
 
   const searchAthlete = () => {
@@ -89,29 +71,53 @@ function StartTest({
   };
 
   const startTest = () => {
-    if (athlete.name.length === 0 && selectedAthletes.length === 0) {
+    if (
+      state.athlete.name.length === 0 &&
+      state.selectedAthletes.length === 0
+    ) {
       setNoAthlete(true);
       return;
     }
 
-    if (study.type === "multipleDropJump") {
+    if (state.testType === "multipleDropJump") {
       if (selectedDropJumpHeights.length === 0) {
         setNoDropJumpHeights(true);
         return;
       }
-      setStudy({ ...study, dropJumpHeights: selectedDropJumpHeights });
+
+      // Set up drop jump heights in the state
+      // We would need to create drop jump objects from the selected heights
+      const dropJumps = selectedDropJumpHeights.map((height) => ({
+        height: height,
+        times: [],
+        avgFlightTime: 0,
+        avgHeightReached: 0,
+        type: "dropJump" as const,
+        takeoffFoot: state.takeoffFoot,
+        sensitivity: state.sensitivity,
+      }));
+
+      dispatch({
+        type: "SET_DROP_JUMPS",
+        payload: dropJumps,
+      });
     }
 
     onBlurChange(true);
     setTestInProgress(true);
+
+    // Set the test status to ready
+    dispatch({ type: "SET_STATUS", payload: "ready" });
   };
 
   const addDropJumpHeight = () => {
-    if (study.type !== "multipleDropJump" || newHeightQuery === "") {
+    if (state.testType !== "multipleDropJump" || newHeightQuery === "") {
       return;
     }
+
     setSelectedDropJumpHeights([...selectedDropJumpHeights, newHeightQuery]);
-    if (study.heightUnit === "cm") {
+
+    if (state.heightUnit === "cm") {
       // Convert cm to feet and inches
       const totalInches = parseFloat(newHeightQuery) / 2.54;
       const feet = Math.floor(totalInches / 12);
@@ -151,71 +157,61 @@ function StartTest({
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    // Handle empty string or numeric validation for load/sensitivity
-    if (field === "load" || field === "sensitivity") {
-      if (value === "" || /^\d+$/.test(value)) {
-        setStudy({ ...study, [field]: value });
-      }
-      return;
-    }
-
-    // Height validation for feet/inches format
-    if (field === "height") {
-      if (!/^[0-9']*$/.test(value)) {
-        return;
-      }
-
-      if (athlete.heightUnit === "ft" && value.length > 0) {
-        // Don't allow inputs longer than 4 characters (e.g., "5'111")
-        if (value.length > 4) return;
-
-        // Validate format for 4 character inputs (e.g., "5'11")
-        if (value.length === 4) {
-          const chars = value.split("");
-          const secondToLast = chars[2];
-          const last = chars[3];
-          if (secondToLast !== "1" || (last !== "0" && last !== "1")) {
-            return;
-          }
+  // These custom actions would need to be added to the testReducer
+  const handleInputChange = (field, value) => {
+    switch (field) {
+      case "takeoffFoot":
+        dispatch({
+          type: "SET_TAKEOFF_FOOT",
+          payload: value,
+        });
+        break;
+      case "load":
+        if (value === "" || /^\d+$/.test(value)) {
+          dispatch({
+            type: "SET_LOAD",
+            payload: value,
+          });
         }
-      }
-
-      // Additional height validation for drop jump studies
-      if (study.type === "multipleDropJump" && value !== "") {
-        if (study.heightUnit === "cm") {
-          const numValue = parseFloat(value);
-          if (numValue > VALIDATION_LIMITS.height.cm.max) {
-            return;
-          }
-        } else if (study.heightUnit === "ft") {
-          const [feet, inches = "0"] = value.split("'");
-          const feetNum = parseInt(feet);
-
-          // Validate feet only input
-          if (value.length === 1 && feetNum > VALIDATION_LIMITS.height.ft.max) {
-            return;
-          }
-
-          // Validate complete feet/inches input
-          const inchesNum = parseInt(inches);
-          if (!isNaN(feetNum) && !isNaN(inchesNum)) {
-            const heightInCm = Math.round(feetNum * 30.48 + inchesNum * 2.54);
-            if (heightInCm > VALIDATION_LIMITS.height.cm.max) {
-              return;
-            }
-          }
+        break;
+      case "loadUnit":
+        dispatch({
+          type: "SET_LOAD_UNIT",
+          payload: value,
+        });
+        break;
+      case "heightUnit":
+        dispatch({
+          type: "SET_HEIGHT_UNIT",
+          payload: value,
+        });
+        if (state.testType === "multipleDropJump") {
+          setPrevHeightUnit(state.heightUnit);
         }
-      }
+        break;
+      case "criteria":
+        dispatch({
+          type: "SET_CRITERION",
+          payload: value,
+        });
+        break;
+      case "criteriaValue":
+        dispatch({
+          type: "SET_CRITERION_VALUE",
+          payload: parseInt(value) || 0,
+        });
+        break;
+      case "sensitivity":
+        if (value === "" || (Number(value) <= 500 && !isNaN(Number(value)))) {
+          dispatch({
+            type: "SET_SENSITIVITY",
+            payload: parseInt(value) || 0,
+          });
+        }
+        break;
+      default:
+        console.warn(`Unhandled field: ${field}`);
     }
-
-    // Store previous height unit for drop jump studies
-    if (study.type === "multipleDropJump" && field === "heightUnit") {
-      setPrevHeightUnit(study.heightUnit);
-    }
-
-    // Update study with new value
-    setStudy({ ...study, [field]: value });
   };
 
   const onClose = () => {
@@ -225,9 +221,13 @@ function StartTest({
     }, 300);
   };
 
+  const resetAthlete = () => {
+    dispatch({ type: "RESET_ATHLETE" });
+    dispatch({ type: "SET_SELECTED_ATHLETES", payload: [] });
+  };
+
   useEffect(() => {
     const handleKeyDown = (event) => {
-      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
       if (
         event.key === "Backspace" &&
         !["INPUT", "TEXTAREA", "SELECT"].includes(
@@ -239,8 +239,6 @@ function StartTest({
     };
 
     window.addEventListener("keydown", handleKeyDown);
-
-    // Cleanup function to remove event listener
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
@@ -248,24 +246,24 @@ function StartTest({
 
   useEffect(() => {
     setNoAthlete(false);
-  }, [athlete]);
+  }, [state.athlete]);
 
   useEffect(() => {
-    if (study.type !== "multipleDropJump") {
+    if (state.testType !== "multipleDropJump") {
       return;
     }
     setNoDropJumpHeights(false);
   }, [selectedDropJumpHeights]);
 
   useEffect(() => {
-    if (study.type !== "multipleDropJump") {
+    if (state.testType !== "multipleDropJump") {
       return;
     }
 
     // Add ' to any single digit foot heights
     const updatedHeights = selectedDropJumpHeights.map((height) => {
       if (
-        study.heightUnit === "ft" &&
+        state.heightUnit === "ft" &&
         height.length === 1 &&
         !height.includes("'")
       ) {
@@ -279,15 +277,15 @@ function StartTest({
     ) {
       setSelectedDropJumpHeights(updatedHeights);
     }
-  }, [(study as MultipleDropJumpStudy).heightUnit]);
+  }, [state.heightUnit]);
 
   // Handle height unit conversion
   useEffect(() => {
-    if (study.type !== "multipleDropJump") {
+    if (state.testType !== "multipleDropJump") {
       return;
     }
 
-    if (study.heightUnit === "ft" && prevHeightUnit === "cm") {
+    if (state.heightUnit === "ft" && prevHeightUnit === "cm") {
       const convertedHeights = selectedDropJumpHeights.map((height) => {
         const heightNum = parseFloat(height);
         if (!isNaN(heightNum)) {
@@ -303,7 +301,7 @@ function StartTest({
       setSelectedDropJumpHeights(convertedHeights);
     }
 
-    if (study.heightUnit === "cm" && prevHeightUnit === "ft") {
+    if (state.heightUnit === "cm" && prevHeightUnit === "ft") {
       const convertedHeights = selectedDropJumpHeights.map((height) => {
         const [feet, inches = "0"] = height.split("'");
         const feetNum = parseInt(feet);
@@ -316,12 +314,12 @@ function StartTest({
       setSelectedDropJumpHeights(convertedHeights);
     }
 
-    setPrevHeightUnit(study.heightUnit);
-  }, [(study as MultipleDropJumpStudy).heightUnit]);
+    setPrevHeightUnit(state.heightUnit);
+  }, [state.heightUnit]);
 
   return (
     <div
-      className={`flex-1  relative flex flex-col items-center transition-all duration-300 ease-in-out `}
+      className={`flex-1 relative flex flex-col items-center transition-all duration-300 ease-in-out`}
       style={{ paddingLeft: isExpanded ? "224px" : "128px" }}
     >
       <div
@@ -337,38 +335,34 @@ function StartTest({
         </div>
 
         <p className="text-5xl text-secondary self-center -mt-10">
-          {t(study["name"])}
+          {t(state.testType)}
         </p>
         <p className="text-4xl mt-8 text-tertiary">Datos del Atleta</p>
-        {athlete.name.length ? (
+        {state.athlete.name.length ? (
           <div className="w-full self-center mt-8 flex items-center justify-center gap-x-16">
             <p className="text-2xl">
               Atleta Seleccionado:{" "}
-              <span className="text-secondary">{athlete.name}</span>
+              <span className="text-secondary">{state.athlete.name}</span>
             </p>
             <OutlinedButton
               title="Cambiar"
-              onClick={() => {
-                resetAthlete();
-                setSelectedAthletes([]);
-              }}
+              onClick={resetAthlete}
               icon="reset"
             />
           </div>
-        ) : selectedAthletes.length > 0 ? (
+        ) : state.selectedAthletes.length > 0 ? (
           <div className="w-full self-center mt-8 flex items-center justify-center gap-x-16">
             <p className="text-2xl" style={{ width: "800px" }}>
               Atletas Seleccionados:{" "}
               <span className="text-secondary">
-                {selectedAthletes.map((athlete) => athlete.name).join(", ")}
+                {state.selectedAthletes
+                  .map((athlete) => athlete.name)
+                  .join(", ")}
               </span>
             </p>
             <OutlinedButton
               title="Cambiar"
-              onClick={() => {
-                resetAthlete();
-                setSelectedAthletes([]);
-              }}
+              onClick={resetAthlete}
               icon="reset"
             />
           </div>
@@ -401,59 +395,59 @@ function StartTest({
 
         <p
           className="text-4xl mt-16 text-tertiary"
-          style={{ marginBottom: study.type !== "bosco" && "32px" }}
+          style={{ marginBottom: state.testType !== "bosco" && "32px" }}
         >
-          {study.type === "bosco" ? "Tests a Realizar" : "Datos del Test"}
+          {state.testType === "bosco" ? "Tests a Realizar" : "Datos del Test"}
         </p>
         <div className="px-8">
-          {study.type === "bosco" && (
+          {state.testType === "bosco" && (
             <div className="flex flex-col px-8 relative">
               <ul className="mt-4 -mb-2">
-                {study.studies.map((studyItem, index) => (
-                  <li key={studyItem} className="w-48 rounded-2xl p-2 mb-1 ">
+                {boscoTests.map((testName, index) => (
+                  <li key={testName} className="w-48 rounded-2xl p-2 mb-1">
                     <p className="text-secondary text-lg">
-                      {index + 1}. {t(studyItem)}
+                      {index + 1}. {t(testName)}
                     </p>
                   </li>
                 ))}
               </ul>
             </div>
           )}
-          {study.type !== "bosco" && study.type !== "multipleJumps" && (
+          {state.testType !== "bosco" && state.testType !== "multipleJumps" && (
             <div className="flex items-center">
               <p
                 className="text-tertiary mr-8 w-40 text-lg text-end"
                 style={{
-                  width: study.type === "multipleDropJump" && "261px",
+                  width: state.testType === "multipleDropJump" && "261px",
                 }}
               >
                 Pie de Despegue
               </p>
               <button
-                key={`${study.type}-left`}
-                onClick={() => setStudy({ ...study, takeoffFoot: "left" })}
+                key={`${state.testType}-left`}
+                onClick={() => handleInputChange("takeoffFoot", "left")}
                 className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                  study.takeoffFoot === "left" &&
+                  state.takeoffFoot === "left" &&
                   "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                 }`}
               >
                 Izquierdo
               </button>
               <button
-                key={`${study.type}-right`}
-                onClick={() => setStudy({ ...study, takeoffFoot: "right" })}
+                key={`${state.testType}-right`}
+                onClick={() => handleInputChange("takeoffFoot", "right")}
                 className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                  study.takeoffFoot === "right" &&
+                  state.takeoffFoot === "right" &&
                   "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                 }`}
               >
                 Derecho
               </button>
               <button
-                key={`${study.type}-both`}
-                onClick={() => setStudy({ ...study, takeoffFoot: "both" })}
+                key={`${state.testType}-both`}
+                onClick={() => handleInputChange("takeoffFoot", "both")}
                 className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                  study.takeoffFoot === "both" &&
+                  state.takeoffFoot === "both" &&
                   "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                 }`}
               >
@@ -461,15 +455,15 @@ function StartTest({
               </button>
             </div>
           )}
-          {study.type !== "bosco" && study.type !== "multipleJumps" && (
+          {state.testType !== "bosco" && state.testType !== "multipleJumps" && (
             <div className="flex items-center mt-8">
-              {study.type === "multipleDropJump" ? (
+              {state.testType === "multipleDropJump" ? (
                 <div>
                   <div className="flex items-center">
                     <p
-                      className=" mr-8 text-lg w-60"
+                      className="mr-8 text-lg w-60"
                       style={{
-                        width: study.type === "multipleDropJump" && "261px",
+                        width: state.testType === "multipleDropJump" && "261px",
                       }}
                     >
                       Seleccionar Alturas de Caída
@@ -480,26 +474,26 @@ function StartTest({
                         key={height.cm}
                         className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none truncate ${
                           selectedDropJumpHeights.includes(
-                            height[study.heightUnit]
+                            height[state.heightUnit]
                           ) &&
                           "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                         }`}
                         onClick={() =>
                           setSelectedDropJumpHeights(
                             !selectedDropJumpHeights.includes(
-                              height[study.heightUnit]
+                              height[state.heightUnit]
                             )
                               ? [
                                   ...selectedDropJumpHeights,
-                                  height[study.heightUnit],
+                                  height[state.heightUnit],
                                 ]
                               : selectedDropJumpHeights.filter(
-                                  (h) => h !== height[study.heightUnit]
+                                  (h) => h !== height[state.heightUnit]
                                 )
                           )
                         }
                       >
-                        {height[study.heightUnit]} {study.heightUnit}
+                        {height[state.heightUnit]} {state.heightUnit}
                       </button>
                     ))}
                   </div>
@@ -512,14 +506,14 @@ function StartTest({
                     <p
                       className={"text-lg text-end w-40 mr-12"}
                       style={{
-                        width: study.type === "multipleDropJump" && "261px",
+                        width: state.testType === "multipleDropJump" && "261px",
                       }}
                     >
                       Añadir Altura
                     </p>
                     <input
                       type="numeric"
-                      className={`bg-offWhite border pl-2 border-gray focus:outline-secondary rounded-2xl shadow-sm  w-20 h-10 text-tertiary ${inputStyles.input}`}
+                      className={`bg-offWhite border pl-2 border-gray focus:outline-secondary rounded-2xl shadow-sm w-20 h-10 text-tertiary ${inputStyles.input}`}
                       placeholder="70..."
                       value={newHeightQuery}
                       onChange={(e) => {
@@ -529,13 +523,13 @@ function StartTest({
                     />
                     <button
                       onClick={addDropJumpHeight}
-                      className="w-8 ml-4 h-8 rounded-full bg-secondary focus:outline-none focus:ring-2 focus:ring-secondary transition-opacity duration-200 ease-linear shadow-sm flex items-center justify-center hover:opacity-70 "
+                      className="w-8 ml-4 h-8 rounded-full bg-secondary focus:outline-none focus:ring-2 focus:ring-secondary transition-opacity duration-200 ease-linear shadow-sm flex items-center justify-center hover:opacity-70"
                     >
                       <img src="/add.png" className="h-6 w-6" alt="" />
                     </button>
                     <img
                       src="/reset.png"
-                      className="h-7 w-7 ml-4 hover:opacity-70 cursor-pointer "
+                      className="h-7 w-7 ml-4 hover:opacity-70 cursor-pointer"
                       alt=""
                       onClick={() => {
                         setNewHeightQuery("");
@@ -555,26 +549,26 @@ function StartTest({
                     type="numeric"
                     className={`bg-offWhite border border-gray focus:outline-secondary rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${inputStyles.input}`}
                     placeholder="70..."
-                    value={study.load}
+                    value={state.load}
                     onChange={(e) => {
                       handleInputChange("load", e.target.value);
                     }}
                   />
                   <button
-                    key={`${study.loadUnit}-right`}
-                    onClick={() => setStudy({ ...study, loadUnit: "kgs" })}
+                    key={`${state.loadUnit}-right`}
+                    onClick={() => handleInputChange("loadUnit", "kgs")}
                     className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-8 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                      study.loadUnit === "kgs" &&
+                      state.loadUnit === "kgs" &&
                       "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                     }`}
                   >
                     Kgs
                   </button>
                   <button
-                    key={`${study.type}-both`}
-                    onClick={() => setStudy({ ...study, loadUnit: "lbs" })}
+                    key={`${state.testType}-both`}
+                    onClick={() => handleInputChange("loadUnit", "lbs")}
                     className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                      study.loadUnit === "lbs" &&
+                      state.loadUnit === "lbs" &&
                       "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                     }`}
                   >
@@ -584,76 +578,61 @@ function StartTest({
               )}
             </div>
           )}
-          {study.type === "multipleJumps" && (
+          {state.testType === "multipleJumps" && (
             <>
               <div className="flex items-center mt-8">
                 <p className="text-tertiary mr-8 w-40 text-lg text-right">
                   Criterio
                 </p>
                 <button
-                  key={`${study.criteria}-numberOfJumps`}
-                  onClick={() =>
-                    setStudy({ ...study, criteria: "numberOfJumps" })
-                  }
+                  key="numberOfJumps"
+                  onClick={() => handleInputChange("criteria", "numberOfJumps")}
                   className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                    study.criteria === "numberOfJumps" &&
+                    state.criterion === "numberOfJumps" &&
                     "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                   }`}
                 >
                   N° de saltos
                 </button>
+
                 <button
-                  key={`${study.criteria}-stiffness`}
-                  onClick={() => setStudy({ ...study, criteria: "stiffness" })}
+                  key="time"
+                  onClick={() => handleInputChange("criteria", "time")}
                   className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                    study.criteria === "stiffness" &&
-                    "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
-                  }`}
-                >
-                  Stiffness
-                </button>
-                <button
-                  key={`${study.type}-time`}
-                  onClick={() => setStudy({ ...study, criteria: "time" })}
-                  className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                    study.criteria === "time" &&
+                    state.criterion === "time" &&
                     "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                   }`}
                 >
                   Tiempo
                 </button>
               </div>
-              {study.criteria !== "stiffness" && (
-                <div className="flex items-center mt-8 relative w-full">
-                  <p className="text-tertiary w-40 text-end mr-12 text-lg">
-                    {t(study.criteria)}
-                  </p>
-                  <input
-                    type="numeric"
-                    className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${inputStyles.input}`}
-                    placeholder="20..."
-                    value={study.criteriaValue}
-                    onChange={(e) => {
-                      handleInputChange("criteriaValue", e.target.value);
-                    }}
-                  />
-                  {study.criteria === "time" && (
-                    <p className=" ml-2">segundos</p>
-                  )}
-                </div>
-              )}
+              <div className="flex items-center mt-8 relative w-full">
+                <p className="text-tertiary w-40 text-end mr-12 text-lg">
+                  {t(state.criterion)}
+                </p>
+                <input
+                  type="numeric"
+                  className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${inputStyles.input}`}
+                  placeholder="20..."
+                  value={state.criterionValue}
+                  onChange={(e) => {
+                    handleInputChange("criteriaValue", e.target.value);
+                  }}
+                />
+                {state.criterion === "time" && <p className="ml-2">segundos</p>}
+              </div>
             </>
           )}
           <div
             className="flex items-center mt-8 relative w-full"
             style={{
-              marginTop: study.type === "bosco" && "24px",
+              marginTop: state.testType === "bosco" && "24px",
             }}
           >
             <p
               className="text-tertiary w-40 text-end mr-12 text-lg"
               style={{
-                width: study.type === "multipleDropJump" && "261px",
+                width: state.testType === "multipleDropJump" && "261px",
               }}
             >
               Sensibilidad
@@ -662,7 +641,7 @@ function StartTest({
               type="numeric"
               className={`bg-offWhite border border-gray rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${inputStyles.input}`}
               placeholder="20..."
-              value={study.sensitivity}
+              value={state.sensitivity}
               onChange={(e) => {
                 const value = e.target.value;
                 if (
@@ -678,7 +657,7 @@ function StartTest({
               onClick={showInfo}
             >
               <img src="/info.png" alt="" className="mr-2 h-6 w-6" />
-              <p className="text-secondary ">Qué es la sensibilidad?</p>
+              <p className="text-secondary">Qué es la sensibilidad?</p>
             </div>
           </div>
         </div>
@@ -695,21 +674,20 @@ function StartTest({
             className="absolute top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
             onClick={() => {
               setIsBlurred(false);
-
               onBlurChange(false);
             }}
           >
             <img src="/close.png" className="h-6 w-6" alt="" />
           </div>
           <p className="self-center mt-8 text-xl">Qué es la sensibilidad?</p>
-          <p className=" mt-4">
+          <p className="mt-4">
             Valor expresado en milisegundos (ms) que establece el umbral mínimo
             de tiempo de vuelo que debe tener un salto para ser registrado.
             Todos los saltos con un tiempo de vuelo menor a este valor serán
             ignorados por el sistema, filtrando así impactos o rebotes no
             deseados. Su función principal es:
           </p>
-          <ul className="list-disc list-inside  mt-2">
+          <ul className="list-disc list-inside mt-2">
             <li>
               Adaptar la medición a diferentes tipos de usuarios (como niños o
               personas con descensos muy veloces)
@@ -732,22 +710,13 @@ function StartTest({
         </div>
       )}
       {testInProgress && (
-        <TestInProgress
+        <StandardTest
           setTestInProgress={setTestInProgress}
           onBlurChange={onBlurChange}
           customNavigate={customNavigate}
-          tests={
-            study.type === "bosco"
-              ? study.studies
-              : study.type === "multipleDropJump"
-              ? study.dropJumpHeights.map(() => "dropJump")
-              : [study.type]
-          }
-          setSelectedOption={setSelectedOption}
         />
       )}
     </div>
   );
 }
-
 export default StartTest;

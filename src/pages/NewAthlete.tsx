@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useStudyContext } from "../contexts/StudyContext";
+import { useTestContext, useTestActions } from "../contexts/TestContext";
 import { useTranslation } from "react-i18next";
 import TonalButton from "../components/TonalButton";
 import { useJsonFiles } from "../hooks/useJsonFiles";
@@ -62,8 +62,9 @@ function NewAthlete({
   });
 
   const { saveJson, readDirectoryJsons } = useJsonFiles();
-  const { athlete, setAthlete, resetAthlete, setSelectedAthletes } =
-    useStudyContext();
+  const { state } = useTestContext();
+  const { setAthlete, resetAthlete, setSelectedAthletes } = useTestActions();
+  const athlete = state.athlete;
 
   // Store previous values for conversion calculations
   const [prevHeight, setPrevHeight] = useState<string>("");

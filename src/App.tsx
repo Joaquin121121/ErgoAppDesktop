@@ -28,6 +28,7 @@ import { AthleteComparisonProvider } from "./contexts/AthleteComparisonContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ErrorPage from "./pages/ErrorPage";
 import CompletedStudyDashboard from "./pages/CompletedStudyDashboard";
+import { TestProvider } from "./contexts/TestContext";
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
@@ -374,121 +375,126 @@ function App() {
   }
 
   return (
-    <AthleteComparisonProvider>
-      <UserProvider>
-        <HashRouter>
-          <UpdateChecker
-            showUpdate={showUpdate}
-            setShowUpdate={setShowUpdate}
-          />
-          {isBlockingClicks && (
-            <div
-              style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100vw",
-                height: "100vh",
-                background: "transparent",
-                zIndex: 9999,
-              }}
+    <TestProvider>
+      <AthleteComparisonProvider>
+        <UserProvider>
+          <HashRouter>
+            <UpdateChecker
+              showUpdate={showUpdate}
+              setShowUpdate={setShowUpdate}
             />
-          )}
+            {isBlockingClicks && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100vw",
+                  height: "100vh",
+                  background: "transparent",
+                  zIndex: 9999,
+                }}
+              />
+            )}
 
-          <Routes>
-            <Route
-              path="/error"
-              element={
-                <ErrorPage
-                  onReset={handleErrorReset}
-                  customNavigate={customNavigate}
-                />
-              }
-            />
-            <Route
-              path="*"
-              element={
-                <WithLayout
-                  isExpanded={isExpanded}
-                  setIsExpanded={setIsExpanded}
-                  isBlurred={isBlurred}
-                  resetAnimations={resetAnimations}
-                  selectedOption={selectedOption}
-                  setSelectedOption={setSelectedOption}
-                >
-                  <ErrorBoundary
-                    onError={handleError}
+            <Routes>
+              <Route
+                path="/error"
+                element={
+                  <ErrorPage
                     onReset={handleErrorReset}
-                    fallback={<Navigate to="/error" replace />}
+                    customNavigate={customNavigate}
+                  />
+                }
+              />
+              <Route
+                path="*"
+                element={
+                  <WithLayout
+                    isExpanded={isExpanded}
+                    setIsExpanded={setIsExpanded}
+                    isBlurred={isBlurred}
+                    resetAnimations={resetAnimations}
+                    selectedOption={selectedOption}
+                    setSelectedOption={setSelectedOption}
                   >
-                    <Routes>
-                      <Route path="/" element={getPageComponent("studies")} />
-                      <Route
-                        path="/studies"
-                        element={getPageComponent("studies")}
-                      />
-                      <Route
-                        path="/athletes"
-                        element={getPageComponent("athletes")}
-                      />
-                      <Route
-                        path="/about"
-                        element={getPageComponent("about")}
-                      />
-                      <Route
-                        path="/startTest"
-                        element={getPageComponent("startTest")}
-                      />
-                      <Route
-                        path="/newTest"
-                        element={getPageComponent("newTest")}
-                      />
-                      <Route
-                        path="/selectAthlete"
-                        element={getPageComponent("selectAthlete")}
-                      />
-                      <Route
-                        path="/newAthlete"
-                        element={getPageComponent("newAthlete")}
-                      />
-                      <Route
-                        path="/athleteStudies"
-                        element={getPageComponent("athleteStudies")}
-                      />
-                      <Route
-                        path="/studyInfo"
-                        element={getPageComponent("studyInfo")}
-                      />
-                      <Route
-                        path="/completedStudyInfo"
-                        element={getPageComponent("completedStudyInfo")}
-                      />
-                      <Route
-                        path="/compareTwoStudies"
-                        element={getPageComponent("compareTwoStudies")}
-                      />
-                      <Route
-                        path="/compareThreeStudies"
-                        element={getPageComponent("compareThreeStudies")}
-                      />
-                      <Route
-                        path="/compareTwoAthletes"
-                        element={getPageComponent("compareTwoAthletes")}
-                      />
-                      <Route
-                        path="/completedStudyDashboard"
-                        element={getPageComponent("completedStudyDashboard")}
-                      />
-                      <Route path="*" element={getPageComponent("notFound")} />
-                    </Routes>
-                  </ErrorBoundary>
-                </WithLayout>
-              }
-            />
-          </Routes>
-        </HashRouter>
-      </UserProvider>
-    </AthleteComparisonProvider>
+                    <ErrorBoundary
+                      onError={handleError}
+                      onReset={handleErrorReset}
+                      fallback={<Navigate to="/error" replace />}
+                    >
+                      <Routes>
+                        <Route path="/" element={getPageComponent("studies")} />
+                        <Route
+                          path="/studies"
+                          element={getPageComponent("studies")}
+                        />
+                        <Route
+                          path="/athletes"
+                          element={getPageComponent("athletes")}
+                        />
+                        <Route
+                          path="/about"
+                          element={getPageComponent("about")}
+                        />
+                        <Route
+                          path="/startTest"
+                          element={getPageComponent("startTest")}
+                        />
+                        <Route
+                          path="/newTest"
+                          element={getPageComponent("newTest")}
+                        />
+                        <Route
+                          path="/selectAthlete"
+                          element={getPageComponent("selectAthlete")}
+                        />
+                        <Route
+                          path="/newAthlete"
+                          element={getPageComponent("newAthlete")}
+                        />
+                        <Route
+                          path="/athleteStudies"
+                          element={getPageComponent("athleteStudies")}
+                        />
+                        <Route
+                          path="/studyInfo"
+                          element={getPageComponent("studyInfo")}
+                        />
+                        <Route
+                          path="/completedStudyInfo"
+                          element={getPageComponent("completedStudyInfo")}
+                        />
+                        <Route
+                          path="/compareTwoStudies"
+                          element={getPageComponent("compareTwoStudies")}
+                        />
+                        <Route
+                          path="/compareThreeStudies"
+                          element={getPageComponent("compareThreeStudies")}
+                        />
+                        <Route
+                          path="/compareTwoAthletes"
+                          element={getPageComponent("compareTwoAthletes")}
+                        />
+                        <Route
+                          path="/completedStudyDashboard"
+                          element={getPageComponent("completedStudyDashboard")}
+                        />
+                        <Route
+                          path="*"
+                          element={getPageComponent("notFound")}
+                        />
+                      </Routes>
+                    </ErrorBoundary>
+                  </WithLayout>
+                }
+              />
+            </Routes>
+          </HashRouter>
+        </UserProvider>
+      </AthleteComparisonProvider>
+    </TestProvider>
   );
 }
 

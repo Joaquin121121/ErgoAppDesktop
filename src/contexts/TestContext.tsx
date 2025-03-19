@@ -4,6 +4,8 @@ import React, { createContext, useContext, useReducer, ReactNode } from "react";
 import { TestState, TestAction } from "../types/TestReducer";
 import { testReducer, initialTestState } from "../hooks/useTestReducer";
 import useSerialMonitor from "../hooks/useSerialMonitor";
+import { Athlete } from "../types/Athletes";
+
 // Create context with type information
 interface TestContextType {
   state: TestState;
@@ -84,6 +86,47 @@ export function useTestActions() {
 
     toggleChart: (show: boolean) => {
       dispatch({ type: "TOGGLE_CHART", payload: show });
+    },
+
+    // Athlete-related actions
+    setAthlete: (athlete: Athlete) => {
+      dispatch({ type: "SET_ATHLETE", payload: athlete });
+    },
+
+    resetAthlete: () => {
+      dispatch({ type: "RESET_ATHLETE" });
+    },
+
+    setSelectedAthletes: (athletes: Athlete[]) => {
+      dispatch({
+        type: "SET_STATUS",
+        payload: athletes.length > 0 ? "ready" : "idle",
+      });
+      // Update the state with the selected athletes
+      dispatch({
+        type: "SET_SELECTED_ATHLETES",
+        payload: athletes,
+      });
+    },
+
+    nextTest: () => {
+      dispatch({ type: "NEXT_TEST" });
+    },
+
+    previousTest: () => {
+      dispatch({ type: "PREVIOUS_TEST" });
+    },
+
+    nextAthlete: () => {
+      dispatch({ type: "NEXT_ATHLETE" });
+    },
+
+    previousAthlete: () => {
+      dispatch({ type: "PREVIOUS_ATHLETE" });
+    },
+
+    jumpToAthlete: (athleteIndex: number) => {
+      dispatch({ type: "JUMP_TO_ATHLETE", payload: athleteIndex });
     },
   };
 }

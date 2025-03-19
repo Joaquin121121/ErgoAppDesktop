@@ -5,7 +5,6 @@ import type { Studies, Study } from "../types/Studies";
 import StudyCard from "../components/StudyCard";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
-import { useStudyContext } from "../contexts/StudyContext";
 import { useNavigate } from "react-router-dom";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
@@ -17,6 +16,7 @@ import HandleUpdate from "../components/HandleUpdate";
 import { check, Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { getVersion } from "@tauri-apps/api/app";
+import { useTestActions, useTestContext } from "../contexts/TestContext";
 
 function Studies({
   onBlurChange,
@@ -33,10 +33,10 @@ function Studies({
     nextPage: string
   ) => void;
 }) {
-  const { setStudy, resetAthlete, setSelectedAthletes } = useStudyContext();
+  const { resetAthlete, setSelectedAthletes } = useTestActions();
 
   const { readDirectoryJsons, deleteJson } = useJsonFiles();
-
+  const { state, dispatch } = useTestContext();
   const { user } = useUser();
   const navigate = useNavigate();
 
@@ -117,7 +117,10 @@ function Studies({
     }
   };
   const onClick = (key) => {
-    setStudy(filteredStudies.find((array) => array[0] === key)?.[1]);
+    dispatch({
+      type: "SET_TEST_TYPE",
+      payload: filteredStudies.find((array) => array[0] === key)?.[1].type,
+    });
     customNavigate("forward", "studies", "startTest");
     setTimeout(() => {
       navigate("/startTest");

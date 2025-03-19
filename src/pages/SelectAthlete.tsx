@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useStudyContext } from "../contexts/StudyContext";
+import { useTestContext, useTestActions } from "../contexts/TestContext";
 import { useNavigate } from "react-router-dom";
 import inputStyles from "../styles/inputStyles.module.css";
 import { Athlete, transformToAthlete } from "../types/Athletes";
@@ -59,13 +59,11 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const { readDirectoryJsons, saveJson } = useJsonFiles();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const {
-    athlete,
-    setAthlete,
-    resetAthlete,
-    selectedAthletes,
-    setSelectedAthletes,
-  } = useStudyContext();
+  const { state } = useTestContext();
+  const { setAthlete, resetAthlete, setSelectedAthletes } = useTestActions();
+  const athlete = state.athlete;
+  const selectedAthletes = state.selectedAthletes;
+
   const [originalAthlete, setOriginalAthlete] = useState(athlete);
 
   const countries = Country.getAllCountries();

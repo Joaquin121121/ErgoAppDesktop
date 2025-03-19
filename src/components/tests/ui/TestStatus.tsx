@@ -2,32 +2,15 @@ import { useTestContext, useTestActions } from "../../../contexts/TestContext";
 import { useTranslation } from "react-i18next";
 import React from "react";
 import OutlinedButton from "../../OutlinedButton";
-import MultipleJumpsChart from "@/components/charts/MultipleJumpsChart";
-import MultipleDropJumpChart from "@/components/charts/MultipleDropJumpChart";
-import StandardChart from "@/components/charts/StandardChart";
-import TonalButton from "@/components/TonalButton";
+import MultipleJumpsChart from "../../charts/MultipleJumpsChart";
+import MultipleDropJumpChart from "../../charts/MultipleDropJumpChart";
+import StandardChart from "../../charts/StandardChart";
+import TonalButton from "../../TonalButton";
 
 function TestStatus() {
   const { state } = useTestContext();
-  const { initializeTest, finishTest } = useTestActions();
+  const { initializeTest, finishTest, resetTest } = useTestActions();
   const { t } = useTranslation();
-
-  const getStatus = () => {
-    switch (state.status) {
-      case "ready":
-        return "Listo para saltar";
-      case "jumping":
-        return "Saltando";
-      case "deviceError":
-        return "Error: Dispositivo no encontrado";
-      case "finished":
-        return "Test Finalizado";
-      case "idle":
-        return "Conectando...";
-      case "noJumpsError":
-        return "Error: No se registraron saltos";
-    }
-  };
 
   const deviceErrorJSX = (
     <div className="mt-4 flex flex-col self-center">
@@ -46,6 +29,23 @@ function TestStatus() {
     </div>
   );
 
+  const getStatus = () => {
+    switch (state.status) {
+      case "ready":
+        return "Listo para saltar";
+      case "jumping":
+        return "Saltando";
+      case "deviceError":
+        return "Error: Dispositivo no encontrado";
+      case "finished":
+        return "Test Finalizado";
+      case "idle":
+        return "Conectando...";
+      case "noJumpsError":
+        return "Error: No se registraron saltos";
+    }
+  };
+
   const getChartType = () => {
     switch (state.testType) {
       case "multipleDropJump":
@@ -57,18 +57,39 @@ function TestStatus() {
     }
   };
 
+  const getRelevantJSX = () => {
+    switch (state.status) {
+      case "deviceError":
+        return deviceErrorJSX;
+      case "ready":
+      case "jumping":
+        return (
+          <>
+            Estado:{" "}
+            <span className="text-secondary font-medium">{getStatus()}</span>
+            {getChartType()}
+            <TonalButton
+              title="Finalizar Test"
+              icon="closeWhite"
+              onClick={finishTest}
+              containerStyles="mt-8 self-center"
+            />
+          </>
+        );
+      case "finished":
+        return (
+          <OutlinedButton
+            title="Rehace Test"
+            onClick={resetTest}
+            icon="redo"
+            containerStyles="mt-8 self-center"
+          />
+        );
+    }
+  };
+
   return (
-    <div className="w-full flex flex-col items-center">
-      Estado: <span className="text-secondary font-medium">{getStatus()}</span>
-      {state.status === "deviceError" && deviceErrorJSX}
-      {getChartType()}
-      <TonalButton
-        title="Finalizar Test"
-        icon="closeWhite"
-        onClick={finishTest}
-        containerStyles="mt-8 self-center"
-      />
-    </div>
+    <div className="w-full flex flex-col items-center">{getRelevantJSX()}</div>
   );
 }
 

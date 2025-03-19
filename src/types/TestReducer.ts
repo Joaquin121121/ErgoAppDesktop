@@ -63,6 +63,7 @@ export interface TestState {
   heightUnit: HeightUnit;
   maxAvgHeightReached: number;
   bestHeight: string;
+  athlete: Athlete;
   // Add other state properties as needed
 }
 
@@ -80,4 +81,28 @@ export type TestAction =
   | { type: "NEXT_ATHLETE" }
   | { type: "PREVIOUS_ATHLETE" }
   | { type: "NEXT_TEST" }
-  | { type: "PREVIOUS_TEST" };
+  | { type: "PREVIOUS_TEST" }
+  | { type: "SAVE_TEST" }
+  | { type: "SET_ATHLETE"; payload: Athlete }
+  | { type: "RESET_ATHLETE" }
+  | { type: "SET_SELECTED_ATHLETES"; payload: Athlete[] }
+  | { type: "JUMP_TO_ATHLETE"; payload: number }
+  | { type: "SET_TAKEOFF_FOOT"; payload: "right" | "left" | "both" }
+  | { type: "SET_LOAD"; payload: number }
+  | { type: "SET_LOAD_UNIT"; payload: LoadUnit }
+  | { type: "SET_HEIGHT_UNIT"; payload: HeightUnit }
+  | { type: "SET_CRITERION"; payload: "time" | "numberOfJumps" }
+  | { type: "SET_CRITERION_VALUE"; payload: number }
+  | { type: "SET_SENSITIVITY"; payload: number }
+  | { type: "SET_DROP_JUMPS"; payload: DropJumpResult[] }
+  | { type: "SET_DROP_JUMP_HEIGHTS"; payload: string[] }
+  | {
+      type: "SET_TEST_TYPE";
+      payload:
+        | "cmj"
+        | "abalakov"
+        | "squatJump"
+        | "multipleDropJump"
+        | "multipleJumps"
+        | "bosco";
+    };
