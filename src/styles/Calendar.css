@@ -1,0 +1,46 @@
+@keyframes slideInLeft {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.3s ease-in-out forwards;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.3s ease-in-out forwards;
+}
+
+/* Calendar event colors */
+.event-orange {
+  background-color: rgba(255, 162, 0, 0.7);
+}
+
+.event-blue {
+  background-color: rgba(0, 149, 255, 0.7);
+}
+
+.event-green {
+  background-color: rgba(80, 200, 120, 0.7);
+}
+
+.event-yellow {
+  background-color: rgba(255, 230, 0, 0.7);
+}

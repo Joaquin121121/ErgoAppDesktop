@@ -1,18 +1,17 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
-  ComposedChart,
   Bar,
-  XAxis,
-  YAxis,
   CartesianGrid,
-  Tooltip,
+  ComposedChart,
   Legend,
   ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
-import TonalButton from "./TonalButton";
 import { DropJumpResult, units } from "../types/Studies";
-import animations from "../styles/animations.module.css";
-import { useTranslation } from "react-i18next";
+import TonalButton from "./TonalButton";
 
 function MultipleDropJumpChartDisplay({
   setShowChart,

@@ -28,6 +28,7 @@ import { AthleteComparisonProvider } from "./contexts/AthleteComparisonContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ErrorPage from "./pages/ErrorPage";
 import CompletedStudyDashboard from "./pages/CompletedStudyDashboard";
+import Dashboard from "./pages/Dashboard";
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
@@ -38,11 +39,9 @@ const WithLayout = ({
   selectedOption,
   setSelectedOption,
 }) => {
-  const options = ["studies", "athletes", "about"];
+  const options = ["dashboard", "studies", "athletes", "about"];
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [timeoutID, setTimeoutID] = useState<NodeJS.Timeout | null>(null);
-  const [stopVideo, setStopVideo] = useState(false);
 
   return (
     <div className="flex w-screen h-screen bg-offWhite">
@@ -107,7 +106,6 @@ function App() {
   const [isBlurred, setIsBlurred] = useState(false);
   const [isMaximized, setIsMaximized] = useState(true);
   const [selectedOption, setSelectedOption] = useState("studies");
-  const [user, setUser] = useState<User>({ email: "" });
   const [isBlockingClicks, setIsBlockingClicks] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
   const [hasGlobalError, setHasGlobalError] = useState(false);
@@ -190,6 +188,15 @@ function App() {
             animation={animations.athletes}
             customNavigate={customNavigate}
             onBlurChange={setIsBlurred}
+          />
+        );
+      case "dashboard":
+        return (
+          <Dashboard
+            isExpanded={isExpanded}
+            animation={animations.dashboard}
+            onBlurChange={setIsBlurred}
+            customNavigate={customNavigate}
           />
         );
       case "about":
@@ -481,6 +488,10 @@ function App() {
                       <Route
                         path="/completedStudyDashboard"
                         element={getPageComponent("completedStudyDashboard")}
+                      />
+                      <Route
+                        path="/dashboard"
+                        element={getPageComponent("dashboard")}
                       />
                       <Route path="*" element={getPageComponent("notFound")} />
                     </Routes>

@@ -54,16 +54,13 @@ function MultipleJumpsChartDisplay({
   const [displayMetric, setDisplayMetric] = useState<
     "height" | "time" | "performance"
   >("time");
-  const performanceData = performance.map(
-    (performance, i) =>
-      !jumpTimes[i].deleted && {
-        index: i + 1,
-        performance: Number(performance.toFixed(2)),
-        qIndex: Number(
-          (validJumpTimes[i].time / validJumpTimes[i].floorTime).toFixed(2)
-        ),
-      }
-  );
+  const performanceData = performance.map((performance, i) => ({
+    index: i + 1,
+    performance: Number(performance.toFixed(2)),
+    qIndex: Number(
+      (validJumpTimes[i].time / validJumpTimes[i].floorTime).toFixed(2)
+    ),
+  }));
 
   const toggleGraph = (newMetric: "height" | "time" | "performance") => {
     if (newMetric === "height") {

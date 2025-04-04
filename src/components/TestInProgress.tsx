@@ -145,9 +145,6 @@ function TestInProgress({
     );
   const [chartData, setChartData] = useState<any[]>([]);
 
-  // Add this state to track when finishTest completes its updates
-  const [testFinished, setTestFinished] = useState(false);
-
   const tableJSX = (
     <table className="w-full mt-8">
       <thead className="w-full">
@@ -334,12 +331,11 @@ function TestInProgress({
   };
 
   useEffect(() => {
-    console.log("multipleAthletesTests", multipleAthletesTests);
-    console.log("selectedAthletePointer", selectedAthletePointer);
-    console.log("pointer", pointer);
-  }, [multipleAthletesTests, selectedAthletePointer, pointer]);
+    console.log(multipleDropJumpResults);
+  }, [multipleDropJumpResults]);
 
   const nextAthlete = () => {
+    saveTest();
     if (!multipleAthletesTests[selectedAthletePointer + 1]) {
       resetTest();
       setSelectedAthletePointer(selectedAthletePointer + 1);
@@ -449,37 +445,56 @@ function TestInProgress({
   const previousTest = () => {
     const newPointer = pointer - 1;
     if (study.type === "multipleDropJump") {
-      setMultipleDropJumpResults({
+      const updatedMultipleDropJumpResults = {
         ...multipleDropJumpResults,
-        dropJumps: [
-          ...multipleDropJumpResults.dropJumps,
-          {
-            avgHeightReached: data.avgHeightReached,
-            times: jumpTimes,
-            avgFlightTime: data.avgFlightTime,
-            type: "dropJump",
-            height: study.dropJumpHeights[pointer],
-            takeoffFoot: study.takeoffFoot,
-            sensitivity: study.sensitivity,
-            stiffness: stiffness[pointer],
-          },
-        ],
+        dropJumps:
+          pointer < multipleDropJumpResults.dropJumps.length
+            ? multipleDropJumpResults.dropJumps.map((dropJump, index) =>
+                index === pointer
+                  ? {
+                      avgHeightReached: data.avgHeightReached,
+                      times: jumpTimes,
+                      avgFlightTime: data.avgFlightTime,
+                      type: "dropJump" as const,
+                      height: study.dropJumpHeights[pointer],
+                      takeoffFoot: study.takeoffFoot,
+                      sensitivity: study.sensitivity,
+                      stiffness: stiffness[pointer],
+                    }
+                  : dropJump
+              )
+            : [
+                ...multipleDropJumpResults.dropJumps,
+                {
+                  avgHeightReached: data.avgHeightReached,
+                  times: jumpTimes,
+                  avgFlightTime: data.avgFlightTime,
+                  type: "dropJump" as const,
+                  height: study.dropJumpHeights[pointer],
+                  takeoffFoot: study.takeoffFoot,
+                  sensitivity: study.sensitivity,
+                  stiffness: stiffness[pointer],
+                },
+              ],
         maxAvgHeightReached: 0,
-      });
-      setJumpTimes(multipleDropJumpResults.dropJumps[newPointer].times);
+      };
+      setMultipleDropJumpResults(updatedMultipleDropJumpResults);
+      setJumpTimes(updatedMultipleDropJumpResults.dropJumps[newPointer].times);
       setFlightTimes(
-        multipleDropJumpResults.dropJumps[newPointer].times.map((e) => e.time)
+        updatedMultipleDropJumpResults.dropJumps[newPointer].times.map(
+          (e) => e.time
+        )
       );
       setFloorTimes(
-        multipleDropJumpResults.dropJumps[newPointer].times.map(
+        updatedMultipleDropJumpResults.dropJumps[newPointer].times.map(
           (e) => e.floorTime
         )
       );
       setData({
         avgFlightTime:
-          multipleDropJumpResults.dropJumps[newPointer].avgFlightTime,
+          updatedMultipleDropJumpResults.dropJumps[newPointer].avgFlightTime,
         avgHeightReached:
-          multipleDropJumpResults.dropJumps[newPointer].avgHeightReached,
+          updatedMultipleDropJumpResults.dropJumps[newPointer].avgHeightReached,
       });
     }
     if (study.type === "bosco") {
@@ -509,24 +524,41 @@ function TestInProgress({
   const nextTest = () => {
     const newPointer = pointer + 1;
     if (study.type === "multipleDropJump") {
-      setMultipleDropJumpResults({
+      const updatedMultipleDropJumpResults = {
         ...multipleDropJumpResults,
-        dropJumps: [
-          ...multipleDropJumpResults.dropJumps,
-          {
-            avgHeightReached: data.avgHeightReached,
-            times: jumpTimes,
-            avgFlightTime: data.avgFlightTime,
-            type: "dropJump",
-            height: study.dropJumpHeights[pointer],
-            takeoffFoot: study.takeoffFoot,
-            sensitivity: study.sensitivity,
-            stiffness: stiffness[pointer],
-          },
-        ],
+        dropJumps:
+          pointer < multipleDropJumpResults.dropJumps.length
+            ? multipleDropJumpResults.dropJumps.map((dropJump, index) =>
+                index === pointer
+                  ? {
+                      avgHeightReached: data.avgHeightReached,
+                      times: jumpTimes,
+                      avgFlightTime: data.avgFlightTime,
+                      type: "dropJump" as const,
+                      height: study.dropJumpHeights[pointer],
+                      takeoffFoot: study.takeoffFoot,
+                      sensitivity: study.sensitivity,
+                      stiffness: stiffness[pointer],
+                    }
+                  : dropJump
+              )
+            : [
+                ...multipleDropJumpResults.dropJumps,
+                {
+                  avgHeightReached: data.avgHeightReached,
+                  times: jumpTimes,
+                  avgFlightTime: data.avgFlightTime,
+                  type: "dropJump" as const,
+                  height: study.dropJumpHeights[pointer],
+                  takeoffFoot: study.takeoffFoot,
+                  sensitivity: study.sensitivity,
+                  stiffness: stiffness[pointer],
+                },
+              ],
         maxAvgHeightReached: 0,
-      });
-      if (multipleDropJumpResults.dropJumps.length === pointer) {
+      };
+      setMultipleDropJumpResults(updatedMultipleDropJumpResults);
+      if (multipleDropJumpResults.dropJumps.length === newPointer) {
         resetTest();
       } else {
         setJumpTimes(multipleDropJumpResults.dropJumps[newPointer].times);
@@ -635,16 +667,61 @@ function TestInProgress({
       });
       setPerformanceDrop(getPerformanceDrop(validPerformances));
       setStatus("Finalizado");
-      setTestFinished(true); // Signal that all updates are complete
       return;
     }
-
-    setData({
+    const studyData = {
       avgFlightTime: avgFlightTime,
       avgHeightReached: ((9.81 * avgFlightTime ** 2) / 8) * 100,
-    });
+    };
+    setData(studyData);
+    if (study.type === "multipleDropJump") {
+      setMultipleDropJumpResults({
+        ...multipleDropJumpResults,
+        dropJumps:
+          pointer < multipleDropJumpResults.dropJumps.length
+            ? multipleDropJumpResults.dropJumps.map((dropJump, index) =>
+                index === pointer
+                  ? {
+                      avgHeightReached: studyData.avgHeightReached,
+                      times: localJumpTimes,
+                      avgFlightTime: studyData.avgFlightTime,
+                      type: "dropJump" as const,
+                      height: study.dropJumpHeights[pointer],
+                      takeoffFoot: study.takeoffFoot,
+                      sensitivity: study.sensitivity,
+                      stiffness: validStiffnesses[pointer],
+                    }
+                  : dropJump
+              )
+            : [
+                ...multipleDropJumpResults.dropJumps,
+                {
+                  avgHeightReached: studyData.avgHeightReached,
+                  times: localJumpTimes,
+                  avgFlightTime: studyData.avgFlightTime,
+                  type: "dropJump" as const,
+                  height: study.dropJumpHeights[pointer],
+                  takeoffFoot: study.takeoffFoot,
+                  sensitivity: study.sensitivity,
+                  stiffness: validStiffnesses[pointer],
+                },
+              ],
+        maxAvgHeightReached: 0,
+      });
+    }
+    if (study.type === "bosco") {
+      setBoscoResults({
+        ...boscoResults,
+        [tests[pointer]]: {
+          avgFlightTime: studyData.avgFlightTime,
+          avgHeightReached: ((9.81 * studyData.avgFlightTime ** 2) / 8) * 100,
+          takeoffFoot: "both",
+          times: localJumpTimes,
+          type: tests[pointer],
+        },
+      });
+    }
     setStatus("Finalizado");
-    setTestFinished(true); // Signal that all updates are complete
   };
 
   /* Also works as nextAthlete */
@@ -740,7 +817,7 @@ function TestInProgress({
     console.log(studyToSave);
 
     if (selectedAthletes.length > 0) {
-      setMultipleAthletesTests(
+      const updatedMultipleAthletesTests =
         selectedAthletePointer === multipleAthletesTests.length
           ? [
               ...multipleAthletesTests,
@@ -758,9 +835,9 @@ function TestInProgress({
                     testType: studyToSave.results.type,
                   }
                 : e
-            )
-      );
-      return;
+            );
+      setMultipleAthletesTests(updatedMultipleAthletesTests);
+      return updatedMultipleAthletesTests;
     }
     const newAthleteState = {
       ...athlete,
@@ -788,13 +865,15 @@ function TestInProgress({
   };
 
   const saveAllTests = async () => {
+    const updatedMultipleAthletesTests = await saveTest();
+    console.log(updatedMultipleAthletesTests);
     try {
       selectedAthletes.forEach(async (athlete, index) => {
         const newAthleteState = {
           ...athlete,
           completedStudies: [
             ...athlete.completedStudies,
-            multipleAthletesTests[index].test,
+            updatedMultipleAthletesTests[index].test,
           ],
         };
         await saveJson(
@@ -1109,25 +1188,17 @@ function TestInProgress({
     }
   }, [flightTimes, floorTimes]);
 
-  // Add this useEffect near other useEffect hooks
-  useEffect(() => {
-    if (testFinished && selectedAthletes.length > 0) {
-      saveTest();
-      setTestFinished(false); // Reset for next time
-    }
-  }, [testFinished]);
-
   return (
     <>
       <div
-        className={`bg-white shadow-lg rounded-2xl transition-all duration-300 ease-linear fixed right-8 flex flex-col items-center px-16 py-8 ${
+        className={`bg-white shadow-lg rounded-2xl transition-all duration-300 ease-linear fixed right-8 flex flex-col items-center px-16 py-8 top-[2%] ${
           (isBlurred || showTable || showChart) && "blur-md pointer-events-none"
         }
           `}
         style={{
           width: study.type === "multipleJumps" ? "1400px" : "50%",
-          left: study.type === "multipleJumps" ? "5%" : "25%",
-          top: study.type === "multipleJumps" ? "2%" : "0%",
+          left: "50%",
+          transform: "translateX(-50%)",
         }}
       >
         <div
@@ -1167,7 +1238,7 @@ function TestInProgress({
           {status !== "Finalizado" &&
           status !== "Súbase a la alfombra" &&
           study.type === "multipleJumps" ? (
-            <div className="w-full flex mt-16 items-center justify-around">
+            <div className="w-full flex mt-8 items-center justify-around">
               <div className="w-[177px]"></div>
               <p
                 className=" text-2xl text-tertiary"
