@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import Calendar, { CalendarEvent } from "../components/Calendar";
 import EventsList from "../components/EventsList";
 import { es } from "date-fns/locale";
-
+import AddEventModal from "../components/AddEventModal";
 const Dashboard = ({
   isExpanded,
   animation,
@@ -18,8 +18,9 @@ const Dashboard = ({
   ) => void;
   onBlurChange: (isBlurred: boolean) => void;
 }) => {
-  const [isBlurred, setIsBlurred] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [targetDate, setTargetDate] = useState<Date>(new Date());
+  const [addingEvent, setAddingEvent] = useState(false);
 
   const dummyEvents: CalendarEvent[] = [
     {
@@ -49,25 +50,32 @@ const Dashboard = ({
     <>
       <div
         className={`flex-1 relative flex flex-col items-center ${
-          isBlurred && "blur-md pointer-events-none"
+          addingEvent && "blur-md pointer-events-none"
         } transition-all duration-300 ease-in-out ${animation}`}
         style={{
           paddingLeft: isExpanded ? "100px" : "32px",
         }}
       >
-        <div className="flex mt-8 gap-x-8 ml-8">
-          <div className="w-[70vw] rounded-2xl shadow-sm bg-white overflow-hidden">
-            <Calendar
-              locale={es}
-              events={dummyEvents}
-              onClick={(date) => {
-                setSelectedDate(date);
-              }}
-            />
-          </div>
+        <div className="flex mt-8 justify-around ml-16 ">
+          <Calendar
+            locale={es}
+            events={dummyEvents}
+            setSelectedDate={setSelectedDate}
+            setTargetDate={setTargetDate}
+            setAddingEvent={setAddingEvent}
+          />
           <EventsList events={dummyEvents} selectedDate={selectedDate} />
         </div>
       </div>
+
+      {addingEvent && (
+        <AddEventModal
+          onClose={() => {
+            setAddingEvent(false);
+          }}
+          targetDate={selectedDate}
+        />
+      )}
     </>
   );
 };

@@ -64,6 +64,15 @@
   }
 }
 
+@keyframes fade-in {
+  0% {
+    opacity: 0%;
+  }
+  100% {
+    opacity: 100%;
+  }
+}
+
 .fadeInLeft {
   animation: fade-in-left 200ms ease forwards;
 }
@@ -86,4 +95,8 @@
 
 .popupFadeOutTop {
   animation: fade-out-top-popup 200ms ease forwards;
+}
+
+.fadeIn {
+  animation: fade-in 1000ms ease forwards;
 }

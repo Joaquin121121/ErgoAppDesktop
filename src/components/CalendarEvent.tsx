@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 function CalendarEvent({
   eventType,
@@ -11,6 +11,16 @@ function CalendarEvent({
   athleteName: string;
   onClick: () => void;
 }) {
+  const [showIcon, setShowIcon] = useState(true);
+
+  // Truncate event name if longer than 18 characters
+  const displayName =
+    eventName.length > 18 ? `${eventName.substring(0, 15)}...` : eventName;
+
+  useEffect(() => {
+    setShowIcon(eventName.length < 10);
+  }, [eventName]);
+
   const getEventColor = () => {
     switch (eventType) {
       case "competition":
@@ -24,17 +34,19 @@ function CalendarEvent({
 
   return (
     <div
-      className={`${getEventColor()} mt-1 px-2 py-1 rounded-2xl flex items-center transition-all duration-300 ease-in-out hover:cursor-pointer hover:scale-105 bg-opacity-80 active:opacity-40`}
+      className={`${getEventColor()} mt-1 px-2 py-1 rounded-2xl flex items-center transition-all duration-300 ease-in-out hover:cursor-pointer hover:scale-105 bg-opacity-60 active:opacity-40`}
       onClick={onClick}
     >
-      <img
-        src={`/${eventType}.png`}
-        alt={eventType}
-        className="w-5 h-5 mr-2 overflow-hidden"
-      />
-      <div className="flex flex-col items-center gap-y-1">
-        <p className="text-xs truncate ">{eventName}</p>
-      </div>
+      {showIcon && (
+        <img
+          src={`/${eventType}.png`}
+          alt={eventType}
+          className="w-5 h-5 mr-2 overflow-hidden"
+        />
+      )}
+      <p className="text-xs truncate" title={eventName}>
+        {displayName}
+      </p>
     </div>
   );
 }

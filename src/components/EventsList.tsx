@@ -17,8 +17,8 @@ function EventsList({
     );
   }, [events, selectedDate]);
   return (
-    <div className="flex flex-col items-center">
-      <div className="min-w-[15vw] rounded-t-2xl bg-lightRed text-secondary flex justify-center items-center text-xl py-2 font-medium -mb-2 z-50">
+    <div className="flex flex-col items-center ml-8">
+      <div className="min-w-[16vw] rounded-t-2xl bg-lightRed text-secondary flex justify-center items-center text-xl py-2 font-medium -mb-2 z-50">
         {isToday(selectedDate)
           ? "Hoy"
           : isTomorrow(selectedDate)

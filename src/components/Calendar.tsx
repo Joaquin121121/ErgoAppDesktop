@@ -9,9 +9,13 @@ import {
   isSameDay,
   startOfWeek,
   getDay,
+  differenceInDays,
+  isPast,
 } from "date-fns";
 import { es } from "date-fns/locale";
 import CalendarEvent from "./CalendarEvent";
+import styles from "../styles/animations.module.css";
+import AddEventModal from "./AddEventModal";
 
 export interface CalendarEvent {
   eventType: "competition" | "trainingSession" | "testSession";
@@ -25,19 +29,32 @@ interface CalendarProps {
   locale?: Locale;
   className?: string;
   events: CalendarEvent[];
-  onClick: (date: Date) => void;
+  setSelectedDate: (date: Date) => void;
+  setTargetDate: (date: Date) => void;
+  setAddingEvent: (addingEvent: boolean) => void;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
   locale = es,
   className = "",
   events,
-  onClick,
+  setSelectedDate,
+  setTargetDate,
+  setAddingEvent,
 }) => {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  // Reference date for consistent period calculation
+  const [referenceDate] = useState<Date>(
+    startOfWeek(new Date(), { locale, weekStartsOn: 1 })
+  );
+  // Period offset from reference date (multiples of 14 days)
+  const [periodOffset, setPeriodOffset] = useState<number>(0);
+  const [hoveredElementIndex, setHoveredElementIndex] = useState<number | null>(
+    null
+  );
   const [translateX, setTranslateX] = useState("0%");
+  const [isNavigating, setIsNavigating] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
-
+  const datePickerRef = useRef<HTMLInputElement>(null);
   // Add keyboard navigation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -54,12 +71,34 @@ const Calendar: React.FC<CalendarProps> = ({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [currentDate]); // Re-run effect when currentDate changes
+  }, [periodOffset, isNavigating]); // Re-run effect when periodOffset or isNavigating changes
 
-  // Generate calendar days based on a date
-  const generateDays = (date: Date) => {
-    // Get the start of the current week
-    const startDateOfView = startOfWeek(startOfDay(date), { locale });
+  // Show date picker directly when the calendar icon is clicked
+  const togglePicker = () => {
+    if (datePickerRef.current) {
+      datePickerRef.current.showPicker();
+    }
+  };
+
+  // Handle date selection from the picker
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.value) {
+      const selectedDate = new Date(e.target.value);
+
+      // Calculate which period this date belongs to relative to reference date
+      const days = differenceInDays(selectedDate, referenceDate) + 1;
+      // Integer division to get period number
+      const newPeriodOffset = Math.floor(days / 14);
+
+      // Update period offset
+      setPeriodOffset(newPeriodOffset);
+    }
+  };
+
+  // Generate calendar days based on period offset
+  const generateDays = () => {
+    // Calculate the start date for the current period
+    const startDateOfView = addDays(referenceDate, periodOffset * 14);
     const days = [];
     for (let i = 0; i < 14; i++) {
       days.push(addDays(startDateOfView, i));
@@ -68,7 +107,7 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   // Current days
-  const currentDays = generateDays(currentDate);
+  const currentDays = generateDays();
 
   // Get month name and range for the header
   const getHeaderText = (days: Date[]) => {
@@ -114,10 +153,14 @@ const Calendar: React.FC<CalendarProps> = ({
 
   // Navigate to the previous two weeks
   const goToPrevious = () => {
+    // Prevent multiple rapid navigations
+    if (isNavigating) return;
+
+    setIsNavigating(true);
     // Slide current grid out to right
     setTranslateX("100%");
     setTimeout(() => {
-      setCurrentDate(subDays(currentDate, 14));
+      setPeriodOffset(periodOffset - 1);
       if (gridRef.current) {
         gridRef.current.style.transition = "none";
         gridRef.current.style.transform = "translateX(-100%)";
@@ -127,16 +170,24 @@ const Calendar: React.FC<CalendarProps> = ({
       }
       setTimeout(() => {
         setTranslateX("0%");
+        // Reset navigation lock after animation completes
+        setTimeout(() => {
+          setIsNavigating(false);
+        }, 300);
       }, 50);
     }, 100);
   };
 
   // Navigate to the next two weeks
   const goToNext = () => {
+    // Prevent multiple rapid navigations
+    if (isNavigating) return;
+
+    setIsNavigating(true);
     // Slide current grid out to left
     setTranslateX("-100%");
     setTimeout(() => {
-      setCurrentDate(addDays(currentDate, 14));
+      setPeriodOffset(periodOffset + 1);
       if (gridRef.current) {
         gridRef.current.style.transition = "none";
         gridRef.current.style.transform = "translateX(100%)";
@@ -146,19 +197,23 @@ const Calendar: React.FC<CalendarProps> = ({
       }
       setTimeout(() => {
         setTranslateX("0%");
+        // Reset navigation lock after animation completes
+        setTimeout(() => {
+          setIsNavigating(false);
+        }, 300);
       }, 50);
     }, 100);
   };
 
-  // Map of day indices to day names
+  // Map of day indices to day names - rearranged to have Monday first
   const dayOfWeekNames = [
-    "Domingo",
     "Lunes",
     "Martes",
     "Miércoles",
     "Jueves",
     "Viernes",
     "Sábado",
+    "Domingo",
   ];
 
   const headerText =
@@ -185,7 +240,12 @@ const Calendar: React.FC<CalendarProps> = ({
       </div>
 
       {/* Calendar grid with carousel transition */}
-      <div className="overflow-hidden">
+      <div
+        className="overflow-hidden"
+        onMouseLeave={() => {
+          setHoveredElementIndex(null);
+        }}
+      >
         <div
           ref={gridRef}
           className="grid grid-cols-7 grid-rows-2"
@@ -197,16 +257,40 @@ const Calendar: React.FC<CalendarProps> = ({
           {currentDays.map((day, index) => {
             const dayNumber = format(day, "d");
             const isCurrentDay = isToday(day);
+            const isPastDay = isPast(day) && !isToday(day);
 
             return (
               <div
                 key={index}
                 className={`min-h-[150px] flex flex-col gap-y-1 border border-gray p-2 ${
-                  isCurrentDay ? "bg-blue-50" : ""
+                  isPastDay ? "bg-offWhite" : ""
                 }`}
+                onMouseEnter={() => {
+                  setHoveredElementIndex(index);
+                }}
               >
-                <div className="text-secondary font-normal text-left">
-                  {dayNumber}
+                <div
+                  className="flex items-center"
+                  style={{
+                    justifyContent:
+                      hoveredElementIndex === index && "space-between",
+                  }}
+                >
+                  <p className="text-secondary font-normal text-left">
+                    {dayNumber}
+                    {isCurrentDay && " - Hoy"}
+                  </p>
+                  {hoveredElementIndex === index && (
+                    <img
+                      onClick={() => {
+                        setTargetDate(day);
+                        setAddingEvent(true);
+                      }}
+                      src="/addRed.png"
+                      alt=""
+                      className={`w-5 h-5 self-end hover:cursor-pointer hover:opacity-70 active:opacity-40 ${styles.fadeIn}`}
+                    />
+                  )}
                 </div>
                 {events.map((event, eventIndex) => {
                   const eventDate =
@@ -219,7 +303,7 @@ const Calendar: React.FC<CalendarProps> = ({
                         key={eventIndex}
                         {...event}
                         onClick={() => {
-                          onClick(day);
+                          setSelectedDate(day);
                         }}
                       />
                     );
@@ -236,15 +320,37 @@ const Calendar: React.FC<CalendarProps> = ({
       <div className="flex justify-center items-center py-4 gap-4">
         <button
           onClick={goToPrevious}
-          className="hover:opacity-70 active:opacity-50 focus:outline-none"
+          disabled={isNavigating}
+          className={`hover:opacity-70 active:opacity-50 focus:outline-none ${
+            isNavigating ? "opacity-50 cursor-not-allowed" : ""
+          }`}
           aria-label="Previous two weeks"
         >
           <img src="/back.png" className="w-7 h-7" alt="Previous" />
         </button>
-        <div className="text-darkGray w-60 text-center">{footerText}</div>
+        <div className="w-60 relative">
+          <p className="text-darkGray text-center">{footerText}</p>
+          <div className="flex justify-center items-center">
+            <img
+              onClick={togglePicker}
+              src="/calendar.png"
+              alt="Calendar"
+              className="h-8 w-8 mt-2 mx-auto hover:opacity-70 hover:cursor-pointer active:opacity-40 z-10"
+            />
+            <input
+              ref={datePickerRef}
+              type="date"
+              onChange={handleDateChange}
+              className="opacity-0 absolute w-8 h-8"
+            />
+          </div>
+        </div>
         <button
           onClick={goToNext}
-          className="hover:opacity-70 active:opacity-50 focus:outline-none"
+          disabled={isNavigating}
+          className={`hover:opacity-70 active:opacity-50 focus:outline-none ${
+            isNavigating ? "opacity-50 cursor-not-allowed" : ""
+          }`}
           aria-label="Next two weeks"
         >
           <img src="/nextRed.png" className="w-7 h-7" alt="Next" />
