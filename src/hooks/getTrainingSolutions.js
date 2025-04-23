@@ -52,17 +52,134 @@ function filterRelevantSolutions(solutions, testType) {
         return true;
     }
   });
-} // Training Solutions Generator
+}
+
+// Training Solutions Generator
 import { useStudyContext } from "../contexts/StudyContext";
+import { removeDuplicateTrainingSolutions } from "../utils/trainingSolutionUtils";
 
 /**
- * Returns training solutions based on analysis of jump test comparisons
- * @param {Date|string} targetDate - Date to find the completed study
- * @param {string} [testType] - Optional test type to filter solutions for
- * @returns {Array<TrainingSolution>} Array of training solution recommendations
+ * @typedef {Object} TrainingSolution
+ * @property {string} title - Title of the training solution
+ * @property {string} info - Explanation of why this training is recommended
+ * @property {string} exerciseType - Type of exercises recommended
+ * @property {string[]} exerciseExamples - Examples of specific exercises
+ * @property {string} comparedTo - The type of study comparison that generated this solution (e.g., "cmj-squatjump")
  */
-export function getTrainingSolutions(targetDate, testType) {
-  // Get athlete from context
+
+/**
+ * @typedef {Object} Study
+ * @property {string} date - Date of the study (ISO string or similar)
+ * @property {Object} results - Results object containing test type and metrics
+ * @property {string} results.type - Type of the test (e.g., "cmj", "squatJump", "bosco")
+ * // ... other potential results properties
+ */
+
+/**
+ * @typedef {Object.<string, Study|null>} LatestStudies
+ * @property {Study|null} cmj - Latest CMJ study (standalone or from Bosco)
+ * @property {Study|null} squatJump - Latest Squat Jump study (standalone or from Bosco)
+ * @property {Study|null} abalakov - Latest Abalakov study (standalone or from Bosco)
+ * @property {Study|null} multipleDropJump - Latest Multiple Drop Jump study
+ * @property {Study|null} multipleJumps - Latest Multiple Jumps study
+ * @property {Study|null} bosco - Latest Bosco study
+ */
+
+/**
+ * Finds the latest completed study for each relevant test type.
+ * For CMJ, SquatJump, and Abalakov, it considers both standalone tests
+ * and tests nested within a Bosco test, selecting the most recent.
+ * @param {Array<Study>} completedStudies - Array of all completed studies for the athlete.
+ * @returns {LatestStudies} An object containing the latest study for each type, or null if none exists.
+ */
+function findLatestStudies(completedStudies) {
+  /** @type {LatestStudies} */
+  const latestStudies = {
+    cmj: null,
+    squatJump: null,
+    abalakov: null,
+    multipleDropJump: null,
+    multipleJumps: null,
+    bosco: null,
+  };
+
+  if (!completedStudies || completedStudies.length === 0) {
+    return latestStudies;
+  }
+
+  // Sort studies by date descending to easily find the latest
+  const sortedStudies = [...completedStudies].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  // Helper to update latest study if the current one is newer
+  const updateLatest = (type, study) => {
+    const currentLatest = latestStudies[type];
+    if (!currentLatest || new Date(study.date) > new Date(currentLatest.date)) {
+      latestStudies[type] = study;
+    }
+  };
+
+  // Iterate through sorted studies to find the latest of each type
+  sortedStudies.forEach((study) => {
+    const studyType = study.results.type;
+    const studyDate = new Date(study.date);
+
+    switch (studyType) {
+      case "cmj":
+        updateLatest("cmj", study);
+        break;
+      case "squatJump":
+        updateLatest("squatJump", study);
+        break;
+      case "abalakov":
+        updateLatest("abalakov", study);
+        break;
+      case "multipleDropJump":
+        updateLatest("multipleDropJump", study);
+        break;
+      case "multipleJumps":
+        updateLatest("multipleJumps", study);
+        break;
+      case "bosco":
+        updateLatest("bosco", study);
+        // Also consider the nested tests within Bosco
+        // Create pseudo-study objects for comparison purposes
+        if (study.results.cmj) {
+          updateLatest("cmj", {
+            ...study,
+            results: { ...study.results.cmj, type: "cmj" },
+          }); // Keep original date
+        }
+        if (study.results.squatJump) {
+          updateLatest("squatJump", {
+            ...study,
+            results: { ...study.results.squatJump, type: "squatJump" },
+          }); // Keep original date
+        }
+        if (study.results.abalakov) {
+          updateLatest("abalakov", {
+            ...study,
+            results: { ...study.results.abalakov, type: "abalakov" },
+          }); // Keep original date
+        }
+        break;
+      default:
+        // Ignore unknown study types
+        break;
+    }
+  });
+
+  return latestStudies;
+}
+
+/**
+ * Generates training solutions for a specific test performed on a target date.
+ * It compares the target test with the latest relevant comparison tests.
+ * @param {Date|string} targetDate - The date of the specific test to analyze.
+ * @returns {Array<TrainingSolution>} Array of training solution recommendations for the target test.
+ */
+export function getTrainingSolutionsForTest(targetDate) {
   const { athlete } = useStudyContext();
   const trainingSolutions = [];
 
@@ -74,45 +191,35 @@ export function getTrainingSolutions(targetDate, testType) {
     return [];
   }
 
-  // Convert target date to string for comparison
+  // Convert target date to string for consistent comparison
   const targetDateStr = new Date(targetDate).toDateString();
 
-  // Find studies matching the target date
-  const targetStudies = athlete.completedStudies.filter(
+  // Find the specific study performed on the target date
+  const targetStudy = athlete.completedStudies.find(
     (study) => new Date(study.date).toDateString() === targetDateStr
   );
 
-  if (targetStudies.length === 0) return [];
+  // If no study found for the target date, return empty array
+  if (!targetStudy) {
+    console.warn(`No study found for date: ${targetDateStr}`);
+    return [];
+  }
 
-  // Get all studies except those on the target date, to find the latest for each type
+  // Find the latest studies of all relevant types *excluding* the target study date temporarily
+  // to avoid comparing a test to itself if it's the absolute latest.
   const otherStudies = athlete.completedStudies.filter(
     (study) => new Date(study.date).toDateString() !== targetDateStr
   );
+  const latestComparisonStudies = findLatestStudies(otherStudies);
 
-  // For studies not on target date, find the latest study of each type
-  const latestStudiesByType = {};
+  // --- Perform Comparisons based on Target Study Type ---
+  const results = targetStudy.results;
+  const studyType = results.type;
 
-  otherStudies.forEach((study) => {
-    const studyType = study.results.type;
-    const studyDate = new Date(study.date);
-
-    // If we don't have this type yet, or this study is more recent, update
-    if (
-      !latestStudiesByType[studyType] ||
-      studyDate > new Date(latestStudiesByType[studyType].date)
-    ) {
-      latestStudiesByType[studyType] = study;
-    }
-  });
-
-  // Process each study on the target date
-  targetStudies.forEach((study) => {
-    const results = study.results;
-    const studyType = results.type;
-
-    // Check if it's a BOSCO test (contains cmj, squatJump, and abalakov)
-    if (studyType === "bosco") {
-      // Compare CMJ and Squat Jump within BOSCO
+  // Compare Bosco Test components
+  if (studyType === "bosco") {
+    // Compare CMJ and Squat Jump within BOSCO
+    if (results.cmj?.avgHeightReached && results.squatJump?.avgHeightReached) {
       const ecrValue = calculateECR(
         results.cmj.avgHeightReached,
         results.squatJump.avgHeightReached
@@ -122,8 +229,10 @@ export function getTrainingSolutions(targetDate, testType) {
         trainingSolutions,
         "bosco-cmj-squatjump"
       );
+    }
 
-      // Compare Abalakov and CMJ within BOSCO
+    // Compare Abalakov and CMJ within BOSCO
+    if (results.abalakov?.avgHeightReached && results.cmj?.avgHeightReached) {
       const armSwingContribution = calculateArmSwingContribution(
         results.abalakov.avgHeightReached,
         results.cmj.avgHeightReached
@@ -134,109 +243,152 @@ export function getTrainingSolutions(targetDate, testType) {
         "bosco-abalakov-cmj"
       );
     }
-    // Process CMJ test
-    else if (studyType === "cmj") {
-      // Compare with latest Squat Jump
-      if (latestStudiesByType["squatJump"]) {
-        const sjResult = latestStudiesByType["squatJump"].results;
-        const ecrValue = calculateECR(
-          results.avgHeightReached,
-          sjResult.avgHeightReached
-        );
-        addECRTrainingSolutions(ecrValue, trainingSolutions, "cmj-squatjump");
-      }
-
-      // Compare with latest Abalakov
-      if (latestStudiesByType["abalakov"]) {
-        const abalakovResult = latestStudiesByType["abalakov"].results;
-        const armSwingContribution = calculateArmSwingContribution(
-          abalakovResult.avgHeightReached,
-          results.avgHeightReached
-        );
-        addArmSwingTrainingSolutions(
-          armSwingContribution,
-          trainingSolutions,
-          "abalakov-cmj"
-        );
-      }
-
-      // Compare with latest MultipleDropJump
-      if (latestStudiesByType["multipleDropJump"]) {
-        const mdjResult = latestStudiesByType["multipleDropJump"].results;
-        compareDropJumpWithCMJ(
-          mdjResult,
-          results,
-          trainingSolutions,
-          "multipledropjump-cmj"
-        );
-      }
-    }
-    // Process Squat Jump test
-    else if (studyType === "squatJump") {
-      // Compare with latest CMJ
-      if (latestStudiesByType["cmj"]) {
-        const cmjResult = latestStudiesByType["cmj"].results;
-        const ecrValue = calculateECR(
-          cmjResult.avgHeightReached,
-          results.avgHeightReached
-        );
-        addECRTrainingSolutions(ecrValue, trainingSolutions, "cmj-squatjump");
-      }
-    }
-    // Process Abalakov test
-    else if (studyType === "abalakov") {
-      // Compare with latest CMJ
-      if (latestStudiesByType["cmj"]) {
-        const cmjResult = latestStudiesByType["cmj"].results;
-        const armSwingContribution = calculateArmSwingContribution(
-          results.avgHeightReached,
-          cmjResult.avgHeightReached
-        );
-        addArmSwingTrainingSolutions(
-          armSwingContribution,
-          trainingSolutions,
-          "abalakov-cmj"
-        );
-      }
-    }
-    // Process MultipleDropJump test
-    else if (studyType === "multipleDropJump") {
-      // Compare with latest CMJ
-      if (latestStudiesByType["cmj"]) {
-        const cmjResult = latestStudiesByType["cmj"].results;
-        compareDropJumpWithCMJ(
-          results,
-          cmjResult,
-          trainingSolutions,
-          "multipledropjump-cmj"
-        );
-      }
-    }
-    // If it's a MultipleJumps test, calculate RSI
-    else if (studyType === "multipleJumps") {
-      calculateRSIFromMultipleJumps(
-        results,
-        trainingSolutions,
-        "multiplejumps"
+    // Potentially compare Bosco Drop Jump with Bosco CMJ if data exists
+    // Add comparison if needed based on Bosco structure
+  }
+  // Compare standalone CMJ Test
+  else if (studyType === "cmj") {
+    // Compare with latest Squat Jump (standalone or from Bosco)
+    if (latestComparisonStudies.squatJump) {
+      const sjResult = latestComparisonStudies.squatJump.results;
+      const ecrValue = calculateECR(
+        results.avgHeightReached,
+        sjResult.avgHeightReached
       );
+      addECRTrainingSolutions(ecrValue, trainingSolutions, "cmj-squatjump");
+    }
+
+    // Compare with latest Abalakov (standalone or from Bosco)
+    if (latestComparisonStudies.abalakov) {
+      const abalakovResult = latestComparisonStudies.abalakov.results;
+      const armSwingContribution = calculateArmSwingContribution(
+        abalakovResult.avgHeightReached,
+        results.avgHeightReached
+      );
+      addArmSwingTrainingSolutions(
+        armSwingContribution,
+        trainingSolutions,
+        "abalakov-cmj"
+      );
+    }
+
+    // Compare with latest MultipleDropJump
+    if (latestComparisonStudies.multipleDropJump) {
+      const mdjResult = latestComparisonStudies.multipleDropJump.results;
+      compareDropJumpWithCMJ(
+        mdjResult,
+        results, // CMJ results
+        trainingSolutions,
+        "multipledropjump-cmj"
+      );
+    }
+  }
+  // Compare standalone Squat Jump Test
+  else if (studyType === "squatJump") {
+    // Compare with latest CMJ (standalone or from Bosco)
+    if (latestComparisonStudies.cmj) {
+      const cmjResult = latestComparisonStudies.cmj.results;
+      const ecrValue = calculateECR(
+        cmjResult.avgHeightReached,
+        results.avgHeightReached // SJ results
+      );
+      addECRTrainingSolutions(ecrValue, trainingSolutions, "cmj-squatjump");
+    }
+  }
+  // Compare standalone Abalakov Test
+  else if (studyType === "abalakov") {
+    // Compare with latest CMJ (standalone or from Bosco)
+    if (latestComparisonStudies.cmj) {
+      const cmjResult = latestComparisonStudies.cmj.results;
+      const armSwingContribution = calculateArmSwingContribution(
+        results.avgHeightReached, // Abalakov results
+        cmjResult.avgHeightReached
+      );
+      addArmSwingTrainingSolutions(
+        armSwingContribution,
+        trainingSolutions,
+        "abalakov-cmj"
+      );
+    }
+  }
+  // Compare standalone MultipleDropJump Test
+  else if (studyType === "multipleDropJump") {
+    // Compare with latest CMJ (standalone or from Bosco)
+    if (latestComparisonStudies.cmj) {
+      const cmjResult = latestComparisonStudies.cmj.results;
+      compareDropJumpWithCMJ(
+        results, // MDJ results
+        cmjResult,
+        trainingSolutions,
+        "multipledropjump-cmj"
+      );
+    }
+  }
+  // Process MultipleJumps Test for RSI
+  else if (studyType === "multipleJumps") {
+    calculateRSIFromMultipleJumps(
+      results,
+      trainingSolutions,
+      "multiplejumps" // Comparison type is just the test itself
+    );
+  }
+
+  // No need to filter by testType here, as this function is already specific
+  // No need to remove duplicates here, handled by getAllTrainingSolutions if needed
+  return trainingSolutions;
+}
+
+/**
+ * Generates a comprehensive list of all possible training solutions
+ * by analyzing the latest instance of each test type and its comparisons.
+ * @returns {Array<TrainingSolution>} A deduplicated array of all training solution recommendations.
+ */
+export function getAllTrainingSolutions() {
+  const { athlete } = useStudyContext();
+  let allSolutions = [];
+
+  if (
+    !athlete ||
+    !athlete.completedStudies ||
+    athlete.completedStudies.length === 0
+  ) {
+    return [];
+  }
+
+  // Find the latest study date for *every* relevant type
+  const latestStudiesOfAllTypes = findLatestStudies(athlete.completedStudies);
+
+  // Collect unique dates of the latest studies
+  const latestStudyDates = new Set();
+  Object.values(latestStudiesOfAllTypes).forEach((study) => {
+    if (study) {
+      latestStudyDates.add(new Date(study.date).toDateString()); // Use DateString for comparison
     }
   });
 
-  // Remove duplicate training solutions
-  const uniqueSolutions = removeDuplicateTrainingSolutions(trainingSolutions);
+  // Generate solutions for each unique latest study date
+  latestStudyDates.forEach((dateStr) => {
+    // We need the original Date object or string format expected by getTrainingSolutionsForTest
+    // Find the original study corresponding to this date string to pass the correct date format
+    const originalStudy = athlete.completedStudies.find(
+      (s) => new Date(s.date).toDateString() === dateStr
+    );
+    if (originalStudy) {
+      const solutionsForDate = getTrainingSolutionsForTest(originalStudy.date);
+      allSolutions.push(...solutionsForDate);
+    }
+  });
 
-  // If testType is provided, filter solutions relevant to that test type
-  if (testType) {
-    return filterRelevantSolutions(uniqueSolutions, testType);
-  }
+  // Remove duplicate solutions from the combined list
+  const uniqueSolutions = removeDuplicateTrainingSolutions(allSolutions);
 
   return uniqueSolutions;
 }
 
 /**
  * Compare Drop Jump with CMJ and add appropriate training solutions
- * @param {Object} dropJumpResult - Drop Jump result
- * @param {Object} cmjResult - CMJ result
+ * @param {Object} dropJumpResult - Drop Jump result (can be from MultipleDropJump or Bosco)
+ * @param {Object} cmjResult - CMJ result (can be standalone or from Bosco)
  * @param {Array<TrainingSolution>} trainingSolutions - Array to add solutions to
  * @param {string} comparisonType - Identifier for the comparison type
  */
@@ -248,20 +400,29 @@ function compareDropJumpWithCMJ(
 ) {
   // Find the highest average height reached across all drop jumps
   let maxDropJumpHeight = 0;
+  // Handle results from MultipleDropJump (array)
   if (dropJumpResult.dropJumps && dropJumpResult.dropJumps.length > 0) {
-    // Iterate through all drop jumps to find the maximum height reached
     dropJumpResult.dropJumps.forEach((dropJump) => {
-      if (dropJump.avgHeightReached > maxDropJumpHeight) {
+      // Check if avgHeightReached exists and is a number
+      if (
+        typeof dropJump.avgHeightReached === "number" &&
+        dropJump.avgHeightReached > maxDropJumpHeight
+      ) {
         maxDropJumpHeight = dropJump.avgHeightReached;
       }
     });
-  } else if (dropJumpResult.maxAvgHeightReached) {
-    // If the property exists directly on the result
+  }
+  // Handle potential direct property if available (e.g., from Bosco or simplified structure)
+  else if (typeof dropJumpResult.maxAvgHeightReached === "number") {
     maxDropJumpHeight = dropJumpResult.maxAvgHeightReached;
+  }
+  // Add a check for avgHeightReached directly on dropJumpResult if it's not an array structure
+  else if (typeof dropJumpResult.avgHeightReached === "number") {
+    maxDropJumpHeight = dropJumpResult.avgHeightReached; // Consider single DJ value if present
   }
 
   // Only calculate if we have valid heights
-  if (maxDropJumpHeight > 0 && cmjResult.avgHeightReached > 0) {
+  if (maxDropJumpHeight > 0 && cmjResult?.avgHeightReached > 0) {
     // Check if Drop Jump height is greater than CMJ height
     if (maxDropJumpHeight > cmjResult.avgHeightReached) {
       trainingSolutions.push({
@@ -291,73 +452,121 @@ function compareDropJumpWithCMJ(
  * Calculate RSI from MultipleJumps test and add appropriate training solutions
  * @param {Object} results - MultipleJumps results
  * @param {Array<TrainingSolution>} trainingSolutions - Array to add solutions to
- * @param {string} testType - Type of test that generated the results
+ * @param {string} comparisonType - Type of test that generated the results (e.g., "multiplejumps")
  */
-function calculateRSIFromMultipleJumps(results, trainingSolutions, testType) {
+function calculateRSIFromMultipleJumps(
+  results,
+  trainingSolutions,
+  comparisonType
+) {
   let rsi = null;
 
   // Try different methods to calculate RSI based on available data
 
   // Method 1: Using times array to find max flight time and corresponding floor time
-  if (results.times && results.times.length > 0) {
+  if (
+    results.times &&
+    Array.isArray(results.times) &&
+    results.times.length > 0
+  ) {
     let maxFlightTime = 0;
-    let maxFlightTimeIndex = 0;
+    let maxFlightTimeIndex = -1; // Initialize to invalid index
 
     results.times.forEach((time, index) => {
-      if (time.flightTime > maxFlightTime) {
+      if (
+        time &&
+        typeof time.flightTime === "number" &&
+        time.flightTime > maxFlightTime
+      ) {
         maxFlightTime = time.flightTime;
         maxFlightTimeIndex = index;
       }
     });
 
-    const correspondingFloorTime = results.times[maxFlightTimeIndex].floorTime;
-
-    if (maxFlightTime > 0 && correspondingFloorTime > 0) {
-      rsi = maxFlightTime / correspondingFloorTime;
+    // Ensure index is valid and corresponding floor time exists and is valid
+    if (maxFlightTimeIndex !== -1) {
+      const correspondingTime = results.times[maxFlightTimeIndex];
+      if (
+        correspondingTime &&
+        typeof correspondingTime.floorTime === "number" &&
+        correspondingTime.floorTime > 0 &&
+        maxFlightTime > 0
+      ) {
+        rsi = maxFlightTime / correspondingTime.floorTime;
+      }
     }
   }
 
   // Method 2: Using average flight time and floor time
-  if (rsi === null && results.avgFlightTime > 0 && results.avgFloorTime > 0) {
+  if (
+    rsi === null &&
+    typeof results.avgFlightTime === "number" &&
+    results.avgFlightTime > 0 &&
+    typeof results.avgFloorTime === "number" &&
+    results.avgFloorTime > 0
+  ) {
     rsi = results.avgFlightTime / results.avgFloorTime;
   }
 
   // Method 3: Using stiffness and performance metrics as a proxy
-  if (rsi === null && results.avgStiffness > 0 && results.avgPerformance > 0) {
-    // A simplified proxy calculation - in practice this needs validation
-    rsi = 2.0; // Default to a moderate RSI value
+  // Note: This proxy might be inaccurate and should be validated or replaced with a better model if possible.
+  if (
+    rsi === null &&
+    typeof results.avgStiffness === "number" &&
+    results.avgStiffness > 0 &&
+    typeof results.avgPerformance === "number" &&
+    results.avgPerformance > 0
+  ) {
+    rsi = 2.0; // Defaulting to a moderate RSI value as a placeholder
   }
 
-  // Method 4: Default fallback
+  // Method 4: Default fallback if no RSI could be calculated
   if (rsi === null) {
-    // If we can't calculate RSI, use a default value of 2.0
-    // This provides generic recommendations for moderate RSI
+    // Using a default value allows providing generic advice but might not be ideal.
+    // Consider logging a warning or handling this case differently if defaults are problematic.
+    console.warn(
+      "Could not calculate RSI from MultipleJumps data. Using default value 2.0."
+    );
     rsi = 2.0;
   }
 
-  // Now that we have an RSI value, add the appropriate training solutions
-  addRSITrainingSolutions(rsi, trainingSolutions, testType);
+  // Now that we have an RSI value (calculated or default), add the appropriate training solutions
+  addRSITrainingSolutions(rsi, trainingSolutions, comparisonType); // Use comparisonType
 }
 
 /**
  * Calculates Elastic Contribution Ratio (ECR)
- * @param {number} cmjHeight - CMJ height in cm
- * @param {number} sjHeight - Squat Jump height in cm
- * @returns {number} ECR as a percentage
+ * @param {number | undefined | null} cmjHeight - CMJ height in cm
+ * @param {number | undefined | null} sjHeight - Squat Jump height in cm
+ * @returns {number} ECR as a percentage, or 0 if inputs are invalid.
  */
 function calculateECR(cmjHeight, sjHeight) {
-  if (!cmjHeight || !sjHeight || sjHeight === 0) return 0;
+  // Add checks for null/undefined and ensure sjHeight is not zero
+  if (
+    typeof cmjHeight !== "number" ||
+    typeof sjHeight !== "number" ||
+    sjHeight === 0
+  ) {
+    return 0;
+  }
   return ((cmjHeight - sjHeight) / sjHeight) * 100;
 }
 
 /**
  * Calculates arm swing contribution
- * @param {number} abalakovHeight - Abalakov height in cm
- * @param {number} cmjHeight - CMJ height in cm
- * @returns {number} Arm swing contribution as a percentage
+ * @param {number | undefined | null} abalakovHeight - Abalakov height in cm
+ * @param {number | undefined | null} cmjHeight - CMJ height in cm
+ * @returns {number} Arm swing contribution as a percentage, or 0 if inputs are invalid.
  */
 function calculateArmSwingContribution(abalakovHeight, cmjHeight) {
-  if (!abalakovHeight || !cmjHeight || cmjHeight === 0) return 0;
+  // Add checks for null/undefined and ensure cmjHeight is not zero
+  if (
+    typeof abalakovHeight !== "number" ||
+    typeof cmjHeight !== "number" ||
+    cmjHeight === 0
+  ) {
+    return 0;
+  }
   return ((abalakovHeight - cmjHeight) / cmjHeight) * 100;
 }
 
@@ -365,7 +574,7 @@ function calculateArmSwingContribution(abalakovHeight, cmjHeight) {
  * Adds training solutions based on ECR value
  * @param {number} ecrValue - ECR value
  * @param {Array<TrainingSolution>} trainingSolutions - Array to add solutions to
- * @param {string} comparisonType - Type of comparison that generated the ECR value
+ * @param {string} comparisonType - Type of comparison that generated the ECR value (e.g., "cmj-squatjump")
  */
 function addECRTrainingSolutions(ecrValue, trainingSolutions, comparisonType) {
   // ECR < 10%
@@ -419,14 +628,15 @@ function addECRTrainingSolutions(ecrValue, trainingSolutions, comparisonType) {
  * Adds training solutions based on arm swing contribution
  * @param {number} armSwingValue - Arm swing contribution percentage
  * @param {Array<TrainingSolution>} trainingSolutions - Array to add solutions to
- * @param {string} comparisonType - Type of comparison that generated the value
+ * @param {string} comparisonType - Type of comparison that generated the value (e.g., "abalakov-cmj")
  */
 function addArmSwingTrainingSolutions(
   armSwingValue,
   trainingSolutions,
   comparisonType
 ) {
-  // Arm swing <= 10%
+  // Arm swing <= 10% (Assuming 10% is the threshold)
+  // Consider if the expected range (10-15% mentioned in info) implies a different threshold or range.
   if (armSwingValue <= 10) {
     trainingSolutions.push({
       title: "Bajo nivel de coordinación de brazos",
@@ -441,15 +651,16 @@ function addArmSwingTrainingSolutions(
       comparedTo: comparisonType,
     });
   }
+  // Add 'else if' or 'else' blocks here if there are recommendations for higher arm swing values.
 }
 
 /**
  * Adds training solutions based on RSI value
  * @param {number} rsiValue - Reactive Strength Index value
  * @param {Array<TrainingSolution>} trainingSolutions - Array to add solutions to
- * @param {string} testType - Type of test that generated the RSI value
+ * @param {string} comparisonType - Type of test/comparison that generated the RSI value (e.g., "multiplejumps")
  */
-function addRSITrainingSolutions(rsiValue, trainingSolutions, testType) {
+function addRSITrainingSolutions(rsiValue, trainingSolutions, comparisonType) {
   // RSI < 1
   if (rsiValue < 1) {
     trainingSolutions.push({
@@ -462,7 +673,7 @@ function addRSITrainingSolutions(rsiValue, trainingSolutions, testType) {
         "Prensa a 45 grados con pocas repeticiones y alta densidad",
         "Ejercicios coordinativos en escalerilla sin fase de vuelo",
       ],
-      comparedTo: testType,
+      comparedTo: comparisonType, // Use comparisonType
     });
   }
   // RSI 1-1.5
@@ -477,7 +688,7 @@ function addRSITrainingSolutions(rsiValue, trainingSolutions, testType) {
         "Sentadillas con pocas repeticiones y alta intensidad",
         "Prensa a 45 grados con pocas repeticiones y alta densidad",
       ],
-      comparedTo: testType,
+      comparedTo: comparisonType, // Use comparisonType
     });
   }
   // RSI 1.5-2
@@ -492,7 +703,7 @@ function addRSITrainingSolutions(rsiValue, trainingSolutions, testType) {
         "Ejercicios de saltabilidad tipo HOPS unilateral",
         "Saltar la soga con los tobillos y rodillas lo más rígido posible y con el menor tiempo de contacto",
       ],
-      comparedTo: testType,
+      comparedTo: comparisonType, // Use comparisonType
     });
   }
   // RSI 2-2.5
@@ -507,7 +718,7 @@ function addRSITrainingSolutions(rsiValue, trainingSolutions, testType) {
         "Saltos rebote en el lugar de alta intensidad",
         "Saltos con mínima asistencia",
       ],
-      comparedTo: testType,
+      comparedTo: comparisonType, // Use comparisonType
     });
   }
   // RSI 2.5-3
@@ -522,7 +733,7 @@ function addRSITrainingSolutions(rsiValue, trainingSolutions, testType) {
         "Pliometría (shock method)",
         "Saltos con vallas con máxima intensidad y mínimo tiempo de contacto",
       ],
-      comparedTo: testType,
+      comparedTo: comparisonType, // Use comparisonType
     });
   }
   // RSI > 3
@@ -537,33 +748,7 @@ function addRSITrainingSolutions(rsiValue, trainingSolutions, testType) {
         "Drop jumps sobre superficies rígidas",
         "Saltabilidad con mínima fase de contacto sobre superficies rígidas",
       ],
-      comparedTo: testType,
+      comparedTo: comparisonType, // Use comparisonType
     });
   }
 }
-
-/**
- * Removes duplicate training solutions based on title
- * @param {Array<TrainingSolution>} solutions - Array of training solutions
- * @returns {Array<TrainingSolution>} Filtered array without duplicates
- */
-function removeDuplicateTrainingSolutions(solutions) {
-  const uniqueTitles = new Set();
-  return solutions.filter((solution) => {
-    if (uniqueTitles.has(solution.title)) {
-      return false;
-    }
-    uniqueTitles.add(solution.title);
-    return true;
-  });
-}
-
-// Export the interface definition for TypeScript environments
-/**
- * @typedef {Object} TrainingSolution
- * @property {string} title - Title of the training solution
- * @property {string} info - Explanation of why this training is recommended
- * @property {string} exerciseType - Type of exercises recommended
- * @property {string[]} exerciseExamples - Examples of specific exercises
- * @property {string} comparedTo - The type of study that was compared to target study
- */

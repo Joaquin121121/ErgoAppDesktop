@@ -35,7 +35,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { ComposedChart } from "recharts";
-
+import { useBlur } from "../contexts/BlurContext";
 interface MultipleAthletesTest {
   athleteName: string;
   test: CompletedStudy;
@@ -44,13 +44,11 @@ interface MultipleAthletesTest {
 
 function TestInProgress({
   setTestInProgress,
-  onBlurChange,
   customNavigate,
   tests,
   setSelectedOption,
 }: {
   setTestInProgress: (testInProgress: boolean) => void;
-  onBlurChange: (isBlurred: boolean) => void;
   customNavigate: (
     direction: "back" | "forward",
     page: string,
@@ -63,7 +61,6 @@ function TestInProgress({
     MultipleAthletesTest[]
   >([]);
   const [selectedAthletePointer, setSelectedAthletePointer] = useState(0);
-  const [isBlurred, setIsBlurred] = useState(false);
   const [status, setStatus] = useState("Súbase a la alfombra");
   const [data, setData] = useState<StudyData>({
     avgFlightTime: 0,
@@ -72,11 +69,13 @@ function TestInProgress({
   const [pointer, setPointer] = useState(0);
   const [errorTimeout, setErrorTimeout] = useState(null);
   const [displayError, setDisplayError] = useState(false);
+  const [displayErrorPopup, setDisplayErrorPopup] = useState(false);
   const [ignoreJump, setIgnoreJump] = useState(false);
   const { serialData, error, startSerialListener, logs, isConnected } =
     useSerialMonitor();
   const { study, setStudy, athlete, setAthlete, selectedAthletes } =
     useStudyContext();
+  const { isBlurred, setIsBlurred } = useBlur();
   const { saveJson, readJson } = useJsonFiles();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -727,7 +726,7 @@ function TestInProgress({
   /* Also works as nextAthlete */
   const saveTest = async () => {
     if (!jumpTimes.length || Number.isNaN(data.avgFlightTime)) {
-      setIsBlurred(true);
+      setDisplayErrorPopup(true);
       return;
     }
     const updatedBoscoResults = {
@@ -852,7 +851,7 @@ function TestInProgress({
       );
       console.log(result.message);
       setTestInProgress(false);
-      onBlurChange(false);
+      setIsBlurred(false);
       setAthlete(newAthleteState);
       customNavigate("back", "startTest", "athleteStudies");
       setSelectedOption("athletes");
@@ -883,7 +882,7 @@ function TestInProgress({
         );
       });
       setTestInProgress(false);
-      onBlurChange(false);
+      setIsBlurred(false);
       customNavigate("back", "startTest", "athletes");
       setSelectedOption("athletes");
       setTimeout(() => {
@@ -970,7 +969,7 @@ function TestInProgress({
 
   const onClose = () => {
     setTestInProgress(false);
-    onBlurChange(false);
+    setIsBlurred(false);
   };
 
   // Add DEL key event listener
@@ -1192,7 +1191,8 @@ function TestInProgress({
     <>
       <div
         className={`bg-white shadow-lg rounded-2xl transition-all duration-300 ease-linear fixed right-8 flex flex-col items-center px-16 py-8 top-[2%] ${
-          (isBlurred || showTable || showChart) && "blur-md pointer-events-none"
+          (displayErrorPopup || showTable || showChart) &&
+          "blur-md pointer-events-none"
         }
           `}
         style={{
@@ -1586,9 +1586,9 @@ function TestInProgress({
           </>
         )}
       </div>
-      {isBlurred && (
+      {displayErrorPopup && (
         <ErrorDisplay
-          setIsBlurred={setIsBlurred}
+          setDisplayErrorPopup={setDisplayErrorPopup}
           redoTest={redoTest}
         ></ErrorDisplay>
       )}

@@ -16,6 +16,7 @@ import SelectAthlete from "./pages/SelectAthlete";
 import AthleteStudies from "./pages/AthleteStudies";
 import OutlinedButton from "./components/OutlinedButton";
 import UpdateChecker from "./components/UpdateChecker";
+import ConnectionStatus from "./components/ConnectionStatus";
 import { Window } from "@tauri-apps/api/window";
 import { User } from "./types/User";
 import { UserProvider } from "./contexts/UserContext";
@@ -29,19 +30,26 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import ErrorPage from "./pages/ErrorPage";
 import CompletedStudyDashboard from "./pages/CompletedStudyDashboard";
 import Dashboard from "./pages/Dashboard";
+import { BlurProvider, useBlur } from "./contexts/BlurContext";
+import { CalendarProvider } from "./contexts/CalendarContext";
+import { NewEventProvider } from "./contexts/NewEventContext";
+import { supabase } from "./supabase";
+import Library from "./pages/Library";
+import AthleteMenu from "./pages/AthleteMenu";
+import TrainingMenu from "./pages/TrainingMenu";
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
   isExpanded,
   setIsExpanded,
-  isBlurred,
   resetAnimations,
   selectedOption,
   setSelectedOption,
 }) => {
-  const options = ["dashboard", "studies", "athletes", "about"];
+  const options = ["dashboard", "studies", "athletes", "library", "about"];
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { isBlurred, setIsBlurred } = useBlur();
 
   return (
     <div className="flex w-screen h-screen bg-offWhite">
@@ -103,17 +111,17 @@ const WithLayout = ({
 
 function App() {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isBlurred, setIsBlurred] = useState(false);
   const [isMaximized, setIsMaximized] = useState(true);
   const [selectedOption, setSelectedOption] = useState("studies");
   const [isBlockingClicks, setIsBlockingClicks] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
   const [hasGlobalError, setHasGlobalError] = useState(false);
   const appWindow = Window.getCurrent();
-
   const keys = [
+    "dashboard",
     "studies",
     "athletes",
+    "library",
     "about",
     "notFound",
     "startTest",
@@ -128,6 +136,8 @@ function App() {
     "compareTwoAthletes",
     "error",
     "completedStudyDashboard",
+    "athleteMenu",
+    "trainingMenu",
   ] as const;
   const [animations, setAnimations] = useState(
     Object.fromEntries(keys.map((key) => [key, ""]))
@@ -175,7 +185,6 @@ function App() {
       case "studies":
         return (
           <Studies
-            onBlurChange={setIsBlurred}
             isExpanded={isExpanded}
             animation={animations.studies}
             customNavigate={customNavigate}
@@ -187,7 +196,6 @@ function App() {
             isExpanded={isExpanded}
             animation={animations.athletes}
             customNavigate={customNavigate}
-            onBlurChange={setIsBlurred}
           />
         );
       case "dashboard":
@@ -195,14 +203,20 @@ function App() {
           <Dashboard
             isExpanded={isExpanded}
             animation={animations.dashboard}
-            onBlurChange={setIsBlurred}
+            customNavigate={customNavigate}
+          />
+        );
+      case "library":
+        return (
+          <Library
+            isExpanded={isExpanded}
+            animation={animations.library}
             customNavigate={customNavigate}
           />
         );
       case "about":
         return (
           <About
-            onBlurChange={setIsBlurred}
             isExpanded={isExpanded}
             animation={animations.about}
             customNavigate={customNavigate}
@@ -220,7 +234,6 @@ function App() {
         return (
           <StartTest
             isExpanded={isExpanded}
-            onBlurChange={setIsBlurred}
             animation={animations.startTest}
             customNavigate={customNavigate}
             setSelectedOption={setSelectedOption}
@@ -248,7 +261,6 @@ function App() {
             isExpanded={isExpanded}
             animation={animations.newAthlete}
             customNavigate={customNavigate}
-            onBlurChange={setIsBlurred}
           />
         );
       case "athleteStudies":
@@ -257,7 +269,6 @@ function App() {
             isExpanded={isExpanded}
             animation={animations.athleteStudies}
             customNavigate={customNavigate}
-            onBlurChange={setIsBlurred}
           />
         );
       case "studyInfo":
@@ -266,14 +277,12 @@ function App() {
             isExpanded={isExpanded}
             animation={animations.studyInfo}
             customNavigate={customNavigate}
-            onBlurChange={setIsBlurred}
           />
         );
       case "completedStudyInfo":
         return (
           <CompletedStudyInfo
             isExpanded={isExpanded}
-            onBlurChange={setIsBlurred}
             animation={animations.completedStudyInfo}
             customNavigate={customNavigate}
           />
@@ -284,7 +293,6 @@ function App() {
             isExpanded={isExpanded}
             animation={animations.compareTwoStudies}
             customNavigate={customNavigate}
-            onBlurChange={setIsBlurred}
           />
         );
       case "compareThreeStudies":
@@ -293,7 +301,6 @@ function App() {
             isExpanded={isExpanded}
             animation={animations.compareThreeStudies}
             customNavigate={customNavigate}
-            onBlurChange={setIsBlurred}
           />
         );
       case "compareTwoAthletes":
@@ -302,7 +309,6 @@ function App() {
             isExpanded={isExpanded}
             animation={animations.compareTwoAthletes}
             customNavigate={customNavigate}
-            onBlurChange={setIsBlurred}
           />
         );
       case "error":
@@ -318,6 +324,22 @@ function App() {
           <CompletedStudyDashboard
             isExpanded={isExpanded}
             animation={animations.completedStudyDashboard}
+            customNavigate={customNavigate}
+          />
+        );
+      case "athleteMenu":
+        return (
+          <AthleteMenu
+            isExpanded={isExpanded}
+            animation={animations.athleteMenu}
+            customNavigate={customNavigate}
+          />
+        );
+      case "trainingMenu":
+        return (
+          <TrainingMenu
+            isExpanded={isExpanded}
+            animation={animations.trainingMenu}
             customNavigate={customNavigate}
           />
         );
@@ -353,17 +375,6 @@ function App() {
     };
   }, []);
 
-  if (!isMaximized) {
-    return (
-      <div className="w-[100vw] h-[100vh] flex flex-col items-center justify-center bg-secondary overflow-hidden">
-        <img className="w-1/2 h-1/2 object-contain" src="/splash.png" />
-        <p className="text-2xl text-offWhite mt-8">
-          Maximice la ventana para usar la app
-        </p>
-      </div>
-    );
-  }
-
   if (hasGlobalError) {
     // In case of a global error, render just the error page without layout
     return (
@@ -382,126 +393,162 @@ function App() {
       </HashRouter>
     );
   }
+  if (!isMaximized) {
+    return (
+      <div className="w-[100vw] h-[100vh] flex flex-col items-center justify-center bg-secondary overflow-hidden">
+        <img className="w-1/2 h-1/2 object-contain" src="/splash.png" />
+        <p className="text-2xl text-offWhite mt-8">
+          Maximice la ventana para usar la app
+        </p>
+      </div>
+    );
+  }
 
   return (
     <AthleteComparisonProvider>
-      <UserProvider>
-        <HashRouter>
-          <UpdateChecker
-            showUpdate={showUpdate}
-            setShowUpdate={setShowUpdate}
-          />
-          {isBlockingClicks && (
-            <div
-              style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100vw",
-                height: "100vh",
-                background: "transparent",
-                zIndex: 9999,
-              }}
-            />
-          )}
-
-          <Routes>
-            <Route
-              path="/error"
-              element={
-                <ErrorPage
-                  onReset={handleErrorReset}
-                  customNavigate={customNavigate}
+      <NewEventProvider>
+        <UserProvider>
+          <BlurProvider>
+            <CalendarProvider>
+              <HashRouter>
+                <UpdateChecker
+                  showUpdate={showUpdate}
+                  setShowUpdate={setShowUpdate}
                 />
-              }
-            />
-            <Route
-              path="*"
-              element={
-                <WithLayout
-                  isExpanded={isExpanded}
-                  setIsExpanded={setIsExpanded}
-                  isBlurred={isBlurred}
-                  resetAnimations={resetAnimations}
-                  selectedOption={selectedOption}
-                  setSelectedOption={setSelectedOption}
-                >
-                  <ErrorBoundary
-                    onError={handleError}
-                    onReset={handleErrorReset}
-                    fallback={<Navigate to="/error" replace />}
-                  >
-                    <Routes>
-                      <Route path="/" element={getPageComponent("studies")} />
-                      <Route
-                        path="/studies"
-                        element={getPageComponent("studies")}
+                <ConnectionStatus showUpdate={showUpdate} />
+                {isBlockingClicks && (
+                  <div
+                    style={{
+                      position: "fixed",
+                      top: 0,
+                      left: 0,
+                      width: "100vw",
+                      height: "100vh",
+                      background: "transparent",
+                      zIndex: 9999,
+                    }}
+                  />
+                )}
+
+                <Routes>
+                  <Route
+                    path="/error"
+                    element={
+                      <ErrorPage
+                        onReset={handleErrorReset}
+                        customNavigate={customNavigate}
                       />
-                      <Route
-                        path="/athletes"
-                        element={getPageComponent("athletes")}
-                      />
-                      <Route
-                        path="/about"
-                        element={getPageComponent("about")}
-                      />
-                      <Route
-                        path="/startTest"
-                        element={getPageComponent("startTest")}
-                      />
-                      <Route
-                        path="/newTest"
-                        element={getPageComponent("newTest")}
-                      />
-                      <Route
-                        path="/selectAthlete"
-                        element={getPageComponent("selectAthlete")}
-                      />
-                      <Route
-                        path="/newAthlete"
-                        element={getPageComponent("newAthlete")}
-                      />
-                      <Route
-                        path="/athleteStudies"
-                        element={getPageComponent("athleteStudies")}
-                      />
-                      <Route
-                        path="/studyInfo"
-                        element={getPageComponent("studyInfo")}
-                      />
-                      <Route
-                        path="/completedStudyInfo"
-                        element={getPageComponent("completedStudyInfo")}
-                      />
-                      <Route
-                        path="/compareTwoStudies"
-                        element={getPageComponent("compareTwoStudies")}
-                      />
-                      <Route
-                        path="/compareThreeStudies"
-                        element={getPageComponent("compareThreeStudies")}
-                      />
-                      <Route
-                        path="/compareTwoAthletes"
-                        element={getPageComponent("compareTwoAthletes")}
-                      />
-                      <Route
-                        path="/completedStudyDashboard"
-                        element={getPageComponent("completedStudyDashboard")}
-                      />
-                      <Route
-                        path="/dashboard"
-                        element={getPageComponent("dashboard")}
-                      />
-                      <Route path="*" element={getPageComponent("notFound")} />
-                    </Routes>
-                  </ErrorBoundary>
-                </WithLayout>
-              }
-            />
-          </Routes>
-        </HashRouter>
-      </UserProvider>
+                    }
+                  />
+                  <Route
+                    path="*"
+                    element={
+                      <WithLayout
+                        isExpanded={isExpanded}
+                        setIsExpanded={setIsExpanded}
+                        resetAnimations={resetAnimations}
+                        selectedOption={selectedOption}
+                        setSelectedOption={setSelectedOption}
+                      >
+                        <ErrorBoundary
+                          onError={handleError}
+                          onReset={handleErrorReset}
+                          fallback={<Navigate to="/error" replace />}
+                        >
+                          <Routes>
+                            <Route
+                              path="/"
+                              element={getPageComponent("studies")}
+                            />
+                            <Route
+                              path="/studies"
+                              element={getPageComponent("studies")}
+                            />
+                            <Route
+                              path="/athletes"
+                              element={getPageComponent("athletes")}
+                            />
+                            <Route
+                              path="/library"
+                              element={getPageComponent("library")}
+                            />
+                            <Route
+                              path="/about"
+                              element={getPageComponent("about")}
+                            />
+                            <Route
+                              path="/startTest"
+                              element={getPageComponent("startTest")}
+                            />
+                            <Route
+                              path="/newTest"
+                              element={getPageComponent("newTest")}
+                            />
+                            <Route
+                              path="/selectAthlete"
+                              element={getPageComponent("selectAthlete")}
+                            />
+                            <Route
+                              path="/newAthlete"
+                              element={getPageComponent("newAthlete")}
+                            />
+                            <Route
+                              path="/athleteMenu"
+                              element={getPageComponent("athleteMenu")}
+                            />
+                            <Route
+                              path="/athleteStudies"
+                              element={getPageComponent("athleteStudies")}
+                            />
+                            <Route
+                              path="/studyInfo"
+                              element={getPageComponent("studyInfo")}
+                            />
+                            <Route
+                              path="/completedStudyInfo"
+                              element={getPageComponent("completedStudyInfo")}
+                            />
+                            <Route
+                              path="/compareTwoStudies"
+                              element={getPageComponent("compareTwoStudies")}
+                            />
+                            <Route
+                              path="/compareThreeStudies"
+                              element={getPageComponent("compareThreeStudies")}
+                            />
+                            <Route
+                              path="/compareTwoAthletes"
+                              element={getPageComponent("compareTwoAthletes")}
+                            />
+                            <Route
+                              path="/completedStudyDashboard"
+                              element={getPageComponent(
+                                "completedStudyDashboard"
+                              )}
+                            />
+                            <Route
+                              path="/trainingMenu"
+                              element={getPageComponent("trainingMenu")}
+                            />
+                            <Route
+                              path="/dashboard"
+                              element={getPageComponent("dashboard")}
+                            />
+                            <Route
+                              path="*"
+                              element={getPageComponent("notFound")}
+                            />
+                          </Routes>
+                        </ErrorBoundary>
+                      </WithLayout>
+                    }
+                  />
+                </Routes>
+              </HashRouter>
+            </CalendarProvider>
+          </BlurProvider>
+        </UserProvider>
+      </NewEventProvider>
     </AthleteComparisonProvider>
   );
 }

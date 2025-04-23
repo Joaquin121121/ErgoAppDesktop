@@ -7,13 +7,13 @@ import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
 import TonalButton from "../components/TonalButton";
 import Filter from "../components/Filter";
+import { useBlur } from "../contexts/BlurContext";
 import { Studies, Study, validComparisons } from "../types/Studies";
 
 function AthleteStudies({
   isExpanded,
   animation,
   customNavigate,
-  onBlurChange,
 }: {
   isExpanded: boolean;
   animation: string;
@@ -22,7 +22,6 @@ function AthleteStudies({
     page: string,
     nextPage: string
   ) => void;
-  onBlurChange: (isBlurred: boolean) => void;
 }) {
   const { athlete, setAthlete } = useStudyContext();
 
@@ -40,7 +39,7 @@ function AthleteStudies({
   const [filteredStudies, setFilteredStudies] = useState<
     [keyof Studies, Study][]
   >([]);
-
+  const { isBlurred, setIsBlurred } = useBlur();
   const { saveJson } = useJsonFiles();
 
   const onClose = () => {
@@ -98,7 +97,7 @@ function AthleteStudies({
   };
 
   const filter = () => {
-    onBlurChange(true);
+    setIsBlurred(true);
     setFiltering(true);
   };
 
@@ -151,7 +150,7 @@ function AthleteStudies({
   };
 
   useEffect(() => {
-    onBlurChange(!!studyToDelete);
+    setIsBlurred(!!studyToDelete);
     console.log(athlete.completedStudies);
   }, [studyToDelete]);
 
@@ -310,8 +309,6 @@ function AthleteStudies({
           selectedEquipment={selectedEquipment}
           setSelectedEquipment={setSelectedEquipment}
           setFilteredStudies={setFilteredStudies}
-          setIsBlurred={setFiltering}
-          onBlurChange={onBlurChange}
           top={100}
           right={100}
         />

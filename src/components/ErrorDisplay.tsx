@@ -1,7 +1,7 @@
 import React from "react";
 import OutlinedButton from "./OutlinedButton";
 import TonalButton from "./TonalButton";
-function ErrorDisplay({ setIsBlurred, redoTest }) {
+function ErrorDisplay({ setDisplayErrorPopup, redoTest }) {
   return (
     <div
       className="bg-white shadow-sm fixed z-50 rounded-2xl py-2 px-8 w-[800px]
@@ -15,7 +15,7 @@ function ErrorDisplay({ setIsBlurred, redoTest }) {
         <OutlinedButton
           icon="back"
           onClick={() => {
-            setIsBlurred(false);
+            setDisplayErrorPopup(false);
           }}
           title="Volver"
           containerStyles="w-[25%]"
@@ -25,7 +25,7 @@ function ErrorDisplay({ setIsBlurred, redoTest }) {
           icon="againWhite"
           onClick={() => {
             redoTest();
-            setIsBlurred(false);
+            setDisplayErrorPopup(false);
           }}
           title="Rehacer Test"
           containerStyles="w-[25%]"

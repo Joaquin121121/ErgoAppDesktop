@@ -6,6 +6,7 @@ interface SeamlessLoopPlayerProps {
   height?: string | number;
   loop?: boolean;
   overlapTime?: number; // Time in seconds to overlap videos
+  timeBetweenReplays?: number; // Optional delay in seconds between loops
 }
 
 const SeamlessLoopPlayer = ({
@@ -14,6 +15,7 @@ const SeamlessLoopPlayer = ({
   height = "auto",
   loop = false,
   overlapTime = 0.2, // Default overlap time in seconds
+  timeBetweenReplays = 0, // Default delay between replays
 }: SeamlessLoopPlayerProps) => {
   // We'll use three video elements to ensure seamless playback
   const video1Ref = useRef<HTMLVideoElement>(null);
@@ -22,6 +24,7 @@ const SeamlessLoopPlayer = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [videoMeta, setVideoMeta] = useState({ duration: 0, loaded: false });
   const [activeIndex, setActiveIndex] = useState(1);
+  const scheduleTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for the scheduling timeout
 
   // Set up video elements and metadata
   useEffect(() => {
@@ -59,62 +62,81 @@ const SeamlessLoopPlayer = ({
     };
   }, [src]);
 
-  // Main playback control
+  // Effect to handle the initial play when metadata is loaded
   useEffect(() => {
-    if (!videoMeta.loaded || !loop) return;
-
     const video1 = video1Ref.current;
-    const video2 = video2Ref.current;
-    const video3 = video3Ref.current;
+    if (videoMeta.loaded && loop && video1) {
+      // Ensure first video starts correctly
+      if (activeIndex === 1 && video1.paused) {
+        video1.currentTime = 0;
+        video1
+          .play()
+          .catch((e) => console.error("Initial video playback failed:", e));
+      }
+    }
+    // Only run when loaded status changes, or loop prop changes
+  }, [videoMeta.loaded, loop, activeIndex]);
 
-    if (!video1 || !video2 || !video3) return;
+  // Main playback control using scheduling
+  useEffect(() => {
+    // Clear any existing timeout when dependencies change or component unmounts
+    if (scheduleTimeoutRef.current) {
+      clearTimeout(scheduleTimeoutRef.current);
+      scheduleTimeoutRef.current = null;
+    }
 
-    // Start the first video
-    video1.currentTime = 0;
-    video1.play().catch((e) => console.error("Video playback failed:", e));
+    if (!videoMeta.loaded || !loop || videoMeta.duration <= 0) return;
 
-    // Set up the cycle
-    const cycleVideos = () => {
-      const activeVideo =
-        activeIndex === 1 ? video1 : activeIndex === 2 ? video2 : video3;
+    const videos = [video1Ref.current, video2Ref.current, video3Ref.current];
+    const activeVideo = videos[activeIndex - 1];
 
-      const nextIndex = activeIndex === 3 ? 1 : activeIndex + 1;
-      const nextVideo =
-        nextIndex === 1 ? video1 : nextIndex === 2 ? video2 : video3;
+    if (!activeVideo) return;
 
-      // Position next video at the beginning
-      nextVideo.currentTime = 0;
+    const nextIndex = activeIndex === 3 ? 1 : activeIndex + 1;
+    const nextVideo = videos[nextIndex - 1];
 
-      // Calculate when to start the next video (before current one ends)
-      const startNextAt = videoMeta.duration - overlapTime;
+    if (!nextVideo) return;
 
-      // If we're close to the end, start the next video
-      if (activeVideo.currentTime >= startNextAt) {
+    // Calculate the time relative to the active video's start
+    // when the *next* video should begin playing.
+    let nextVideoStartTime: number;
+    if (timeBetweenReplays > 0) {
+      // Start after the current video ends + delay
+      nextVideoStartTime = videoMeta.duration + timeBetweenReplays;
+    } else {
+      // Start before the current video ends (overlap)
+      nextVideoStartTime = videoMeta.duration - overlapTime;
+    }
+
+    // Calculate delay in milliseconds from *now* until the next video should start
+    const delayMs = (nextVideoStartTime - activeVideo.currentTime) * 1000;
+
+    // Schedule the transition
+    scheduleTimeoutRef.current = setTimeout(() => {
+      if (nextVideo) {
+        // Prepare the next video
+        nextVideo.currentTime = 0;
         nextVideo
           .play()
           .catch((e) => console.error("Failed to play next video:", e));
-
-        // Update the active index
         setActiveIndex(nextIndex);
-
-        // Reset this timeout since we've triggered the next video
-        return;
       }
+    }, Math.max(0, delayMs)); // Ensure delay is not negative
 
-      // Check again soon
-      setTimeout(cycleVideos, 10);
-    };
-
-    // Start checking for loop points
-    const checkInterval = setTimeout(
-      cycleVideos,
-      Math.max(0, (videoMeta.duration - overlapTime) * 1000 - 100)
-    );
-
+    // Cleanup function to clear timeout
     return () => {
-      clearTimeout(checkInterval);
+      if (scheduleTimeoutRef.current) {
+        clearTimeout(scheduleTimeoutRef.current);
+      }
     };
-  }, [videoMeta.loaded, videoMeta.duration, activeIndex, loop, overlapTime]);
+  }, [
+    videoMeta.loaded,
+    videoMeta.duration,
+    activeIndex,
+    loop,
+    overlapTime,
+    timeBetweenReplays, // Add new prop to dependencies
+  ]);
 
   // If not looping, just show a single video
   if (!loop) {

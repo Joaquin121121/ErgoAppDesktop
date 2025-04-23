@@ -5,15 +5,13 @@ import OutlinedButton from "./OutlinedButton";
 import TonalButton from "./TonalButton";
 import availableStudies from "../types/Studies";
 import { Dispatch, SetStateAction } from "react";
-
+import { useBlur } from "../contexts/BlurContext";
 interface FilterProps {
   selectedEquipment: string[]; // Changed from [string] to string[]
   setSelectedEquipment: (selectedEquipment: string[]) => void; // Fixed type
   selectedStatsToMeasure?: string[]; // Changed from [string] to string[]
   setSelectedStatsToMeasure?: (selectedStatsToMeasure: string[]) => void; // Fixed type
   setFilteredStudies: Dispatch<SetStateAction<[keyof Studies, Study][]>>;
-  setIsBlurred: (isBlurred: boolean) => void;
-  onBlurChange: (isBlurred: boolean) => void;
   top: number;
   right: number;
 }
@@ -24,11 +22,10 @@ function Filter({
   selectedStatsToMeasure,
   setSelectedStatsToMeasure,
   setFilteredStudies,
-  setIsBlurred,
-  onBlurChange,
   top,
   right,
 }: FilterProps) {
+  const { isBlurred, setIsBlurred } = useBlur();
   const selectEquipment = (equipment: string): void => {
     if (!selectedEquipment.includes(equipment)) {
       setSelectedEquipment([...selectedEquipment, equipment]);
@@ -96,7 +93,6 @@ function Filter({
       }) as [keyof Studies, Study][]
     );
     setIsBlurred(false);
-    onBlurChange(false);
   };
   return (
     <div
@@ -107,7 +103,6 @@ function Filter({
         className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
         onClick={() => {
           setIsBlurred(false);
-          onBlurChange(false);
         }}
       >
         <img src="/close.png" className="h-6 w-6" alt="" />

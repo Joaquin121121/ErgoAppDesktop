@@ -17,6 +17,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^6.4.7",
+    "@supabase/supabase-js": "^2.49.4",
     "@tauri-apps/plugin-process": "^2.2.0",
     "@tauri-apps/plugin-shell": "^2.2.0",
     "@tauri-apps/plugin-updater": "^2.5.0",
@@ -34,11 +35,12 @@
     "react-multi-carousel": "^2.8.5",
     "react-router-dom": "^7.1.1",
     "recharts": "^2.15.1",
-    "swiper": "^11.2.6"
+    "swiper": "^11.2.6",
+    "tauri-plugin-network-api": "^2.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
-    "@tauri-apps/api": "^2.3.0",
+    "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/cli": "^2.2.2",
     "@types/node": "^22.10.6",
     "@types/react": "^18.3.18",

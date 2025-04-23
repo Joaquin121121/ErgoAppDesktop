@@ -14,16 +14,15 @@ import scrollBarStyles from "../styles/scrollbar.module.css";
 import ChartDisplay from "../components/MultipleJumpsChartDisplay";
 import MultipleDropJumpChartDisplay from "../components/MultipleDropJumpChartDisplay";
 import useBackspaceNavigation from "../hooks/useBackspaceNavigation";
+import { useBlur } from "../contexts/BlurContext";
 
 function CompletedStudyInfo({
   isExpanded,
   animation,
-  onBlurChange,
   customNavigate,
 }: {
   isExpanded: boolean;
   animation: string;
-  onBlurChange: (isBlurred: boolean) => void;
   customNavigate: (
     direction: "back" | "forward",
     page: string,
@@ -49,7 +48,7 @@ function CompletedStudyInfo({
       ? studyInfo.results.performance
       : [];
 
-  const [isBlurred, setIsBlurred] = useState(false);
+  const { isBlurred, setIsBlurred } = useBlur();
   const [jumpTimes, setJumpTimes] = useState([]);
   const [data, setData] = useState<StudyData>({
     avgFlightTime: 0,
@@ -566,9 +565,9 @@ function CompletedStudyInfo({
 
   useEffect(() => {
     if (showTable || showChart) {
-      onBlurChange(true);
+      setIsBlurred(true);
     } else {
-      onBlurChange(false);
+      setIsBlurred(false);
     }
     console.log("Bosco Study: ", !!boscoStudy);
     console.log("isBosco: ", studyInfo.results.type === "bosco");

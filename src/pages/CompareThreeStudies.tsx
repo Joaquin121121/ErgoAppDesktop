@@ -18,12 +18,11 @@ import ComparisonChartDisplay from "../components/ComparisonChartDisplay";
 import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import BoscoComparisonChart from "../components/BoscoComparisonChart";
-
+import { useBlur } from "../contexts/BlurContext";
 function CompareThreeStudies({
   isExpanded,
   animation,
   customNavigate,
-  onBlurChange,
 }: {
   isExpanded: boolean;
   animation: string;
@@ -32,8 +31,8 @@ function CompareThreeStudies({
     page: string,
     nextPage: string
   ) => void;
-  onBlurChange: (isBlurred: boolean) => void;
 }) {
+  const { isBlurred, setIsBlurred } = useBlur();
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const date = searchParams.get("date");

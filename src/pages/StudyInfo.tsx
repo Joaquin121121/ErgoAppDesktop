@@ -7,14 +7,13 @@ import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import availableStudies from "../types/Studies";
 import { useStudyContext } from "../contexts/StudyContext";
+import { useBlur } from "../contexts/BlurContext";
 
 function StudyInfo({
-  onBlurChange,
   isExpanded,
   animation,
   customNavigate,
 }: {
-  onBlurChange: (isBlurred: boolean) => void;
   isExpanded: boolean;
   animation: string;
   customNavigate: (
@@ -23,7 +22,7 @@ function StudyInfo({
     nextPage: string
   ) => void;
 }) {
-  const [isBlurred, setIsBlurred] = useState(false);
+  const { isBlurred, setIsBlurred } = useBlur();
 
   const { t } = useTranslation();
   const navigate = useNavigate();

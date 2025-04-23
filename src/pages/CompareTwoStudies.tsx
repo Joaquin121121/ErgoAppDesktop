@@ -10,11 +10,11 @@ import TonalButton from "../components/TonalButton";
 import navAnimations from "../styles/animations.module.css";
 import ComparisonChartDisplay from "../components/ComparisonChartDisplay";
 import { useAthleteComparison } from "../contexts/AthleteComparisonContext";
+import { useBlur } from "../contexts/BlurContext";
 function CompareTwoStudies({
   isExpanded,
   animation,
   customNavigate,
-  onBlurChange,
 }: {
   isExpanded: boolean;
   animation: string;
@@ -23,7 +23,6 @@ function CompareTwoStudies({
     page: string,
     nextPage: string
   ) => void;
-  onBlurChange: (isBlurred: boolean) => void;
 }) {
   const { athlete } = useStudyContext();
   const { t } = useTranslation();
@@ -33,6 +32,7 @@ function CompareTwoStudies({
   const date2 = searchParams.get("date2");
   const diffAthletes = searchParams.get("diffAthletes") === "true";
   const { athleteToCompare1, athleteToCompare2 } = useAthleteComparison();
+  const { isBlurred, setIsBlurred } = useBlur();
 
   const [showChart, setShowChart] = useState(false);
 
@@ -216,7 +216,7 @@ function CompareTwoStudies({
   };
 
   useEffect(() => {
-    onBlurChange(showChart);
+    setIsBlurred(showChart);
   }, [showChart]);
 
   return (

@@ -14,13 +14,12 @@ import { useSearchParams } from "react-router-dom";
 import { VALIDATION_LIMITS } from "../constants/data";
 import navAnimation from "../styles/animations.module.css";
 import OutlinedButton from "../components/OutlinedButton";
-import { set } from "lodash";
-
+import { useBlur } from "../contexts/BlurContext";
+import { useNewEvent } from "../contexts/NewEventContext";
 function NewAthlete({
   isExpanded,
   animation,
   customNavigate,
-  onBlurChange,
 }: {
   isExpanded: boolean;
   animation: string;
@@ -29,7 +28,6 @@ function NewAthlete({
     page: string,
     nextPage: string
   ) => void;
-  onBlurChange: (showInfo: boolean) => void;
 }) {
   const { t } = useTranslation();
 
@@ -37,6 +35,7 @@ function NewAthlete({
   const from = searchParams.get("from");
 
   const navigate = useNavigate();
+  const { isBlurred, setIsBlurred } = useBlur();
 
   const inputRef = useRef(null);
 
@@ -64,6 +63,7 @@ function NewAthlete({
   const { saveJson, readDirectoryJsons } = useJsonFiles();
   const { athlete, setAthlete, resetAthlete, setSelectedAthletes } =
     useStudyContext();
+  const { updateAthleteName } = useNewEvent();
 
   // Store previous values for conversion calculations
   const [prevHeight, setPrevHeight] = useState<string>("");
@@ -118,9 +118,9 @@ function NewAthlete({
 
   const onClose = () => {
     resetAthlete();
-    customNavigate("back", "newAthlete", from ? "athletes" : "startTest");
+    customNavigate("back", "newAthlete", from ? from : "startTest");
     setTimeout(() => {
-      navigate(from ? "/athletes" : "/startTest");
+      navigate(from ? `/${from}` : "/startTest");
     }, 300);
   };
 
@@ -501,9 +501,11 @@ function NewAthlete({
         "athletes"
       );
       console.log(result.message);
-      customNavigate("back", "newAthlete", from ? "athletes" : "startTest");
+      updateAthleteName(athlete.name);
+
+      customNavigate("back", "newAthlete", from ? from : "startTest");
       setTimeout(() => {
-        navigate(from ? "/athletes" : "/startTest");
+        navigate(from ? `/${from}` : "/startTest");
       }, 300);
     } catch (error) {
       console.log(error);
@@ -548,7 +550,7 @@ function NewAthlete({
   }, [athlete?.country]);
 
   useEffect(() => {
-    onBlurChange(showInfo);
+    setIsBlurred(showInfo);
   }, [showInfo]);
 
   // Auto-format height when typing in feet mode
@@ -659,6 +661,8 @@ function NewAthlete({
               icon="close"
               onClick={() => setFastLoad(false)}
             />
+          ) : from === "dashboard" ? (
+            <div className="w-[187px]"></div>
           ) : (
             <>
               <TonalButton

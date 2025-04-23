@@ -12,36 +12,39 @@ import {
   differenceInDays,
   isPast,
 } from "date-fns";
-import { es } from "date-fns/locale";
+import { es, se } from "date-fns/locale";
 import CalendarEvent from "./CalendarEvent";
 import styles from "../styles/animations.module.css";
 import AddEventModal from "./AddEventModal";
-
+import { useBlur } from "../contexts/BlurContext";
+import { useCalendar } from "../contexts/CalendarContext";
 export interface CalendarEvent {
-  eventType: "competition" | "trainingSession" | "testSession";
-  eventName: string;
-  athleteName: string;
-  eventDate: Date;
-  duration: number;
+  id?: number | string;
+  coach_id: number;
+  event_type: "competition" | "trainingSession" | "testSession";
+  event_name: string;
+  athlete_name: string;
+  event_date: Date | string;
+  duration?: number;
+  last_changed: Date | string;
 }
 
 interface CalendarProps {
   locale?: Locale;
   className?: string;
-  events: CalendarEvent[];
-  setSelectedDate: (date: Date) => void;
-  setTargetDate: (date: Date) => void;
-  setAddingEvent: (addingEvent: boolean) => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({
-  locale = es,
-  className = "",
-  events,
-  setSelectedDate,
-  setTargetDate,
-  setAddingEvent,
-}) => {
+const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
+  const {
+    selectedDate,
+    setSelectedDate,
+    addingEvent,
+    setAddingEvent,
+    eventInfo,
+    setEventInfo,
+    events,
+  } = useCalendar();
+  const { isBlurred, setIsBlurred } = useBlur();
   // Reference date for consistent period calculation
   const [referenceDate] = useState<Date>(
     startOfWeek(new Date(), { locale, weekStartsOn: 1 })
@@ -65,13 +68,18 @@ const Calendar: React.FC<CalendarProps> = ({
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    // Only add event listener when not adding event and no event info is displayed
+    if (!addingEvent && !eventInfo) {
+      window.addEventListener("keydown", handleKeyDown);
 
-    // Cleanup function to remove event listener
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [periodOffset, isNavigating]); // Re-run effect when periodOffset or isNavigating changes
+      // Cleanup function to remove event listener
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+      };
+    }
+
+    return undefined;
+  }, [periodOffset, isNavigating, addingEvent, eventInfo]); // Re-run effect when these values change
 
   // Show date picker directly when the calendar icon is clicked
   const togglePicker = () => {
@@ -258,15 +266,23 @@ const Calendar: React.FC<CalendarProps> = ({
             const dayNumber = format(day, "d");
             const isCurrentDay = isToday(day);
             const isPastDay = isPast(day) && !isToday(day);
-
+            const eventsForDay = events.filter((event) =>
+              isSameDay(new Date(event.event_date), day)
+            );
             return (
               <div
                 key={index}
-                className={`min-h-[150px] flex flex-col gap-y-1 border border-gray p-2 ${
+                className={`min-h-[150px] flex flex-col gap-y-1 border border-gray p-2 hover:border-lightRed  hover:cursor-pointer ${
                   isPastDay ? "bg-offWhite" : ""
                 }`}
                 onMouseEnter={() => {
                   setHoveredElementIndex(index);
+                }}
+                style={{
+                  borderColor: isSameDay(selectedDate, day) ? "#FFC1C1" : "",
+                }}
+                onClick={() => {
+                  setSelectedDate(day);
                 }}
               >
                 <div
@@ -280,35 +296,39 @@ const Calendar: React.FC<CalendarProps> = ({
                     {dayNumber}
                     {isCurrentDay && " - Hoy"}
                   </p>
-                  {hoveredElementIndex === index && (
-                    <img
+                  {hoveredElementIndex === index && !isPastDay && (
+                    <div
+                      className={`w-1/5 flex justify-center hover:cursor-pointer hover:scale-105 active:scale-95 active:opacity-50 transition-all duration-300 ease-in-out ${styles.fadeIn}`}
                       onClick={() => {
-                        setTargetDate(day);
+                        setSelectedDate(day);
                         setAddingEvent(true);
+                        setIsBlurred(true);
                       }}
-                      src="/addRed.png"
-                      alt=""
-                      className={`w-5 h-5 self-end hover:cursor-pointer hover:opacity-70 active:opacity-40 ${styles.fadeIn}`}
-                    />
+                    >
+                      <img src="/addRed.png" alt="" className={`w-5 h-5  `} />
+                    </div>
                   )}
                 </div>
-                {events.map((event, eventIndex) => {
-                  const eventDate =
-                    typeof event.eventDate === "string"
-                      ? new Date(event.eventDate)
-                      : event.eventDate;
-                  if (isSameDay(eventDate, day)) {
+                {eventsForDay.map((event, eventIndex) => {
+                  if (eventIndex > 2) return null;
+                  if (eventIndex === 2) {
                     return (
-                      <CalendarEvent
-                        key={eventIndex}
-                        {...event}
-                        onClick={() => {
-                          setSelectedDate(day);
-                        }}
-                      />
+                      <p className="self-center text-secondary mt-2 text-sm">
+                        +{eventsForDay.length - 2} más
+                      </p>
                     );
                   }
-                  return null;
+                  return (
+                    <CalendarEvent
+                      key={eventIndex}
+                      {...event}
+                      onClick={() => {
+                        setSelectedDate(day);
+                        setEventInfo(event);
+                        setIsBlurred(true);
+                      }}
+                    />
+                  );
                 })}
               </div>
             );
@@ -321,8 +341,8 @@ const Calendar: React.FC<CalendarProps> = ({
         <button
           onClick={goToPrevious}
           disabled={isNavigating}
-          className={`hover:opacity-70 active:opacity-50 focus:outline-none ${
-            isNavigating ? "opacity-50 cursor-not-allowed" : ""
+          className={`hover:opacity-70 hover:scale-105 active:scale-95 active:opacity-50 hover:cursor-pointer active:outline-none transition-all duration-300 ease-in-out ${
+            isNavigating ? "cursor-not-allowed" : ""
           }`}
           aria-label="Previous two weeks"
         >
@@ -335,7 +355,7 @@ const Calendar: React.FC<CalendarProps> = ({
               onClick={togglePicker}
               src="/calendar.png"
               alt="Calendar"
-              className="h-8 w-8 mt-2 mx-auto hover:opacity-70 hover:cursor-pointer active:opacity-40 z-10"
+              className="h-8 w-8 mt-2 mx-auto hover:opacity-70 hover:cursor-pointer hover:scale-105 active:scale-95 active:opacity-50 transition-all duration-300 ease-in-out z-10"
             />
             <input
               ref={datePickerRef}
@@ -348,8 +368,8 @@ const Calendar: React.FC<CalendarProps> = ({
         <button
           onClick={goToNext}
           disabled={isNavigating}
-          className={`hover:opacity-70 active:opacity-50 focus:outline-none ${
-            isNavigating ? "opacity-50 cursor-not-allowed" : ""
+          className={`hover:opacity-70 hover:scale-105 active:scale-95 active:opacity-50 hover:cursor-pointer active:outline-none transition-all duration-300 ease-in-out ${
+            isNavigating ? "cursor-not-allowed" : ""
           }`}
           aria-label="Next two weeks"
         >

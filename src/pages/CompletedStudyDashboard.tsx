@@ -8,7 +8,7 @@ import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import useBackspaceNavigation from "../hooks/useBackspaceNavigation";
 import CustomAccordion from "../components/CustomAccordion";
-import { getTrainingSolutions } from "../hooks/getTrainingSolutions";
+import { getTrainingSolutionsForTest } from "../hooks/getTrainingSolutions";
 
 interface CompletedStudyDashboardProps {
   customNavigate: (
@@ -45,7 +45,7 @@ function CompletedStudyDashboard({
 
   // Training solutions data
   const trainingSolutions: TrainingSolution[] =
-    getTrainingSolutions(date, study.results.type) || [];
+    getTrainingSolutionsForTest(date) || [];
 
   // Format the accordion items
   const accordionItems = trainingSolutions.map((solution) => ({

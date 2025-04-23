@@ -11,6 +11,7 @@ import {
   BoscoResult,
   MultipleDropJumpResult,
 } from "../types/Studies";
+import { useBlur } from "../contexts/BlurContext";
 
 // Define athlete criteria for comparison
 const athleteCriteria = ["gender", "age", "weight", "height"];
@@ -39,7 +40,6 @@ function CompareTwoAthletes({
   isExpanded,
   animation,
   customNavigate,
-  onBlurChange,
 }: {
   isExpanded: boolean;
   animation: string;
@@ -48,7 +48,6 @@ function CompareTwoAthletes({
     page: string,
     nextPage: string
   ) => void;
-  onBlurChange: (isBlurred: boolean) => void;
 }) {
   const { athleteToCompare1, athleteToCompare2, resetAthletes } =
     useAthleteComparison();
@@ -56,6 +55,7 @@ function CompareTwoAthletes({
   const navigate = useNavigate();
   const [showChart, setShowChart] = useState(false);
   const [testsInCommon, setTestsInCommon] = useState<TestsInCommon>({});
+  const { isBlurred, setIsBlurred } = useBlur();
 
   const onClose = () => {
     customNavigate("back", "compareTwoAthletes", "athletes");
@@ -251,7 +251,7 @@ function CompareTwoAthletes({
   }, []);
 
   useEffect(() => {
-    onBlurChange(showChart);
+    setIsBlurred(showChart);
   }, [showChart]);
 
   useEffect(() => {

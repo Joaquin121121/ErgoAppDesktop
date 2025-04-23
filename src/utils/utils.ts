@@ -1,3 +1,29 @@
+import { CalendarEvent } from "../components/Calendar";
+
+export function formatDateString(date: Date): string {
+  return new Date(date)
+    .toLocaleDateString("es-ES", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    })
+    .replace(/^\w/, (c) => c.toUpperCase())
+    .replace(
+      /(\b|\s)([a-zA-ZáéíóúüñÁÉÍÓÚÜÑ])([a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]*)/g,
+      (match, boundary, firstChar, rest, i) =>
+        i > 0 && match.length > 3
+          ? boundary + firstChar.toUpperCase() + rest
+          : match
+    )
+    .replace(/,/g, "");
+}
+
+export function getTimeString(date: Date): string {
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
+
 export function camelToNatural(camelCase: string): string {
   // Handle Spanish characters in addition to regular capitals
   const words = camelCase
@@ -116,3 +142,117 @@ export function formatMinutesToHoursAndMinutes(minutes: number): string {
 
   return `${hours}h ${remainingMinutes}m`;
 }
+
+export function validateHHMM(value: string) {
+  const regex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  return regex.test(value);
+}
+
+/**
+ * Creates a date with the correct local timezone
+ * Prevents timezone offset issues when creating/updating events
+ */
+export const createLocalDate = (
+  dateStr: string | Date,
+  timeStr?: string
+): Date => {
+  const date = new Date(dateStr);
+
+  if (timeStr) {
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    date.setHours(hours, minutes, 0, 0);
+  }
+
+  // Create a date string in YYYY-MM-DD format
+  const localDateStr = `${date.getFullYear()}-${String(
+    date.getMonth() + 1
+  ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+  // Create a time string in HH:MM format
+  const localTimeStr =
+    timeStr ||
+    `${String(date.getHours()).padStart(2, "0")}:${String(
+      date.getMinutes()
+    ).padStart(2, "0")}`;
+
+  // Combine them to create a local datetime string with timezone offset
+  const result = new Date(`${localDateStr}T${localTimeStr}:00`);
+
+  // Add the timezone offset to compensate
+  const timezoneOffset = result.getTimezoneOffset();
+  result.setMinutes(result.getMinutes() + timezoneOffset);
+
+  return result;
+};
+
+/**
+ * Creates a date ISO string that preserves the exact time specified
+ * Completely bypasses timezone issues by directly building the ISO string
+ */
+export const createTimezoneIndependentDate = (
+  dateStr: string | Date,
+  timeStr?: string
+): string => {
+  const date = new Date(dateStr);
+
+  // Extract date parts
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  // Extract time parts
+  let hours, minutes;
+  if (timeStr) {
+    [hours, minutes] = timeStr.split(":").map((s) => s.padStart(2, "0"));
+  } else {
+    hours = String(date.getHours()).padStart(2, "0");
+    minutes = String(date.getMinutes()).padStart(2, "0");
+  }
+
+  // Get the timezone offset in hours and minutes
+  const tzOffset = -date.getTimezoneOffset();
+  const tzOffsetHours = Math.floor(Math.abs(tzOffset) / 60);
+  const tzOffsetMinutes = Math.abs(tzOffset) % 60;
+
+  // Format the timezone string (e.g., +03:00, -05:30)
+  const tzOffsetStr = `${tzOffset >= 0 ? "+" : "-"}${String(
+    tzOffsetHours
+  ).padStart(2, "0")}:${String(tzOffsetMinutes).padStart(2, "0")}`;
+
+  // Build the ISO string with the explicit timezone offset
+  return `${year}-${month}-${day}T${hours}:${minutes}:00${tzOffsetStr}`;
+};
+
+export const findOverlappingEvents = (
+  events: CalendarEvent[],
+  newEvent: CalendarEvent
+): number | string | false => {
+  const newEventStart = new Date(newEvent.event_date);
+  const newEventDuration = newEvent.duration || 0; // Default to 0 if duration is missing
+  const newEventEnd = new Date(
+    newEventStart.getTime() + newEventDuration * 60000
+  );
+  const newEventDay = newEventStart.toDateString(); // Get YYYY-MM-DD for comparison
+
+  for (const event of events) {
+    // Skip comparing the event with itself if it's already in the list (e.g., during updates)
+    if (event.id === newEvent.id) {
+      continue;
+    }
+
+    const eventStart = new Date(event.event_date);
+
+    // Check if the event is on the same day
+    if (eventStart.toDateString() === newEventDay) {
+      const eventDuration = event.duration || 0; // Default to 0 if duration is missing
+      const eventEnd = new Date(eventStart.getTime() + eventDuration * 60000);
+
+      // Check for overlap: (StartA < EndB) and (EndA > StartB)
+      if (eventStart < newEventEnd && eventEnd > newEventStart) {
+        return event.id; // Return the ID of the overlapping event
+      }
+    }
+  }
+
+  return false; // No overlap found
+};

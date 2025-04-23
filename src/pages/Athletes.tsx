@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import AthleteFilter from "../components/AthleteFilter";
 import { athleteAgeRanges } from "../types/Athletes";
 import { useAthleteComparison } from "../contexts/AthleteComparisonContext";
+import { useBlur } from "../contexts/BlurContext";
 // New interface for filter state
 interface FilterState {
   age: string[];
@@ -24,7 +25,6 @@ function Athletes({
   isExpanded,
   animation,
   customNavigate,
-  onBlurChange,
 }: {
   isExpanded: boolean;
   animation: string;
@@ -33,9 +33,7 @@ function Athletes({
     page: string,
     nextPage: string
   ) => void;
-  onBlurChange: (isBlurred: boolean) => void;
 }) {
-  const [isBlurred, setIsBlurred] = useState(false);
   const [searchBarFocus, setSearchBarFocus] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [institutions, setInstitutions] = useState<string[]>([]);
@@ -56,6 +54,7 @@ function Athletes({
   const [keyToCompare, setKeyToCompare] = useState("");
 
   const navigate = useNavigate();
+  const { isBlurred, setIsBlurred } = useBlur();
 
   const user = {
     fullName: "Joaquin Berrini",
@@ -153,7 +152,6 @@ function Athletes({
   // Other handlers
   const handleFilter = () => {
     setIsBlurred(true);
-    onBlurChange(true);
   };
 
   const createAthlete = () => {
@@ -193,9 +191,9 @@ function Athletes({
     const athlete = loadedAthletes.find((athlete) => athlete[0] === key);
     if (athlete) {
       setAthlete(athlete[1]);
-      customNavigate("forward", "athletes", "athleteStudies");
+      customNavigate("forward", "athletes", "athleteMenu");
       setTimeout(() => {
-        navigate("/athleteStudies");
+        navigate("/athleteMenu");
       }, 300);
     }
   };
@@ -245,10 +243,10 @@ function Athletes({
 
   useEffect(() => {
     if (athleteToDelete.length) {
-      onBlurChange(true);
+      setIsBlurred(true);
       return;
     }
-    onBlurChange(false);
+    setIsBlurred(false);
   }, [athleteToDelete.length]);
 
   useEffect(() => {
@@ -433,7 +431,6 @@ function Athletes({
         <AthleteFilter
           onClose={() => {
             setIsBlurred(false);
-            onBlurChange(false);
           }}
           selectedFilters={selectedFilters}
           setSelectedFilters={setSelectedFilters}

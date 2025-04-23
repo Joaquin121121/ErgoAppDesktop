@@ -2,6 +2,7 @@
   "dashboard": "Inicio",
   "studies": "tests",
   "athletes": "atletas",
+  "library": "Biblioteca",
   "about": "info",
   "name": "nombre",
   "birthDate": "fecha de nacimiento",
@@ -79,5 +80,8 @@
   "years": "años",
   "heights": "Alturas",
   "maxAvgHeightReached": "Altura Máxima",
-  "multipleDropJump": "Drop Jump"
+  "multipleDropJump": "Drop Jump",
+  "testSession": "Sesión de Testing",
+  "trainingSession": "Sesión de Entrenamiento",
+  "competition": "Competencia"
 }

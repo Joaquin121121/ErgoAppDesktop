@@ -1,28 +1,28 @@
 import React, { useEffect, useState } from "react";
 
 function CalendarEvent({
-  eventType,
-  eventName,
-  athleteName,
+  event_type,
+  event_name,
+  athlete_name,
   onClick,
 }: {
-  eventType: "competition" | "trainingSession" | "testSession";
-  eventName: string;
-  athleteName: string;
+  event_type: "competition" | "trainingSession" | "testSession";
+  event_name: string;
+  athlete_name: string;
   onClick: () => void;
 }) {
   const [showIcon, setShowIcon] = useState(true);
 
   // Truncate event name if longer than 18 characters
   const displayName =
-    eventName.length > 18 ? `${eventName.substring(0, 15)}...` : eventName;
+    event_name.length > 18 ? `${event_name.substring(0, 15)}...` : event_name;
 
   useEffect(() => {
-    setShowIcon(eventName.length < 10);
-  }, [eventName]);
+    setShowIcon(event_name.length < 10);
+  }, [event_name]);
 
   const getEventColor = () => {
-    switch (eventType) {
+    switch (event_type) {
       case "competition":
         return "bg-[#FFd700]";
       case "trainingSession":
@@ -39,12 +39,12 @@ function CalendarEvent({
     >
       {showIcon && (
         <img
-          src={`/${eventType}.png`}
-          alt={eventType}
+          src={`/${event_type}.png`}
+          alt={event_type}
           className="w-5 h-5 mr-2 overflow-hidden"
         />
       )}
-      <p className="text-xs truncate" title={eventName}>
+      <p className="text-xs truncate" title={event_name}>
         {displayName}
       </p>
     </div>

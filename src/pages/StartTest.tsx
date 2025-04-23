@@ -8,6 +8,7 @@ import TestInProgress from "../components/TestInProgress";
 import { useTranslation } from "react-i18next";
 import { VALIDATION_LIMITS } from "../constants/data";
 import { MultipleDropJumpStudy } from "../types/Studies";
+import { useBlur } from "../contexts/BlurContext";
 
 const initialDropJumpHeights = [
   { cm: "20", ft: "0'8" },
@@ -21,13 +22,11 @@ const initialDropJumpHeights = [
 
 function StartTest({
   isExpanded,
-  onBlurChange,
   animation,
   customNavigate,
   setSelectedOption,
 }: {
   isExpanded: boolean;
-  onBlurChange: (isBlurred: boolean) => void;
   animation: string;
   customNavigate: (
     direction: "back" | "forward",
@@ -45,7 +44,8 @@ function StartTest({
     setSelectedAthletes,
   } = useStudyContext();
 
-  const [isBlurred, setIsBlurred] = useState(false);
+  const { isBlurred, setIsBlurred } = useBlur();
+  const [displayInfo, setDisplayInfo] = useState(false);
   const [testInProgress, setTestInProgress] = useState(false);
   const [noAthlete, setNoAthlete] = useState(false);
   const [prevHeight, setPrevHeight] = useState("");
@@ -79,12 +79,12 @@ function StartTest({
   };
 
   const showInfo = () => {
-    onBlurChange(true);
+    setDisplayInfo(true);
     setIsBlurred(true);
   };
 
   const hideInfo = () => {
-    onBlurChange(false);
+    setDisplayInfo(false);
     setIsBlurred(false);
   };
 
@@ -102,7 +102,7 @@ function StartTest({
       setStudy({ ...study, dropJumpHeights: selectedDropJumpHeights });
     }
 
-    onBlurChange(true);
+    setIsBlurred(true);
     setTestInProgress(true);
   };
 
@@ -702,19 +702,17 @@ function StartTest({
           containerStyles="self-center my-8"
         />
       </div>
-      {isBlurred && (
+      {displayInfo && (
         <div className="bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-8 flex flex-col items-center px-16 py-8">
           <div
             className="absolute top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
-            onClick={() => {
-              setIsBlurred(false);
-
-              onBlurChange(false);
-            }}
+            onClick={hideInfo}
           >
             <img src="/close.png" className="h-6 w-6" alt="" />
           </div>
-          <p className="self-center mt-8 text-xl">Qué es la sensibilidad?</p>
+          <p className="self-center mt-8 text-2xl text-secondary">
+            Qué es la sensibilidad?
+          </p>
           <p className=" mt-4">
             Valor expresado en milisegundos (ms) que establece el umbral mínimo
             de tiempo de vuelo que debe tener un salto para ser registrado.
@@ -747,7 +745,6 @@ function StartTest({
       {testInProgress && (
         <TestInProgress
           setTestInProgress={setTestInProgress}
-          onBlurChange={onBlurChange}
           customNavigate={customNavigate}
           tests={
             study.type === "bosco"

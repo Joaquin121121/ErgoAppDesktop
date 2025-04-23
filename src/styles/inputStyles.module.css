@@ -10,13 +10,18 @@
   }
 }
 
+.input:focus {
+  border: 0.5px solid #e81d23;
+  animation: glowEffect 1s ease-in-out;
+}
+
 .focused {
-  border: 1px solid #e81d23;
+  border: 0.5px solid #e81d23;
   animation: glowEffect 1s ease-in-out;
 }
 
 .input:focus {
   outline: #e81d23;
-  border: 1px solid #e81d23;
+  border: 0.5px solid #e81d23;
   animation: glowEffect 1s ease-in-out;
 }

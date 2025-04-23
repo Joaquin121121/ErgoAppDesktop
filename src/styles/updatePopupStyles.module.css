@@ -20,10 +20,28 @@
   }
 }
 
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 .fadeInRight {
   animation: fade-in-right 400ms forwards;
 }
 
 .fadeInLeft {
   animation: fade-in-right 400ms forwards;
+}
+
+.fadeOutRight {
+  animation: fade-out-right 300ms forwards;
+}
+
+.blink {
+  animation: blink 2s ease-in-out infinite;
 }

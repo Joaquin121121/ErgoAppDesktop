@@ -17,14 +17,13 @@ import HandleUpdate from "../components/HandleUpdate";
 import { check, Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { getVersion } from "@tauri-apps/api/app";
+import { useBlur } from "../contexts/BlurContext";
 
 function Studies({
-  onBlurChange,
   isExpanded,
   animation,
   customNavigate,
 }: {
-  onBlurChange: (isBlurred: boolean) => void;
   isExpanded: boolean;
   animation: string;
   customNavigate: (
@@ -37,6 +36,8 @@ function Studies({
 
   const { readDirectoryJsons, deleteJson } = useJsonFiles();
 
+  const { isBlurred, setIsBlurred } = useBlur();
+
   const { user } = useUser();
   const navigate = useNavigate();
 
@@ -45,7 +46,6 @@ function Studies({
 
   const [searchBarFocus, setSearchBarFocus] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isBlurred, setIsBlurred] = useState(false);
 
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [selectedStatsToMeasure, setSelectedStatsToMeasure] = useState<
@@ -96,7 +96,6 @@ function Studies({
     setSearchTerm("");
     updateOverlayPosition();
     setIsBlurred(true);
-    onBlurChange(true);
   };
 
   const createTest = () => {
@@ -154,10 +153,10 @@ function Studies({
 
   useEffect(() => {
     if (studyToDelete.length /* || !user.name.length */) {
-      onBlurChange(true);
+      setIsBlurred(true);
       return;
     }
-    onBlurChange(false);
+    setIsBlurred(false);
   }, [studyToDelete.length, user]);
 
   return (
@@ -225,7 +224,6 @@ function Studies({
           position={overlayPosition}
           onClose={() => {
             setIsBlurred(false);
-            onBlurChange(false);
           }}
           onReset={() => {
             setSelectedEquipment([]);
@@ -274,7 +272,6 @@ function Studies({
               }) as [keyof Studies, Study][]
             );
             setIsBlurred(false);
-            onBlurChange(false);
           }}
         />
       )}

@@ -13,14 +13,12 @@ import inputStyles from "../styles/inputStyles.module.css";
 import { availableEquipment } from "../types/Studies";
 import ReusableFilter from "../components/ReusableFilter";
 import { useUser } from "../contexts/UserContext";
-
+import { useBlur } from "../contexts/BlurContext";
 function About({
-  onBlurChange,
   isExpanded,
   animation,
   customNavigate,
 }: {
-  onBlurChange: (isBlurred: boolean) => void;
   isExpanded: boolean;
   animation: string;
   customNavigate: (
@@ -41,7 +39,7 @@ function About({
 
   const [searchBarFocus, setSearchBarFocus] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isBlurred, setIsBlurred] = useState(false);
+  const { isBlurred, setIsBlurred } = useBlur();
 
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [selectedStatsToMeasure, setSelectedStatsToMeasure] = useState<
@@ -92,7 +90,6 @@ function About({
     setSearchTerm("");
     updateOverlayPosition();
     setIsBlurred(true);
-    onBlurChange(true);
   };
 
   // Add a function to calculate position
@@ -199,7 +196,6 @@ function About({
           position={overlayPosition}
           onClose={() => {
             setIsBlurred(false);
-            onBlurChange(false);
           }}
           onReset={() => {
             setSelectedEquipment([]);
@@ -248,7 +244,6 @@ function About({
               }) as [keyof Studies, Study][]
             );
             setIsBlurred(false);
-            onBlurChange(false);
           }}
         />
       )}

@@ -5,6 +5,7 @@ import TonalButton from "../components/TonalButton";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { naturalToCamelCase } from "../utils/utils";
 import inputStyles from "../styles/inputStyles.module.css";
+import { useBlur } from "../contexts/BlurContext";
 
 function NewTest({
   isExpanded,
@@ -21,7 +22,7 @@ function NewTest({
 }) {
   const { saveJson, readDirectoryJsons } = useJsonFiles();
   const navigate = useNavigate();
-  const [isBlurred, setIsBlurred] = useState(false);
+  const { isBlurred, setIsBlurred } = useBlur();
   const [newStudy, setNewStudy] = useState<NewStudy>({
     name: "",
     description: "",

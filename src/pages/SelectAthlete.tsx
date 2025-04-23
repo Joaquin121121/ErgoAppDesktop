@@ -76,9 +76,12 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     { name: "Otro", isoCode: "O" },
   ];
 
-  const filteredAthletes = loadedAthletes.filter((athlete) =>
-    athlete.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredAthletes =
+    searchTerm.trim() === ""
+      ? loadedAthletes
+      : loadedAthletes.filter((athlete) =>
+          athlete.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
 
   const handleAthleteSelect = (selectedAthlete) => {
     if (
@@ -646,7 +649,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                 />
               </div>
 
-              {showDropdown && searchTerm && (
+              {showDropdown && (
                 <div
                   ref={dropdownRef}
                   className="absolute w-full mt-2 bg-white rounded-lg shadow-lg max-h-64 overflow-y-auto z-50"
@@ -673,7 +676,9 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                     ))
                   ) : (
                     <div className="px-4 py-2 text-darkGray">
-                      No hay ningun atleta de nombre '{searchTerm}'
+                      {searchTerm
+                        ? `No hay ningun atleta de nombre '${searchTerm}'`
+                        : "No hay atletas disponibles"}
                     </div>
                   )}
                 </div>
