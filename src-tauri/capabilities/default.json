@@ -3,5 +3,11 @@
   "identifier": "default",
   "description": "enables the default permissions",
   "windows": ["main"],
-  "permissions": ["core:default", "updater:default"]
+  "permissions": [
+    "core:default",
+    "updater:default",
+    "core:window:allow-maximize",
+    "core:window:allow-set-resizable",
+    "core:window:allow-set-maximizable"
+  ]
 }

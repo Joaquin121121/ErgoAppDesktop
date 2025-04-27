@@ -18,8 +18,7 @@ import OutlinedButton from "./components/OutlinedButton";
 import UpdateChecker from "./components/UpdateChecker";
 import ConnectionStatus from "./components/ConnectionStatus";
 import { Window } from "@tauri-apps/api/window";
-import { User } from "./types/User";
-import { UserProvider } from "./contexts/UserContext";
+import { UserProvider, useUser } from "./contexts/UserContext";
 import StudyInfo from "./pages/StudyInfo";
 import CompletedStudyInfo from "./pages/CompletedStudyInfo";
 import CompareTwoStudies from "./pages/CompareTwoStudies";
@@ -37,6 +36,9 @@ import { supabase } from "./supabase";
 import Library from "./pages/Library";
 import AthleteMenu from "./pages/AthleteMenu";
 import TrainingMenu from "./pages/TrainingMenu";
+import { NewPlanProvider } from "./contexts/NewPlanContext";
+import LoginPage from "./pages/LoginPage";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
@@ -94,15 +96,6 @@ const WithLayout = ({
             )}
           </div>
         ))}
-
-        <img
-          className={`absolute h-36 w-18 bottom-8 transition-all duration-300 ease-in-out`}
-          style={{
-            left: isExpanded ? "58px" : "16px",
-          }}
-          src="/lucy.png"
-          alt="test"
-        />
       </nav>
       <main className="flex-1 h-full">{children}</main>
     </div>
@@ -116,6 +109,8 @@ function App() {
   const [isBlockingClicks, setIsBlockingClicks] = useState(false);
   const [showUpdate, setShowUpdate] = useState(false);
   const [hasGlobalError, setHasGlobalError] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   const appWindow = Window.getCurrent();
   const keys = [
     "dashboard",
@@ -151,6 +146,7 @@ function App() {
   const handleError = () => {
     setHasGlobalError(true);
   };
+
   const handleErrorReset = () => {
     setHasGlobalError(false);
     setSelectedOption("studies");
@@ -375,6 +371,37 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    // Check if there is a current session
+    const checkAuthStatus = async () => {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Error getting session:", error);
+        setIsLoggedIn(false);
+      } else if (session) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, [isLoggedIn]);
+
+  if (!isLoggedIn) {
+    return (
+      <UserProvider>
+        <LoginPage />
+      </UserProvider>
+    );
+  } else {
+    const window = getCurrentWindow();
+    window.maximize();
+  }
+
   if (hasGlobalError) {
     // In case of a global error, render just the error page without layout
     return (
@@ -393,163 +420,165 @@ function App() {
       </HashRouter>
     );
   }
-  if (!isMaximized) {
-    return (
-      <div className="w-[100vw] h-[100vh] flex flex-col items-center justify-center bg-secondary overflow-hidden">
-        <img className="w-1/2 h-1/2 object-contain" src="/splash.png" />
-        <p className="text-2xl text-offWhite mt-8">
-          Maximice la ventana para usar la app
-        </p>
-      </div>
-    );
-  }
 
   return (
-    <AthleteComparisonProvider>
-      <NewEventProvider>
-        <UserProvider>
-          <BlurProvider>
-            <CalendarProvider>
-              <HashRouter>
-                <UpdateChecker
-                  showUpdate={showUpdate}
-                  setShowUpdate={setShowUpdate}
-                />
-                <ConnectionStatus showUpdate={showUpdate} />
-                {isBlockingClicks && (
-                  <div
-                    style={{
-                      position: "fixed",
-                      top: 0,
-                      left: 0,
-                      width: "100vw",
-                      height: "100vh",
-                      background: "transparent",
-                      zIndex: 9999,
-                    }}
-                  />
-                )}
-
-                <Routes>
-                  <Route
-                    path="/error"
-                    element={
-                      <ErrorPage
-                        onReset={handleErrorReset}
-                        customNavigate={customNavigate}
+    <UserProvider>
+      <AthleteComparisonProvider>
+        <NewEventProvider>
+          <NewPlanProvider>
+            <UserProvider>
+              <BlurProvider>
+                <CalendarProvider>
+                  <HashRouter>
+                    <UpdateChecker
+                      showUpdate={showUpdate}
+                      setShowUpdate={setShowUpdate}
+                    />
+                    <ConnectionStatus showUpdate={showUpdate} />
+                    {isBlockingClicks && (
+                      <div
+                        style={{
+                          position: "fixed",
+                          top: 0,
+                          left: 0,
+                          width: "100vw",
+                          height: "100vh",
+                          background: "transparent",
+                          zIndex: 9999,
+                        }}
                       />
-                    }
-                  />
-                  <Route
-                    path="*"
-                    element={
-                      <WithLayout
-                        isExpanded={isExpanded}
-                        setIsExpanded={setIsExpanded}
-                        resetAnimations={resetAnimations}
-                        selectedOption={selectedOption}
-                        setSelectedOption={setSelectedOption}
-                      >
-                        <ErrorBoundary
-                          onError={handleError}
-                          onReset={handleErrorReset}
-                          fallback={<Navigate to="/error" replace />}
-                        >
-                          <Routes>
-                            <Route
-                              path="/"
-                              element={getPageComponent("studies")}
-                            />
-                            <Route
-                              path="/studies"
-                              element={getPageComponent("studies")}
-                            />
-                            <Route
-                              path="/athletes"
-                              element={getPageComponent("athletes")}
-                            />
-                            <Route
-                              path="/library"
-                              element={getPageComponent("library")}
-                            />
-                            <Route
-                              path="/about"
-                              element={getPageComponent("about")}
-                            />
-                            <Route
-                              path="/startTest"
-                              element={getPageComponent("startTest")}
-                            />
-                            <Route
-                              path="/newTest"
-                              element={getPageComponent("newTest")}
-                            />
-                            <Route
-                              path="/selectAthlete"
-                              element={getPageComponent("selectAthlete")}
-                            />
-                            <Route
-                              path="/newAthlete"
-                              element={getPageComponent("newAthlete")}
-                            />
-                            <Route
-                              path="/athleteMenu"
-                              element={getPageComponent("athleteMenu")}
-                            />
-                            <Route
-                              path="/athleteStudies"
-                              element={getPageComponent("athleteStudies")}
-                            />
-                            <Route
-                              path="/studyInfo"
-                              element={getPageComponent("studyInfo")}
-                            />
-                            <Route
-                              path="/completedStudyInfo"
-                              element={getPageComponent("completedStudyInfo")}
-                            />
-                            <Route
-                              path="/compareTwoStudies"
-                              element={getPageComponent("compareTwoStudies")}
-                            />
-                            <Route
-                              path="/compareThreeStudies"
-                              element={getPageComponent("compareThreeStudies")}
-                            />
-                            <Route
-                              path="/compareTwoAthletes"
-                              element={getPageComponent("compareTwoAthletes")}
-                            />
-                            <Route
-                              path="/completedStudyDashboard"
-                              element={getPageComponent(
-                                "completedStudyDashboard"
-                              )}
-                            />
-                            <Route
-                              path="/trainingMenu"
-                              element={getPageComponent("trainingMenu")}
-                            />
-                            <Route
-                              path="/dashboard"
-                              element={getPageComponent("dashboard")}
-                            />
-                            <Route
-                              path="*"
-                              element={getPageComponent("notFound")}
-                            />
-                          </Routes>
-                        </ErrorBoundary>
-                      </WithLayout>
-                    }
-                  />
-                </Routes>
-              </HashRouter>
-            </CalendarProvider>
-          </BlurProvider>
-        </UserProvider>
-      </NewEventProvider>
-    </AthleteComparisonProvider>
+                    )}
+
+                    <Routes>
+                      <Route
+                        path="/error"
+                        element={
+                          <ErrorPage
+                            onReset={handleErrorReset}
+                            customNavigate={customNavigate}
+                          />
+                        }
+                      />
+                      <Route
+                        path="*"
+                        element={
+                          <WithLayout
+                            isExpanded={isExpanded}
+                            setIsExpanded={setIsExpanded}
+                            resetAnimations={resetAnimations}
+                            selectedOption={selectedOption}
+                            setSelectedOption={setSelectedOption}
+                          >
+                            <ErrorBoundary
+                              onError={handleError}
+                              onReset={handleErrorReset}
+                              fallback={<Navigate to="/error" replace />}
+                            >
+                              <Routes>
+                                <Route
+                                  path="/"
+                                  element={getPageComponent("studies")}
+                                />
+                                <Route
+                                  path="/studies"
+                                  element={getPageComponent("studies")}
+                                />
+                                <Route
+                                  path="/athletes"
+                                  element={getPageComponent("athletes")}
+                                />
+                                <Route
+                                  path="/library"
+                                  element={getPageComponent("library")}
+                                />
+                                <Route
+                                  path="/about"
+                                  element={getPageComponent("about")}
+                                />
+                                <Route
+                                  path="/startTest"
+                                  element={getPageComponent("startTest")}
+                                />
+                                <Route
+                                  path="/newTest"
+                                  element={getPageComponent("newTest")}
+                                />
+                                <Route
+                                  path="/selectAthlete"
+                                  element={getPageComponent("selectAthlete")}
+                                />
+                                <Route
+                                  path="/newAthlete"
+                                  element={getPageComponent("newAthlete")}
+                                />
+                                <Route
+                                  path="/athleteMenu"
+                                  element={getPageComponent("athleteMenu")}
+                                />
+                                <Route
+                                  path="/athleteStudies"
+                                  element={getPageComponent("athleteStudies")}
+                                />
+                                <Route
+                                  path="/studyInfo"
+                                  element={getPageComponent("studyInfo")}
+                                />
+                                <Route
+                                  path="/completedStudyInfo"
+                                  element={getPageComponent(
+                                    "completedStudyInfo"
+                                  )}
+                                />
+                                <Route
+                                  path="/compareTwoStudies"
+                                  element={getPageComponent(
+                                    "compareTwoStudies"
+                                  )}
+                                />
+                                <Route
+                                  path="/compareThreeStudies"
+                                  element={getPageComponent(
+                                    "compareThreeStudies"
+                                  )}
+                                />
+                                <Route
+                                  path="/compareTwoAthletes"
+                                  element={getPageComponent(
+                                    "compareTwoAthletes"
+                                  )}
+                                />
+                                <Route
+                                  path="/completedStudyDashboard"
+                                  element={getPageComponent(
+                                    "completedStudyDashboard"
+                                  )}
+                                />
+                                <Route
+                                  path="/trainingMenu"
+                                  element={getPageComponent("trainingMenu")}
+                                />
+                                <Route
+                                  path="/dashboard"
+                                  element={getPageComponent("dashboard")}
+                                />
+                                <Route
+                                  path="*"
+                                  element={getPageComponent("notFound")}
+                                />
+                              </Routes>
+                            </ErrorBoundary>
+                          </WithLayout>
+                        }
+                      />
+                    </Routes>
+                  </HashRouter>
+                </CalendarProvider>
+              </BlurProvider>
+            </UserProvider>
+          </NewPlanProvider>
+        </NewEventProvider>
+      </AthleteComparisonProvider>
+    </UserProvider>
   );
 }
 

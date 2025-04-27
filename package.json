@@ -20,6 +20,7 @@
     "@supabase/supabase-js": "^2.49.4",
     "@tauri-apps/plugin-process": "^2.2.0",
     "@tauri-apps/plugin-shell": "^2.2.0",
+    "@tauri-apps/plugin-sql": "^2.2.0",
     "@tauri-apps/plugin-updater": "^2.5.0",
     "country-state-city": "^3.2.1",
     "date-fns": "^4.1.0",

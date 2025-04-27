@@ -55,7 +55,7 @@ function AthleteCard({
               {t(athlete.discipline)}
             </span>
           </p>
-          <p className="text-lg text-darkGray mt-4">
+          <p className="text-lg text-darkGray mt-4 ">
             -Categoría:{" "}
             <span className="text-tertiary font-medium">
               {athlete.category}

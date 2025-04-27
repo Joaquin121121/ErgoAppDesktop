@@ -24,6 +24,9 @@ const SeamlessLoopPlayer = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [videoMeta, setVideoMeta] = useState({ duration: 0, loaded: false });
   const [activeIndex, setActiveIndex] = useState(1);
+  const [previousActiveIndex, setPreviousActiveIndex] = useState<number | null>(
+    null
+  );
   const scheduleTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for the scheduling timeout
 
   // Set up video elements and metadata
@@ -119,6 +122,9 @@ const SeamlessLoopPlayer = ({
         nextVideo
           .play()
           .catch((e) => console.error("Failed to play next video:", e));
+
+        // Store previous active index before changing to the next
+        setPreviousActiveIndex(activeIndex);
         setActiveIndex(nextIndex);
       }
     }, Math.max(0, delayMs)); // Ensure delay is not negative
@@ -177,7 +183,11 @@ const SeamlessLoopPlayer = ({
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          opacity: activeIndex === 1 ? 1 : 0,
+          opacity:
+            activeIndex === 1 ||
+            (previousActiveIndex === 1 && timeBetweenReplays > 0)
+              ? 1
+              : 0,
         }}
       />
 
@@ -194,7 +204,11 @@ const SeamlessLoopPlayer = ({
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          opacity: activeIndex === 2 ? 1 : 0,
+          opacity:
+            activeIndex === 2 ||
+            (previousActiveIndex === 2 && timeBetweenReplays > 0)
+              ? 1
+              : 0,
         }}
       />
 
@@ -211,7 +225,11 @@ const SeamlessLoopPlayer = ({
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          opacity: activeIndex === 3 ? 1 : 0,
+          opacity:
+            activeIndex === 3 ||
+            (previousActiveIndex === 3 && timeBetweenReplays > 0)
+              ? 1
+              : 0,
         }}
       />
     </div>

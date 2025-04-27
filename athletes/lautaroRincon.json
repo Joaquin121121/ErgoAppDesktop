@@ -1,0 +1,96 @@
+{
+  "birthDate": "2025-02-21T00:30:16.628Z",
+  "category": "Primera",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-02-21T00:55:52.532Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.5750000000000001,
+          "avgHeightReached": 40.54289062500001,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.558
+            },
+            {
+              "deleted": false,
+              "time": 0.558
+            },
+            {
+              "deleted": false,
+              "time": 0.609
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.557,
+          "avgHeightReached": 38.044283625000006,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.558
+            },
+            {
+              "deleted": false,
+              "time": 0.556
+            },
+            {
+              "deleted": false,
+              "time": 0.557
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.5322500000000001,
+          "avgHeightReached": 34.738443914062515,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.558
+            },
+            {
+              "deleted": false,
+              "time": 0.506
+            },
+            {
+              "deleted": false,
+              "time": 0.507
+            },
+            {
+              "deleted": false,
+              "time": 0.558
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "basketball",
+  "gender": "M",
+  "height": "175",
+  "heightUnit": "cm",
+  "institution": "Las Palmas",
+  "name": "Lautaro Rincon",
+  "state": "X",
+  "weight": "95",
+  "weightUnit": "kgs"
+}

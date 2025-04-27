@@ -7,7 +7,7 @@ interface AccordionItemProps {
   isExpanded: boolean;
   onToggle: () => void;
   children: React.ReactNode;
-  showButton?: () => void;
+  showPapers?: () => void;
   managePlan?: () => void;
 }
 
@@ -16,7 +16,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
   isExpanded,
   onToggle,
   children,
-  showButton,
+  showPapers,
   managePlan,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -93,19 +93,27 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
       >
         <div className="px-8 py-4 min-w-[300px] w-full whitespace-normal">
           {children}
-          {showButton && (
-            <div className="flex justify-around w-full mt-6">
-              <OutlinedButton
-                title="Ver Papers"
-                icon="test"
-                onClick={showButton}
-                containerStyles="self-center"
-              />
-              <TonalButton
-                title="Gestionar Plan"
-                icon="plan"
-                onClick={managePlan}
-              />
+          {(showPapers || managePlan) && (
+            <div
+              className={`flex ${
+                showPapers && managePlan ? "justify-around" : "justify-center"
+              } w-full mt-6`}
+            >
+              {showPapers && (
+                <OutlinedButton
+                  title="Ver Papers"
+                  icon="test"
+                  onClick={showPapers}
+                  containerStyles="self-center"
+                />
+              )}
+              {managePlan && (
+                <TonalButton
+                  title="Gestionar Plan"
+                  icon="plan"
+                  onClick={managePlan}
+                />
+              )}
             </div>
           )}
         </div>
@@ -120,16 +128,32 @@ interface CustomAccordionProps {
     content: React.ReactNode;
   }[];
   initialExpandedIndex?: number;
-  showButton?: () => void;
+  showPapers?: () => void;
+  managePlan?: () => void;
+  collapseAccordion?: boolean;
+  onCollapseComplete?: () => void;
 }
 
 const CustomAccordion: React.FC<CustomAccordionProps> = ({
   items,
   initialExpandedIndex = 0,
-  showButton,
+  showPapers,
+  managePlan,
+  collapseAccordion = false,
+  onCollapseComplete,
 }) => {
   const [expandedIndex, setExpandedIndex] =
     useState<number>(initialExpandedIndex);
+
+  useEffect(() => {
+    if (collapseAccordion) {
+      setExpandedIndex(-1);
+      // Notify parent that collapsing is complete
+      if (onCollapseComplete) {
+        onCollapseComplete();
+      }
+    }
+  }, [collapseAccordion, onCollapseComplete]);
 
   const handleToggle = (index: number) => {
     setExpandedIndex(expandedIndex === index ? -1 : index);
@@ -143,7 +167,8 @@ const CustomAccordion: React.FC<CustomAccordionProps> = ({
           title={item.title}
           isExpanded={expandedIndex === index}
           onToggle={() => handleToggle(index)}
-          showButton={showButton}
+          showPapers={showPapers}
+          managePlan={managePlan}
         >
           {item.content}
         </AccordionItem>

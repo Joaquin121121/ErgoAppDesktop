@@ -437,7 +437,7 @@ function EventInfoModal({
 
   return (
     <div
-      className={`flex flex-col items-center absolute top-8 left-1/2 -translate-x-1/2 z-50 shadow-sm bg-white rounded-2xl w-2/5 ${animation}`}
+      className={`flex flex-col items-center absolute top-8 left-1/2 -translate-x-1/2 z-50 shadow-sm bg-white rounded-2xl w-1/2 ${animation}`}
     >
       <div
         className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"

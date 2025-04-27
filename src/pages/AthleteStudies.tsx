@@ -42,10 +42,10 @@ function AthleteStudies({
   const { isBlurred, setIsBlurred } = useBlur();
   const { saveJson } = useJsonFiles();
 
-  const onClose = () => {
-    customNavigate("back", "athleteStudies", "athletes");
+  const onClose = async () => {
+    customNavigate("back", "athleteStudies", "athleteMenu");
     setTimeout(() => {
-      navigate("/athletes");
+      navigate("/athleteMenu");
     }, 300);
   };
 

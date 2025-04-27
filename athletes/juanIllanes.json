@@ -1,0 +1,112 @@
+{
+  "birthDate": "2025-02-21T00:30:16.628Z",
+  "category": "Primera",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-02-21T00:44:53.861Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.24171428571428571,
+          "avgHeightReached": 7.164463224489796,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.205
+            },
+            {
+              "deleted": false,
+              "time": 0.408
+            },
+            {
+              "deleted": false,
+              "time": 0.055
+            },
+            {
+              "deleted": false,
+              "time": 0.407
+            },
+            {
+              "deleted": false,
+              "time": 0.103
+            },
+            {
+              "deleted": false,
+              "time": 0.459
+            },
+            {
+              "deleted": false,
+              "time": 0.055
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.406,
+          "avgHeightReached": 20.2130145,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.406
+            },
+            {
+              "deleted": false,
+              "time": 0.406
+            },
+            {
+              "deleted": false,
+              "time": 0.406
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.29425,
+          "avgHeightReached": 10.6172480390625,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.355
+            },
+            {
+              "deleted": false,
+              "time": 0.054
+            },
+            {
+              "deleted": false,
+              "time": 0.41
+            },
+            {
+              "deleted": false,
+              "time": 0.358
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "basketball",
+  "gender": "M",
+  "height": "182",
+  "heightUnit": "cm",
+  "institution": "Las Palmas",
+  "name": "Juan Illanes",
+  "state": "X",
+  "weight": "115",
+  "weightUnit": "kgs"
+}

@@ -73,6 +73,14 @@
   }
 }
 
+@keyframes fade-out {
+  0% {
+    opacity: 100%;
+  }
+  100% {
+    opacity: 0%;
+  }
+}
 .fadeInLeft {
   animation: fade-in-left 200ms ease forwards;
 }
@@ -98,5 +106,9 @@
 }
 
 .fadeIn {
-  animation: fade-in 1000ms ease forwards;
+  animation: fade-in 300ms ease forwards;
+}
+
+.fadeOut {
+  animation: fade-out 300ms ease forwards;
 }

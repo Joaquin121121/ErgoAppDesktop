@@ -14,7 +14,7 @@ import { useCalendar } from "../contexts/CalendarContext";
 import { useNewEvent } from "../contexts/NewEventContext";
 import styles from "../styles/animations.module.css";
 import { useNavigate } from "react-router-dom";
-
+import { useUser } from "../contexts/UserContext";
 // Define the specific event types
 type EventType = "competition" | "trainingSession" | "testSession";
 
@@ -30,6 +30,7 @@ function AddEventModal({
   ) => void;
 }) {
   const { selectedDate, addEvent, isOnline } = useCalendar();
+  const { user } = useUser();
   const {
     formState,
     updateEventName,
@@ -243,11 +244,11 @@ function AddEventModal({
       const newEvent = {
         event_name: formState.eventName.value,
         event_type: formState.eventType.value as EventType,
-        athlete_name: formState.selectedAthleteName.value,
         event_date: eventDateString,
         duration: parseFloat(formState.duration.value),
-        coach_id: 1,
+        coach_id: user.id,
         last_changed: new Date(),
+        athlete_id: "1",
       };
 
       // Use the context's addEvent function instead of direct Supabase call
@@ -294,7 +295,7 @@ function AddEventModal({
 
   return (
     <div
-      className={`flex flex-col items-center absolute top-8 left-1/2 -translate-x-1/2 z-50 shadow-sm bg-white rounded-2xl w-2/5 ${animation}`}
+      className={`flex flex-col items-center absolute top-8 left-1/2 -translate-x-1/2 z-50 shadow-sm bg-white rounded-2xl w-1/2 ${animation}`}
     >
       <div
         className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
@@ -364,6 +365,8 @@ function AddEventModal({
                   inputStyles.focused
                 }`}
               >
+                <img src="/search.png" className="h-6 w-6 mr-2" alt="Search" />
+
                 <input
                   type="text"
                   ref={searchInputRef}

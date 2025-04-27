@@ -42,7 +42,7 @@ interface CalendarContextType {
   setEvents: (events: CalendarEvent[]) => void;
   addEvent: (event: Omit<CalendarEvent, "id">) => Promise<void>;
   updateEvent: (event: CalendarEvent) => Promise<void>;
-  deleteEvent: (id: number) => Promise<void>;
+  deleteEvent: (id: string | number) => Promise<void>;
   isOnline: boolean;
   pendingSyncCount: number;
   // Add change listener functions
@@ -524,7 +524,7 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
 
             // Extract only valid fields for the database
             const {
-              coach_id = 1, // Default coach_id to 1 if not provided
+              coach_id = "1", // Default coach_id to "1" if not provided
               event_type,
               event_name,
               athlete_name,
@@ -839,12 +839,12 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
 
       // Extract only valid fields for the insert
       const {
-        coach_id = 1, // Default coach_id to 1 if not provided
+        coach_id = "1", // Default coach_id to "1" if not provided
         event_type,
         event_name,
-        athlete_name,
         event_date,
         duration,
+        athlete_id = "1",
       } = event;
 
       // Create clean data with only valid fields
@@ -852,10 +852,10 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
         coach_id,
         event_type,
         event_name,
-        athlete_name,
         event_date,
         duration,
         last_changed: timestamp,
+        athlete_id,
       };
 
       // Generate a temporary unique ID for optimistic updates
@@ -948,9 +948,9 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
         coach_id,
         event_type,
         event_name,
-        athlete_name,
         event_date,
         duration,
+        athlete_id,
       } = event;
 
       // Only include fields that exist in the database
@@ -958,10 +958,10 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
         coach_id,
         event_type,
         event_name,
-        athlete_name,
         event_date,
         duration,
         last_changed: timestamp,
+        athlete_id,
       };
 
       // Optimistically update UI
@@ -1044,7 +1044,7 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
 
   // Delete an event
   const deleteEvent = useCallback(
-    async (id: number) => {
+    async (id: string | number) => {
       // Optimistically update UI
       setEventsState((prev) => {
         const filtered = prev.filter((e) => e.id !== id);

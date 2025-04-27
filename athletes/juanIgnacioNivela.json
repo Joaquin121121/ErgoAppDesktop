@@ -1,0 +1,100 @@
+{
+  "birthDate": "2025-02-21T00:30:16.628Z",
+  "category": "Primera",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-02-21T01:14:57.085Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.6455000000000001,
+          "avgHeightReached": 51.09418940625001,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.558
+            },
+            {
+              "deleted": false,
+              "time": 0.658
+            },
+            {
+              "deleted": false,
+              "time": 0.81
+            },
+            {
+              "deleted": false,
+              "time": 0.556
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.4195,
+          "avgHeightReached": 21.579578156250005,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.054
+            },
+            {
+              "deleted": false,
+              "time": 0.508
+            },
+            {
+              "deleted": false,
+              "time": 0.558
+            },
+            {
+              "deleted": false,
+              "time": 0.558
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.525,
+          "avgHeightReached": 33.798515625,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.507
+            },
+            {
+              "deleted": false,
+              "time": 0.508
+            },
+            {
+              "deleted": false,
+              "time": 0.56
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "basketball",
+  "gender": "M",
+  "height": "185",
+  "heightUnit": "cm",
+  "institution": "Las Palmas",
+  "name": "Juan Ignacio Nivela",
+  "state": "X",
+  "weight": "81",
+  "weightUnit": "kgs"
+}

@@ -1,0 +1,99 @@
+{
+  "birthDate": "2008-07-17T00:00:00.000Z",
+  "category": "1",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-03-21T13:12:58.762Z",
+      "results": {
+        "avgFlightTime": 0.4226666666666667,
+        "avgHeightReached": 21.906602000000003,
+        "load": 0,
+        "loadUnit": "kgs",
+        "sensitivity": 100,
+        "takeoffFoot": "both",
+        "times": [
+          {
+            "deleted": false,
+            "performance": 91.95,
+            "stiffness": null,
+            "time": 0.4
+          },
+          {
+            "deleted": false,
+            "performance": 99.54,
+            "stiffness": null,
+            "time": 0.433
+          },
+          {
+            "deleted": false,
+            "performance": 100,
+            "stiffness": null,
+            "time": 0.435
+          }
+        ],
+        "type": "cmj"
+      },
+      "studyInfo": {
+        "description": "Salto en Movimiento",
+        "name": "CMJ",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    },
+    {
+      "date": "2025-03-21T13:15:28.877Z",
+      "results": {
+        "avgFlightTime": 0.48933333333333334,
+        "avgHeightReached": 29.362202000000003,
+        "load": 0,
+        "loadUnit": "kgs",
+        "sensitivity": 100,
+        "takeoffFoot": "both",
+        "times": [
+          {
+            "deleted": false,
+            "performance": 99.8,
+            "stiffness": null,
+            "time": 0.5
+          },
+          {
+            "deleted": false,
+            "performance": 100,
+            "stiffness": null,
+            "time": 0.501
+          },
+          {
+            "deleted": false,
+            "performance": 93.21,
+            "stiffness": null,
+            "time": 0.467
+          }
+        ],
+        "type": "squatJump"
+      },
+      "studyInfo": {
+        "description": "Salto de Sentadilla",
+        "name": "Squat Jump",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "football",
+  "gender": "M",
+  "height": "167",
+  "heightUnit": "cm",
+  "institution": "IACC",
+  "name": "Anibal",
+  "state": "X",
+  "weight": "67",
+  "weightUnit": "kgs"
+}

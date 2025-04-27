@@ -3,15 +3,21 @@ import {
   AbalakovResult,
   boscoTests,
   CMJResult,
+  BoscoResult,
+  CompletedStudy,
   MultipleDropJumpResult,
   MultipleJumpsResult,
   SquatJumpResult,
 } from "../types/Studies";
 
 const assessArmSwingContribution = (
-  cmj: CMJResult,
-  abalakov: AbalakovResult
+  cmj: CMJResult | undefined,
+  abalakov: AbalakovResult | undefined
 ) => {
+  console.log("tryinng");
+  if (!cmj || !abalakov) {
+    return;
+  }
   const avgDiff = abalakov.avgFlightTime - cmj.avgFlightTime;
 
   if (avgDiff <= 10) {
@@ -29,7 +35,13 @@ const assessArmSwingContribution = (
   }
 };
 
-const assessECR = (cmj: CMJResult, squatJump: SquatJumpResult) => {
+const assessECR = (
+  cmj: CMJResult | undefined,
+  squatJump: SquatJumpResult | undefined
+) => {
+  if (!cmj || !squatJump) {
+    return;
+  }
   const ECR = (1 - squatJump.avgHeightReached / cmj.avgHeightReached) * 100;
 
   if (ECR < 10) {
@@ -74,9 +86,12 @@ const assessECR = (cmj: CMJResult, squatJump: SquatJumpResult) => {
 };
 
 const assessDropJumpHeight = (
-  cmj: CMJResult,
-  multipleDropJump: MultipleDropJumpResult
+  cmj: CMJResult | undefined,
+  multipleDropJump: MultipleDropJumpResult | undefined
 ) => {
+  if (!cmj || !multipleDropJump) {
+    return;
+  }
   if (parseFloat(multipleDropJump.bestHeight) > cmj.avgHeightReached) {
     return {
       title: "Entrenar con drop jump",
@@ -98,7 +113,10 @@ const assessDropJumpHeight = (
   }
 };
 
-const assessRSI = (multipleJumpsTest: MultipleJumpsResult) => {
+const assessRSI = (multipleJumpsTest: MultipleJumpsResult | undefined) => {
+  if (!multipleJumpsTest) {
+    return;
+  }
   const rsi =
     Math.floor(
       (multipleJumpsTest.avgFlightTime / multipleJumpsTest.avgFloorTime) * 100
@@ -189,69 +207,78 @@ const assessRSI = (multipleJumpsTest: MultipleJumpsResult) => {
   }
 };
 
-export const trainingSolutions = (date: Date) => {
-  const { athlete } = useStudyContext();
-  const study = athlete.completedStudies.find((study) => study.date === date);
+// Note: For solutions infered from a test within a Bosco test, the bosco test data is included in the comparedStudies object, with an additional 'results' key for the relevant test result
 
-  const relevantComparisons = {
-    cmj: ["squatJump", "abalakov", "dropJump"],
-    squatJump: ["cmj"],
-    abalakov: ["cmj"],
-    dropJump: ["cmj"],
-  };
+export const parseTrainingSolutions = (date: Date) => {
+  const { athlete } = useStudyContext();
+  const study = athlete.completedStudies.find(
+    (study) => study.date === date.toISOString()
+  );
+
+  if (!study) return [];
 
   const studiesToCompare = [
     "cmj",
     "squatJump",
     "abalakov",
     "multipleDropJump",
-    "multipleJump",
-  ].filter((studyType) => studyType !== study.results.type);
+    "multipleJumps",
+  ].filter((studyType) => studyType !== study.results?.type);
 
-  let relevantStudies = studiesToCompare.reduce((acc, study) => {
+  let relevantStudies = studiesToCompare.reduce((acc, studyType) => {
     const mostRecentStudyOfType = athlete.completedStudies.find(
-      (completedStudy) => completedStudy.results.type === study
+      (completedStudy) => completedStudy.results?.type === studyType
     );
     if (!mostRecentStudyOfType) {
       return acc;
     }
     return {
       ...acc,
-      [study]: mostRecentStudyOfType,
+      [studyType]: mostRecentStudyOfType,
     };
   }, {});
 
   const latestBosco = athlete.completedStudies.find(
-    (study) => study.results.type === "bosco"
+    (study) => study.results?.type === "bosco"
   );
-
-  boscoTests.forEach((boscoTest) => {
-    if (
-      !relevantStudies[boscoTest] ||
-      latestBosco.date > relevantStudies[boscoTest].date
-    ) {
-      relevantStudies[boscoTest] = latestBosco.results[boscoTest];
-    }
-  });
+  if (latestBosco) {
+    boscoTests.forEach((boscoTest) => {
+      if (
+        !relevantStudies[boscoTest] ||
+        latestBosco.date > relevantStudies[boscoTest]?.date
+      ) {
+        relevantStudies[boscoTest] = {
+          ...latestBosco,
+          results: latestBosco.results?.[boscoTest],
+        };
+      }
+    });
+  }
 
   let trainingSolutions = [];
   let armSwingContribution;
   let ecr;
   let dropJumpHeight;
   let rsi;
+
+  if (!study.results) return [];
+
   switch (study.results.type) {
     case "cmj":
       armSwingContribution =
         relevantStudies["abalakov"] &&
-        assessArmSwingContribution(study.results, relevantStudies["abalakov"]);
+        assessArmSwingContribution(
+          study.results,
+          relevantStudies["abalakov"]?.results
+        );
       ecr =
         relevantStudies["squatJump"] &&
-        assessECR(study.results, relevantStudies["squatJump"]);
+        assessECR(study.results, relevantStudies["squatJump"]?.results);
       dropJumpHeight =
-        relevantStudies["multipleDropJumps"] &&
+        relevantStudies["multipleDropJump"] &&
         assessDropJumpHeight(
           study.results,
-          relevantStudies["multipleDropJumps"]
+          relevantStudies["multipleDropJump"]?.results
         );
 
       if (armSwingContribution) {
@@ -261,7 +288,6 @@ export const trainingSolutions = (date: Date) => {
             cmj: study,
             abalakov: relevantStudies["abalakov"],
           },
-          bosco: false,
         });
       }
       if (ecr) {
@@ -271,7 +297,6 @@ export const trainingSolutions = (date: Date) => {
             squatJump: relevantStudies["squatJump"],
             cmj: study,
           },
-          bosco: false,
         });
       }
 
@@ -282,14 +307,13 @@ export const trainingSolutions = (date: Date) => {
             cmj: study,
             dropJumpHeight: relevantStudies["multipleDropJump"],
           },
-          bosco: false,
         });
       }
-      return;
+      break;
     case "squatJump":
       ecr =
         relevantStudies["cmj"] &&
-        assessECR(relevantStudies["cmj"], study.results);
+        assessECR(relevantStudies["cmj"]?.results, study.results);
       if (ecr) {
         trainingSolutions.push({
           ...ecr,
@@ -297,14 +321,16 @@ export const trainingSolutions = (date: Date) => {
             squatJump: study,
             cmj: relevantStudies["cmj"],
           },
-          bosco: false,
         });
       }
-      return;
+      break;
     case "abalakov":
       armSwingContribution =
         relevantStudies["cmj"] &&
-        assessArmSwingContribution(relevantStudies["cmj"], study.results);
+        assessArmSwingContribution(
+          relevantStudies["cmj"]?.results,
+          study.results
+        );
       if (armSwingContribution) {
         trainingSolutions.push({
           ...armSwingContribution,
@@ -312,14 +338,13 @@ export const trainingSolutions = (date: Date) => {
             cmj: relevantStudies["cmj"],
             abalakov: study,
           },
-          bosco: false,
         });
       }
-      return;
+      break;
     case "multipleDropJump":
       dropJumpHeight =
         relevantStudies["cmj"] &&
-        assessDropJumpHeight(relevantStudies["cmj"], study.results);
+        assessDropJumpHeight(relevantStudies["cmj"]?.results, study.results);
       if (dropJumpHeight) {
         trainingSolutions.push({
           ...dropJumpHeight,
@@ -327,54 +352,222 @@ export const trainingSolutions = (date: Date) => {
             cmj: relevantStudies["cmj"],
             multipleDropJump: study,
           },
-          bosco: false,
         });
       }
-      return;
+      break;
     case "multipleJumps":
       rsi = assessRSI(study.results);
       if (rsi) {
         trainingSolutions.push({
           ...rsi,
           comparedStudies: { multipleJumps: study },
-          bosco: false,
         });
       }
-      return;
+      break;
     case "bosco":
+      if (
+        !study.results.cmj ||
+        !study.results.abalakov ||
+        !study.results.squatJump
+      )
+        break;
+
       armSwingContribution = assessArmSwingContribution(
         study.results.cmj,
         study.results.abalakov
       );
       ecr = assessECR(study.results.cmj, study.results.squatJump);
-      dropJumpHeight = assessDropJumpHeight(
-        study.results.cmj,
-        relevantStudies["multipleDropJump"]
-      );
+      dropJumpHeight =
+        relevantStudies["multipleDropJump"] &&
+        assessDropJumpHeight(
+          study.results.cmj,
+          relevantStudies["multipleDropJump"]?.results
+        );
+      if (armSwingContribution) {
+        trainingSolutions.push({
+          ...armSwingContribution,
+          comparedStudies: {
+            cmj: { ...study, results: study.results.cmj },
+            abalakov: { ...study, results: study.results.abalakov },
+          },
+        });
+      }
+      if (ecr) {
+        trainingSolutions.push({
+          ...ecr,
+          comparedStudies: {
+            squatJump: { ...study, results: study.results.squatJump },
+            cmj: { ...study, results: study.results.cmj },
+          },
+        });
+      }
+      if (dropJumpHeight) {
+        trainingSolutions.push({
+          ...dropJumpHeight,
+          comparedStudies: {
+            cmj: { ...study, results: study.results.cmj },
+            multipleDropJump: relevantStudies["multipleDropJump"],
+          },
+        });
+      }
+      break;
+  }
+
+  return trainingSolutions;
+};
+
+export const parseAllTrainingSolutions = () => {
+  const { athlete } = useStudyContext();
+  if (!athlete?.completedStudies) return [];
+
+  const completedStudies = athlete.completedStudies;
+
+  const latestStandaloneCmj = completedStudies.find(
+    (study) => study.results?.type === "cmj"
+  );
+  const latestStandaloneSquatJump = completedStudies.find(
+    (study) => study.results?.type === "squatJump"
+  );
+  const latestStandaloneAbalakov = completedStudies.find(
+    (study) => study.results?.type === "abalakov"
+  );
+  const latestMultipleDropJump = completedStudies.find(
+    (study) => study.results?.type === "multipleDropJump"
+  );
+  const latestMultipleJumps = completedStudies.find(
+    (study) => study.results?.type === "multipleJumps"
+  );
+
+  const latestBosco = completedStudies.find(
+    (study) => study.results?.type === "bosco"
+  );
+
+  let latestCmj;
+  let latestSquatJump;
+  let latestAbalakov;
+
+  if (
+    latestStandaloneCmj &&
+    latestBosco &&
+    latestBosco.results?.type === "bosco"
+  ) {
+    if (latestStandaloneCmj.date > latestBosco.date) {
+      latestCmj = latestStandaloneCmj;
+    } else {
+      latestCmj = { ...latestBosco, results: latestBosco.results?.cmj };
+    }
+  } else if (
+    latestBosco &&
+    latestBosco.results?.type === "bosco" &&
+    latestBosco.results?.cmj
+  ) {
+    latestCmj = { ...latestBosco, results: latestBosco.results.cmj };
+  } else if (latestStandaloneCmj) {
+    latestCmj = latestStandaloneCmj;
+  }
+
+  if (
+    latestStandaloneSquatJump &&
+    latestBosco &&
+    latestBosco.results?.type === "bosco"
+  ) {
+    if (latestStandaloneSquatJump.date > latestBosco.date) {
+      latestSquatJump = latestStandaloneSquatJump;
+    } else {
+      latestSquatJump = {
+        ...latestBosco,
+        results: latestBosco.results?.squatJump,
+      };
+    }
+  } else if (
+    latestBosco &&
+    latestBosco.results?.type === "bosco" &&
+    latestBosco.results?.squatJump
+  ) {
+    latestSquatJump = {
+      ...latestBosco,
+      results: latestBosco.results.squatJump,
+    };
+  } else if (latestStandaloneSquatJump) {
+    latestSquatJump = latestStandaloneSquatJump;
+  }
+
+  if (
+    latestStandaloneAbalakov &&
+    latestBosco &&
+    latestBosco.results?.type === "bosco"
+  ) {
+    if (latestStandaloneAbalakov.date > latestBosco.date) {
+      latestAbalakov = latestStandaloneAbalakov;
+    } else {
+      latestAbalakov = {
+        ...latestBosco,
+        results: latestBosco.results?.abalakov,
+      };
+    }
+  } else if (
+    latestBosco &&
+    latestBosco.results?.type === "bosco" &&
+    latestBosco.results?.abalakov
+  ) {
+    latestAbalakov = { ...latestBosco, results: latestBosco.results.abalakov };
+  } else if (latestStandaloneAbalakov) {
+    latestAbalakov = latestStandaloneAbalakov;
+  }
+
+  let trainingSolutions = [];
+
+  // Only add solutions when we have the required data
+  if (latestCmj?.results && latestAbalakov?.results) {
+    const armSwingContribution = assessArmSwingContribution(
+      latestCmj.results,
+      latestAbalakov.results
+    );
+    if (armSwingContribution) {
       trainingSolutions.push({
         ...armSwingContribution,
-        comparedStudies: {
-          cmj: study.results.cmj,
-          abalakov: study.results.abalakov,
-        },
-        bosco: true,
+        comparedStudies: { cmj: latestCmj, abalakov: latestAbalakov },
       });
+    }
+  }
+
+  if (latestCmj?.results && latestSquatJump?.results) {
+    const ecr = assessECR(latestCmj.results, latestSquatJump.results);
+    if (ecr) {
       trainingSolutions.push({
         ...ecr,
-        comparedStudies: {
-          squatJump: study.results.squatJump,
-          cmj: study.results.cmj,
-        },
-        bosco: true,
+        comparedStudies: { cmj: latestCmj, squatJump: latestSquatJump },
       });
+    }
+  }
+
+  if (
+    latestCmj?.results &&
+    latestMultipleDropJump?.results?.type === "multipleDropJump"
+  ) {
+    const dropJumpHeight = assessDropJumpHeight(
+      latestCmj.results,
+      latestMultipleDropJump.results
+    );
+    if (dropJumpHeight) {
       trainingSolutions.push({
         ...dropJumpHeight,
         comparedStudies: {
-          cmj: study.results.cmj,
-          multipleDropJump: relevantStudies["multipleDropJump"],
+          cmj: latestCmj,
+          multipleDropJump: latestMultipleDropJump,
         },
-        bosco: true,
       });
+    }
+  }
+
+  if (latestMultipleJumps?.results?.type === "multipleJumps") {
+    const rsi = assessRSI(latestMultipleJumps.results);
+    if (rsi) {
+      trainingSolutions.push({
+        ...rsi,
+        comparedStudies: { multipleJumps: latestMultipleJumps },
+      });
+    }
   }
 
   return trainingSolutions;

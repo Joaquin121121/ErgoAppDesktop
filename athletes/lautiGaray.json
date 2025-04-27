@@ -1,0 +1,92 @@
+{
+  "birthDate": "2025-02-21T00:30:16.628Z",
+  "category": "Primera",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-02-21T00:42:56.434Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.4243333333333333,
+          "avgHeightReached": 22.07970762499999,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.458
+            },
+            {
+              "deleted": false,
+              "time": 0.408
+            },
+            {
+              "deleted": false,
+              "time": 0.407
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.39033333333333325,
+          "avgHeightReached": 18.683158624999994,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.356
+            },
+            {
+              "deleted": false,
+              "time": 0.407
+            },
+            {
+              "deleted": false,
+              "time": 0.408
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.4073333333333333,
+          "avgHeightReached": 20.345994499999996,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.358
+            },
+            {
+              "deleted": false,
+              "time": 0.408
+            },
+            {
+              "deleted": false,
+              "time": 0.456
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "basketball",
+  "gender": "M",
+  "height": "168",
+  "heightUnit": "cm",
+  "institution": "Las Palmas",
+  "name": "Lauti Garay",
+  "state": "X",
+  "weight": "110",
+  "weightUnit": "kgs"
+}

@@ -8,7 +8,7 @@ import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import useBackspaceNavigation from "../hooks/useBackspaceNavigation";
 import CustomAccordion from "../components/CustomAccordion";
-import { getTrainingSolutionsForTest } from "../hooks/getTrainingSolutions";
+import { parseTrainingSolutions } from "../hooks/trainingSolutionsParser";
 
 interface CompletedStudyDashboardProps {
   customNavigate: (
@@ -44,8 +44,7 @@ function CompletedStudyDashboard({
   );
 
   // Training solutions data
-  const trainingSolutions: TrainingSolution[] =
-    getTrainingSolutionsForTest(date) || [];
+  const trainingSolutions = parseTrainingSolutions(new Date(date)) || [];
 
   // Format the accordion items
   const accordionItems = trainingSolutions.map((solution) => ({
@@ -222,7 +221,7 @@ function CompletedStudyDashboard({
 
       <div className="w-full flex justify-center gap-x-4">
         <div
-          className={`w-[35%] h-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col items-center transition-all 300 ease-in-out `}
+          className={`w-[35%] h-[90%] bg-white shadow-sm rounded-2xl flex flex-col items-center transition-all 300 ease-in-out `}
         >
           <div className="flex gap-x-8 mt-4 items-center">
             <p className="text-secondary text-2xl">Resultados</p>
@@ -295,9 +294,9 @@ function CompletedStudyDashboard({
           />
         </div>
         <div
-          className={`w-[62%] h-[90%] bg-white shadow-sm rounded-2xl mt-2 flex flex-col px-16 transition-all 300 ease-in-out`}
+          className={`w-[62%] h-[90%] bg-white shadow-sm rounded-2xl flex flex-col  transition-all 300 ease-in-out`}
         >
-          <div className="flex self-center gap-x-8 mt-4 items-center">
+          <div className="flex self-center gap-x-8 py-4 w-full bg-lightRed rounded-t-2xl items-center justify-center">
             <p className="text-secondary text-2xl">
               Solución de Entrenamiento Inferida
             </p>
@@ -305,11 +304,11 @@ function CompletedStudyDashboard({
           </div>
 
           {/* Using the new CustomAccordion component */}
-          <div className="w-full mt-4">
+          <div className="w-full mt-4 px-8">
             <CustomAccordion
               items={accordionItems}
               initialExpandedIndex={0}
-              showButton={() => {}}
+              showPapers={() => {}}
             />
           </div>
         </div>

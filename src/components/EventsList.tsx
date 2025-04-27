@@ -31,8 +31,8 @@ function EventsList() {
   return (
     <div className="flex flex-col items-center ">
       <div
-        className={`flex flex-col items-center ml-8 overflow-y-auto p-3 ${styles.customScrollbar}`}
-        style={{ maxHeight: "440px" }}
+        className={`flex flex-col items-center ml-4 overflow-y-auto p-3 ${styles.customScrollbar}`}
+        style={{ maxHeight: "80vh" }}
       >
         {relevantEvents.map((event, index) => (
           <Event
@@ -58,7 +58,7 @@ function EventsList() {
                   )}`}
             </div>
             <div className="bg-white rounded-2xl shadow-sm flex flex-col items-center py-4 mb-1 w-[16vw]">
-              <p className="text-lg my-4 break-words">
+              <p className="text-lg my-4 break-words px-4 text-center">
                 No hay eventos para esta fecha
               </p>
             </div>

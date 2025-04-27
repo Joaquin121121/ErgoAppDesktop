@@ -1,0 +1,131 @@
+{
+  "birthDate": "2025-02-21T01:10:14.556Z",
+  "category": "Amateur",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-02-21T01:16:18.419Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.396,
+          "avgHeightReached": 19.229562,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.658
+            },
+            {
+              "deleted": false,
+              "time": 0.054
+            },
+            {
+              "deleted": false,
+              "time": 0.607
+            },
+            {
+              "deleted": false,
+              "time": 0.054
+            },
+            {
+              "deleted": false,
+              "time": 0.607
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.5573333333333333,
+          "avgHeightReached": 38.08983200000001,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.556
+            },
+            {
+              "deleted": false,
+              "time": 0.558
+            },
+            {
+              "deleted": false,
+              "time": 0.558
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.5576666666666666,
+          "avgHeightReached": 38.135407625,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.557
+            },
+            {
+              "deleted": false,
+              "time": 0.559
+            },
+            {
+              "deleted": false,
+              "time": 0.557
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    },
+    {
+      "date": "2025-03-02T05:15:11.167Z",
+      "results": {
+        "avgFlightTime": 0.1805,
+        "avgHeightReached": 3.99515315625,
+        "load": 0,
+        "loadUnit": "kgs",
+        "sensitivity": 10,
+        "takeoffFoot": "both",
+        "times": [
+          {
+            "deleted": false,
+            "time": 0.106
+          },
+          {
+            "deleted": false,
+            "time": 0.255
+          }
+        ],
+        "type": "cmj"
+      },
+      "studyInfo": {
+        "description": "Salto en Movimiento",
+        "name": "CMJ",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "roadCycling",
+  "gender": "M",
+  "height": "173",
+  "heightUnit": "cm",
+  "institution": "Las Palmas",
+  "name": "Julio Castillo",
+  "state": "X",
+  "weight": "90",
+  "weightUnit": "kgs"
+}

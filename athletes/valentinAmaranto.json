@@ -1,0 +1,116 @@
+{
+  "birthDate": "2025-02-21T01:11:10.285Z",
+  "category": "U21",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-02-21T01:23:30.351Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.4372,
+          "avgHeightReached": 23.43901338,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.659
+            },
+            {
+              "deleted": false,
+              "time": 0.155
+            },
+            {
+              "deleted": false,
+              "time": 0.608
+            },
+            {
+              "deleted": false,
+              "time": 0.609
+            },
+            {
+              "deleted": false,
+              "time": 0.155
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.3561428571428572,
+          "avgHeightReached": 15.55347721683674,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.557
+            },
+            {
+              "deleted": false,
+              "time": 0.052
+            },
+            {
+              "deleted": false,
+              "time": 0.607
+            },
+            {
+              "deleted": false,
+              "time": 0.557
+            },
+            {
+              "deleted": false,
+              "time": 0.055
+            },
+            {
+              "deleted": false,
+              "time": 0.106
+            },
+            {
+              "deleted": false,
+              "time": 0.559
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.5913333333333334,
+          "avgHeightReached": 42.8789105,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.608
+            },
+            {
+              "deleted": false,
+              "time": 0.608
+            },
+            {
+              "deleted": false,
+              "time": 0.558
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "basketball",
+  "gender": "M",
+  "height": "174",
+  "heightUnit": "cm",
+  "institution": "Las Palmas",
+  "name": "Valentin Amaranto",
+  "state": "X",
+  "weight": "70",
+  "weightUnit": "kgs"
+}

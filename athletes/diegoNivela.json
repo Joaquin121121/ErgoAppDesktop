@@ -1,0 +1,92 @@
+{
+  "birthDate": "2025-02-21T00:30:16.628Z",
+  "category": "Primera",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-02-21T01:09:15.660Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.5073333333333333,
+          "avgHeightReached": 31.562094499999997,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.557
+            },
+            {
+              "deleted": false,
+              "time": 0.507
+            },
+            {
+              "deleted": false,
+              "time": 0.458
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.43933333333333335,
+          "avgHeightReached": 23.6683145,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.456
+            },
+            {
+              "deleted": false,
+              "time": 0.406
+            },
+            {
+              "deleted": false,
+              "time": 0.456
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.423,
+          "avgHeightReached": 21.941168625000003,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.457
+            },
+            {
+              "deleted": false,
+              "time": 0.406
+            },
+            {
+              "deleted": false,
+              "time": 0.406
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "basketball",
+  "gender": "M",
+  "height": "173",
+  "heightUnit": "cm",
+  "institution": "Las Palmas",
+  "name": "Diego Nivela",
+  "state": "X",
+  "weight": "76",
+  "weightUnit": "kgs"
+}

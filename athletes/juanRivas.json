@@ -1,0 +1,100 @@
+{
+  "birthDate": "2025-02-21T00:30:16.628Z",
+  "category": "Primera",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-02-21T00:57:40.954Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.524,
+          "avgHeightReached": 33.66988200000001,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.506
+            },
+            {
+              "deleted": false,
+              "time": 0.558
+            },
+            {
+              "deleted": false,
+              "time": 0.508
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.41925,
+          "avgHeightReached": 21.5538652265625,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.558
+            },
+            {
+              "deleted": false,
+              "time": 0.054
+            },
+            {
+              "deleted": false,
+              "time": 0.557
+            },
+            {
+              "deleted": false,
+              "time": 0.508
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.4315,
+          "avgHeightReached": 22.831824656250003,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.457
+            },
+            {
+              "deleted": false,
+              "time": 0.406
+            },
+            {
+              "deleted": false,
+              "time": 0.407
+            },
+            {
+              "deleted": false,
+              "time": 0.456
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "basketball",
+  "gender": "M",
+  "height": "168",
+  "heightUnit": "cm",
+  "institution": "Las Palmas",
+  "name": "Juan Rivas",
+  "state": "X",
+  "weight": "70",
+  "weightUnit": "kgs"
+}

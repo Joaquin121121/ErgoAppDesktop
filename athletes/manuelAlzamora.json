@@ -1,0 +1,152 @@
+{
+  "birthDate": "2003-11-25T00:00:00.000Z",
+  "category": "dssd",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-03-13T22:01:17.497Z",
+      "results": {
+        "avgFlightTime": 0.26733333333333337,
+        "avgHeightReached": 8.763654500000003,
+        "load": 0,
+        "loadUnit": "kgs",
+        "sensitivity": 100,
+        "takeoffFoot": "both",
+        "times": [
+          {
+            "deleted": false,
+            "performance": 77.74,
+            "stiffness": null,
+            "time": 0.234
+          },
+          {
+            "deleted": false,
+            "performance": 100,
+            "stiffness": null,
+            "time": 0.301
+          },
+          {
+            "deleted": false,
+            "performance": 88.7,
+            "stiffness": null,
+            "time": 0.267
+          }
+        ],
+        "type": "cmj"
+      },
+      "studyInfo": {
+        "description": "Salto en Movimiento",
+        "name": "CMJ",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    },
+    {
+      "date": "2025-03-13T22:02:26.962Z",
+      "results": {
+        "avgFlightTime": 0.24757142857142855,
+        "avgFloorTime": 0.4737142857142856,
+        "avgHeightReached": 7.515883951530614,
+        "avgPerformance": 82.25,
+        "avgStiffness": 9.600427133241112,
+        "criteria": "numberOfJumps",
+        "criteriaValue": 30,
+        "performance": [
+          55.48,
+          66.45,
+          66.11,
+          88.37,
+          99.67,
+          100,
+          99.67
+        ],
+        "performanceDrop": 39.104522462062405,
+        "sensitivity": 100,
+        "stiffness": [
+          3.723385049934324,
+          9.016278726091365,
+          9.1247034432097,
+          7.761295779925295,
+          20.375595705068108,
+          8.92896077910991,
+          8.272770449349084
+        ],
+        "takeoffFoot": "both",
+        "times": [
+          {
+            "deleted": false,
+            "floorTime": 1.035,
+            "performance": 55.48,
+            "stiffness": 3.723385049934324,
+            "time": 0.167
+          },
+          {
+            "deleted": false,
+            "floorTime": 0.407,
+            "performance": 66.45,
+            "stiffness": 9.016278726091365,
+            "time": 0.2
+          },
+          {
+            "deleted": false,
+            "floorTime": 0.402,
+            "performance": 66.11,
+            "stiffness": 9.1247034432097,
+            "time": 0.199
+          },
+          {
+            "deleted": false,
+            "floorTime": 0.469,
+            "performance": 88.37,
+            "stiffness": 7.761295779925295,
+            "time": 0.266
+          },
+          {
+            "deleted": false,
+            "floorTime": 0.167,
+            "performance": 99.67,
+            "stiffness": 20.375595705068108,
+            "time": 0.3
+          },
+          {
+            "deleted": false,
+            "floorTime": 0.401,
+            "performance": 100,
+            "stiffness": 8.92896077910991,
+            "time": 0.301
+          },
+          {
+            "deleted": false,
+            "floorTime": 0.435,
+            "performance": 99.67,
+            "stiffness": 8.272770449349084,
+            "time": 0.3
+          }
+        ],
+        "type": "multipleJumps"
+      },
+      "studyInfo": {
+        "description": "Saltos Repetidos Continuos",
+        "name": "Saltos Múltiples",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "football",
+  "gender": "F",
+  "height": "48",
+  "heightUnit": "cm",
+  "institution": "zxdd",
+  "name": "Manuel Alzamora",
+  "state": "X",
+  "weight": "44",
+  "weightUnit": "kgs"
+}

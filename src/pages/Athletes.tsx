@@ -38,6 +38,7 @@ function Athletes({
   const [searchTerm, setSearchTerm] = useState("");
   const [institutions, setInstitutions] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [showFilter, setShowFilter] = useState(false);
   const [filterTextPosition, setFilterTextPosition] = useState({
     left: 0,
     top: 0,
@@ -152,6 +153,7 @@ function Athletes({
   // Other handlers
   const handleFilter = () => {
     setIsBlurred(true);
+    setShowFilter(true);
   };
 
   const createAthlete = () => {
@@ -427,9 +429,10 @@ function Athletes({
           </div>
         </div>
       )}
-      {isBlurred && (
+      {showFilter && (
         <AthleteFilter
           onClose={() => {
+            setShowFilter(false);
             setIsBlurred(false);
           }}
           selectedFilters={selectedFilters}

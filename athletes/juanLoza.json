@@ -1,0 +1,100 @@
+{
+  "birthDate": "2025-02-21T00:30:16.628Z",
+  "category": "Primera",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-02-21T00:49:01.984Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.54,
+          "avgHeightReached": 35.757450000000006,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.557
+            },
+            {
+              "deleted": false,
+              "time": 0.506
+            },
+            {
+              "deleted": false,
+              "time": 0.557
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.5076,
+          "avgHeightReached": 31.59528282000001,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.508
+            },
+            {
+              "deleted": false,
+              "time": 0.509
+            },
+            {
+              "deleted": false,
+              "time": 0.507
+            },
+            {
+              "deleted": false,
+              "time": 0.508
+            },
+            {
+              "deleted": false,
+              "time": 0.506
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.49033333333333334,
+          "avgHeightReached": 29.482333625000003,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.507
+            },
+            {
+              "deleted": false,
+              "time": 0.507
+            },
+            {
+              "deleted": false,
+              "time": 0.457
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "basketball",
+  "gender": "M",
+  "height": "166",
+  "heightUnit": "cm",
+  "institution": "Las Palmas",
+  "name": "Juan Loza",
+  "state": "X",
+  "weight": "63",
+  "weightUnit": "kgs"
+}

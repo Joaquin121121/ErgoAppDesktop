@@ -1,0 +1,137 @@
+{
+  "birthDate": "2025-02-21T00:30:16.628Z",
+  "category": "Primera",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-02-21T01:01:35.705Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.4315,
+          "avgHeightReached": 22.831824656250003,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.557
+            },
+            {
+              "deleted": false,
+              "time": 0.557
+            },
+            {
+              "deleted": false,
+              "time": 0.559
+            },
+            {
+              "deleted": false,
+              "time": 0.053
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.5566666666666668,
+          "avgHeightReached": 37.99876250000001,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.608
+            },
+            {
+              "deleted": false,
+              "time": 0.556
+            },
+            {
+              "deleted": false,
+              "time": 0.506
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.5233333333333334,
+          "avgHeightReached": 33.584262500000015,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.507
+            },
+            {
+              "deleted": false,
+              "time": 0.508
+            },
+            {
+              "deleted": false,
+              "time": 0.555
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    },
+    {
+      "date": "2025-03-11T18:59:57.509Z",
+      "results": {
+        "avgFlightTime": 0.4789999999999999,
+        "avgHeightReached": 28.13520262499999,
+        "load": 0,
+        "loadUnit": "kgs",
+        "sensitivity": 100,
+        "takeoffFoot": "both",
+        "times": [
+          {
+            "deleted": false,
+            "performance": 94.01,
+            "stiffness": null,
+            "time": 0.534
+          },
+          {
+            "deleted": false,
+            "performance": 100,
+            "stiffness": null,
+            "time": 0.568
+          },
+          {
+            "deleted": false,
+            "performance": 58.98,
+            "stiffness": null,
+            "time": 0.335
+          }
+        ],
+        "type": "cmj"
+      },
+      "studyInfo": {
+        "description": "Salto en Movimiento",
+        "name": "CMJ",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "basketball",
+  "gender": "M",
+  "height": "178",
+  "heightUnit": "cm",
+  "institution": "Las Palmas",
+  "name": "Santiago Dreher",
+  "state": "X",
+  "weight": "90",
+  "weightUnit": "kgs"
+}

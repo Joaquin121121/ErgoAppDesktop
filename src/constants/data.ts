@@ -202,7 +202,7 @@ export const studiesInfo = {
       "La comparación con el CMJ (índice de elasticidad) ayuda a determinar si el atleta necesita más trabajo de fuerza máxima o potencia explosiva",
   },
 
-  dropJump: {
+  multipleDropJump: {
     name: "Salto en Caída",
     shortDesc:
       "Mide la fuerza reactiva saltando inmediatamente después de caer desde una altura",

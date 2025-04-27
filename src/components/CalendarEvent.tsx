@@ -3,12 +3,10 @@ import React, { useEffect, useState } from "react";
 function CalendarEvent({
   event_type,
   event_name,
-  athlete_name,
   onClick,
 }: {
   event_type: "competition" | "trainingSession" | "testSession";
   event_name: string;
-  athlete_name: string;
   onClick: () => void;
 }) {
   const [showIcon, setShowIcon] = useState(true);

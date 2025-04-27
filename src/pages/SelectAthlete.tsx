@@ -117,13 +117,9 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       resetAthlete();
     }
     setSelectedAthletes([]);
-    customNavigate(
-      "back",
-      "selectAthlete",
-      from ? "athleteStudies" : "startTest"
-    );
+    customNavigate("back", "selectAthlete", from ? "athleteMenu" : "startTest");
     setTimeout(() => {
-      navigate(from ? "/athleteStudies" : "/startTest");
+      navigate(from ? "/athleteMenu" : "/startTest");
     }, 300);
   };
 

@@ -15,18 +15,17 @@ import {
 import { es, se } from "date-fns/locale";
 import CalendarEvent from "./CalendarEvent";
 import styles from "../styles/animations.module.css";
-import AddEventModal from "./AddEventModal";
 import { useBlur } from "../contexts/BlurContext";
 import { useCalendar } from "../contexts/CalendarContext";
 export interface CalendarEvent {
-  id?: number | string;
-  coach_id: number;
+  id?: string;
+  coach_id: string;
   event_type: "competition" | "trainingSession" | "testSession";
   event_name: string;
-  athlete_name: string;
   event_date: Date | string;
   duration?: number;
   last_changed: Date | string;
+  athlete_id: string;
 }
 
 interface CalendarProps {
@@ -49,7 +48,7 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
   const [referenceDate] = useState<Date>(
     startOfWeek(new Date(), { locale, weekStartsOn: 1 })
   );
-  // Period offset from reference date (multiples of 14 days)
+  // Period offset from reference date (multiples of 28 days)
   const [periodOffset, setPeriodOffset] = useState<number>(0);
   const [hoveredElementIndex, setHoveredElementIndex] = useState<number | null>(
     null
@@ -96,7 +95,7 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
       // Calculate which period this date belongs to relative to reference date
       const days = differenceInDays(selectedDate, referenceDate) + 1;
       // Integer division to get period number
-      const newPeriodOffset = Math.floor(days / 14);
+      const newPeriodOffset = Math.floor(days / 28);
 
       // Update period offset
       setPeriodOffset(newPeriodOffset);
@@ -106,9 +105,9 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
   // Generate calendar days based on period offset
   const generateDays = () => {
     // Calculate the start date for the current period
-    const startDateOfView = addDays(referenceDate, periodOffset * 14);
+    const startDateOfView = addDays(referenceDate, periodOffset * 28);
     const days = [];
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 28; i++) {
       days.push(addDays(startDateOfView, i));
     }
     return days;
@@ -153,13 +152,26 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
 
     const firstDay = days[0];
     const lastDay = days[days.length - 1];
+
+    // Check if firstDay and lastDay are in different months
+    if (
+      format(firstDay, "MMMM", { locale }) !==
+      format(lastDay, "MMMM", { locale })
+    ) {
+      return `${format(firstDay, "d", { locale })} de ${format(
+        firstDay,
+        "MMMM",
+        { locale }
+      )} - ${format(lastDay, "d")} de ${format(lastDay, "MMMM", { locale })}`;
+    }
+
     return `${format(firstDay, "d", { locale })}-${format(
       lastDay,
       "d"
     )} de ${format(firstDay, "MMMM", { locale })}`;
   };
 
-  // Navigate to the previous two weeks
+  // Navigate to the previous four weeks
   const goToPrevious = () => {
     // Prevent multiple rapid navigations
     if (isNavigating) return;
@@ -186,7 +198,7 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
     }, 100);
   };
 
-  // Navigate to the next two weeks
+  // Navigate to the next four weeks
   const goToNext = () => {
     // Prevent multiple rapid navigations
     if (isNavigating) return;
@@ -236,6 +248,10 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
       {/* Calendar header */}
       <div className="bg-red-200 text-red-600 py-4 px-2 text-center text-2xl rounded-t-lg">
         {headerText}
+        {currentDays[0] &&
+        new Date().getFullYear() !== currentDays[0].getFullYear()
+          ? ` (${format(currentDays[0], "yyyy")})`
+          : ""}
       </div>
 
       {/* Day of week headers */}
@@ -256,7 +272,7 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
       >
         <div
           ref={gridRef}
-          className="grid grid-cols-7 grid-rows-2"
+          className="grid grid-cols-7 grid-rows-4"
           style={{
             transform: `translateX(${translateX})`,
             transition: "transform 0.3s ease-out",
@@ -272,7 +288,7 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
             return (
               <div
                 key={index}
-                className={`min-h-[150px] flex flex-col gap-y-1 border border-gray p-2 hover:border-lightRed  hover:cursor-pointer ${
+                className={`h-[130px] flex flex-col gap-y-1 border border-gray p-2 hover:border-lightRed  hover:cursor-pointer ${
                   isPastDay ? "bg-offWhite" : ""
                 }`}
                 onMouseEnter={() => {
@@ -313,7 +329,7 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
                   if (eventIndex > 2) return null;
                   if (eventIndex === 2) {
                     return (
-                      <p className="self-center text-secondary mt-2 text-sm">
+                      <p className="self-center text-secondary text-sm">
                         +{eventsForDay.length - 2} más
                       </p>
                     );
@@ -344,7 +360,7 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
           className={`hover:opacity-70 hover:scale-105 active:scale-95 active:opacity-50 hover:cursor-pointer active:outline-none transition-all duration-300 ease-in-out ${
             isNavigating ? "cursor-not-allowed" : ""
           }`}
-          aria-label="Previous two weeks"
+          aria-label="Previous four weeks"
         >
           <img src="/back.png" className="w-7 h-7" alt="Previous" />
         </button>
@@ -371,7 +387,7 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
           className={`hover:opacity-70 hover:scale-105 active:scale-95 active:opacity-50 hover:cursor-pointer active:outline-none transition-all duration-300 ease-in-out ${
             isNavigating ? "cursor-not-allowed" : ""
           }`}
-          aria-label="Next two weeks"
+          aria-label="Next four weeks"
         >
           <img src="/nextRed.png" className="w-7 h-7" alt="Next" />
         </button>

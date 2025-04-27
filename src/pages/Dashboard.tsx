@@ -3,7 +3,6 @@ import Calendar from "../components/Calendar";
 import EventsList from "../components/EventsList";
 import { es } from "date-fns/locale";
 import AddEventModal from "../components/AddEventModal";
-import { supabase } from "../supabase";
 import EventInfoModal from "../components/EventInfoModal";
 import { useBlur } from "../contexts/BlurContext";
 import { useCalendar } from "../contexts/CalendarContext";
@@ -36,7 +35,7 @@ const Dashboard = ({
           paddingLeft: isExpanded ? "100px" : "32px",
         }}
       >
-        <div className="flex mt-8 justify-around ml-16 ">
+        <div className="flex mt-8 justify-center ml-16 ">
           <Calendar locale={es} />
           <EventsList />
         </div>

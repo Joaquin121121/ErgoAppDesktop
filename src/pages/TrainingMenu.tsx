@@ -1,13 +1,12 @@
-import SeamlessLoopPlayer from "../components/SeamlessLoopPlayer";
-import TonalButton from "../components/TonalButton";
 import { useBlur } from "../contexts/BlurContext";
 import { useStudyContext } from "../contexts/StudyContext";
-import React, { useEffect } from "react";
-import {
-  getAllTrainingSolutions,
-  TrainingSolution,
-} from "../hooks/getTrainingSolutions";
-import CustomAccordion from "../components/CustomAccordion";
+import React, { useEffect, useState } from "react";
+import { parseAllTrainingSolutions } from "../hooks/trainingSolutionsParser";
+import { useNavigate } from "react-router-dom";
+import TonalButton from "../components/TonalButton";
+import TrainingPlanCreator from "../components/TrainingPlanCreator";
+import TrainingSolutionsPanel from "../components/TrainingSolutionsPanel";
+import ModelChoicePopup from "../components/ModelChoicePopup";
 
 const TrainingMenu = ({
   isExpanded,
@@ -23,8 +22,10 @@ const TrainingMenu = ({
   ) => void;
 }) => {
   const { athlete } = useStudyContext();
+  const navigate = useNavigate();
+  const [closePopup, setClosePopup] = useState(false);
 
-  const trainingSolutions: TrainingSolution[] = getAllTrainingSolutions() || [];
+  const trainingSolutions = parseAllTrainingSolutions() || [];
 
   // Format the accordion items
   const accordionItems = trainingSolutions.map((solution) => ({
@@ -47,56 +48,108 @@ const TrainingMenu = ({
     ),
   }));
 
-  const { isBlurred } = useBlur();
+  const { isBlurred, setIsBlurred } = useBlur();
+
+  const [creatingPlan, setCreatingPlan] = useState(false);
+  const [collapseAccordion, setCollapseAccordion] = useState(false);
+  const [displayPopup, setDisplayPopup] = useState(false);
+
+  const onClose = async () => {
+    customNavigate("back", "trainingMenu", "athleteMenu");
+    setTimeout(() => {
+      navigate("/athleteMenu");
+    }, 300);
+  };
+
+  const handleToggleCreatingPlan = () => {
+    setCreatingPlan(!creatingPlan);
+  };
 
   useEffect(() => {
-    console.log("s:", trainingSolutions);
-  }, [trainingSolutions]);
+    const handleKeyDown = (event) => {
+      // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
+      if (
+        event.key === "Backspace" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(
+          document.activeElement.tagName
+        )
+      ) {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
+    setCollapseAccordion(true);
+  }, [creatingPlan]);
+
   return (
-    <div
-      className={`flex-1 relative flex flex-col items-center ${
-        isBlurred && "blur-md pointer-events-none"
-      } transition-all duration-300 ease-in-out ${animation}`}
-      style={{
-        paddingLeft: isExpanded ? "100px" : "32px",
-      }}
-    >
-      <p className="my-10 text-3xl">
-        Entrenamiento: <span className="text-secondary">{athlete.name}</span>
-      </p>
-      <div className="flex-grow self-end w-[90%] flex items-center justify-center gap-x-16 transition-all duration-300 ease-in-out pr-8">
-        <div className="bg-white rounded-2xl shadow-sm flex flex-col items-center w-2/5">
-          <div className="flex items-center justify-center gap-x-8 mt-8">
-            <p className="text-secondary text-2xl">Plan de Entrenamiento</p>
-            <img src="/trainingRed.png" alt="" className="h-8 w-8" />
-          </div>
-          <SeamlessLoopPlayer
-            src="/studying.mov"
-            height={400}
-            width={600}
-            loop
-            timeBetweenReplays={3}
-          />
-          <p className="text-xl mt-16 mb-8">No hay ningun plan cargado...</p>
+    <>
+      <div
+        className={`flex-1 relative flex flex-col items-center  transition-all duration-300 ease-in-out ${animation}`}
+        style={{
+          paddingLeft: isExpanded ? "100px" : "32px",
+        }}
+      >
+        <div
+          className={`my-10 w-full flex justify-around items-center ${
+            isBlurred && "blur-md pointer-events-none"
+          }`}
+        >
+          <div className="w-[122px]" />
+          <p className="text-3xl">
+            Entrenamiento:{" "}
+            <span className="text-secondary">{athlete.name}</span>
+          </p>
           <TonalButton
-            title="Crear Plan"
-            icon="next"
-            containerStyles="self-center mb-8"
-            onClick={() => {}}
+            inverse
+            title="Volver"
+            icon="backWhite"
+            onClick={onClose}
           />
         </div>
+        <div className="flex-grow self-end w-[90%] flex justify-between transition-all duration-300 ease-in-out pr-8">
+          <TrainingPlanCreator
+            isCreatingPlan={creatingPlan}
+            onToggleCreatingPlan={handleToggleCreatingPlan}
+            displayPopup={() => {
+              setIsBlurred(true);
+              setDisplayPopup(true);
+            }}
+          />
 
-        <div className="bg-white rounded-2xl shadow-sm flex flex-col items-center w-3/5 h-full">
-          <div className="flex items-center justify-center gap-x-8 mt-8">
-            <p className="text-secondary text-2xl">
-              Soluciones de Entrenamiento
-            </p>
-            <img src="/trainingRed.png" alt="" className="h-8 w-8" />
-          </div>
-          <CustomAccordion items={accordionItems} />
+          <TrainingSolutionsPanel
+            isCreatingPlan={creatingPlan}
+            accordionItems={accordionItems}
+            collapseAccordion={collapseAccordion}
+            onCollapseComplete={() => setCollapseAccordion(false)}
+            goToTests={() => {
+              customNavigate("forward", "trainingMenu", "studies");
+              setClosePopup(true);
+              setTimeout(() => {
+                navigate("/studies");
+              }, 300);
+            }}
+          />
         </div>
       </div>
-    </div>
+      {displayPopup && (
+        <ModelChoicePopup
+          closePopup={() => {
+            setIsBlurred(false);
+            setDisplayPopup(false);
+          }}
+          externalClose={closePopup}
+        />
+      )}
+    </>
   );
 };
 

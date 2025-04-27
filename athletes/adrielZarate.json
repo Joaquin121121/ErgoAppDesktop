@@ -1,0 +1,348 @@
+{
+  "birthDate": "2025-02-21T00:30:16.628Z",
+  "category": "Primera",
+  "comments": "",
+  "completedStudies": [
+    {
+      "date": "2025-02-21T00:51:33.674Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.396,
+          "avgHeightReached": 19.229562,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.054
+            },
+            {
+              "deleted": false,
+              "time": 0.609
+            },
+            {
+              "deleted": false,
+              "time": 0.605
+            },
+            {
+              "deleted": false,
+              "time": 0.105
+            },
+            {
+              "deleted": false,
+              "time": 0.607
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.3964,
+          "avgHeightReached": 19.26842922,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.105
+            },
+            {
+              "deleted": false,
+              "time": 0.557
+            },
+            {
+              "deleted": false,
+              "time": 0.104
+            },
+            {
+              "deleted": false,
+              "time": 0.609
+            },
+            {
+              "deleted": false,
+              "time": 0.607
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.41875,
+          "avgHeightReached": 21.502485351562505,
+          "jumpTimes": [
+            {
+              "deleted": false,
+              "time": 0.508
+            },
+            {
+              "deleted": false,
+              "time": 0.556
+            },
+            {
+              "deleted": false,
+              "time": 0.558
+            },
+            {
+              "deleted": false,
+              "time": 0.053
+            }
+          ],
+          "takeoffFoot": "both",
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    },
+    {
+      "date": "2025-03-12T14:27:07.297Z",
+      "results": {
+        "dropJumps": [
+          {
+            "avgFlightTime": 0.4595,
+            "avgHeightReached": 25.891073156250005,
+            "height": "30",
+            "sensitivity": 100,
+            "stiffness": null,
+            "takeoffFoot": "both",
+            "times": [
+              {
+                "deleted": false,
+                "performance": 73.45,
+                "stiffness": null,
+                "time": 0.368
+              },
+              {
+                "deleted": false,
+                "performance": 93.41,
+                "stiffness": null,
+                "time": 0.468
+              },
+              {
+                "deleted": false,
+                "performance": 100,
+                "stiffness": null,
+                "time": 0.501
+              },
+              {
+                "deleted": false,
+                "performance": 100,
+                "stiffness": null,
+                "time": 0.501
+              }
+            ],
+            "type": "dropJump"
+          },
+          {
+            "avgFlightTime": 0.43500000000000005,
+            "avgHeightReached": 23.203715625000008,
+            "height": "30",
+            "sensitivity": 100,
+            "stiffness": null,
+            "takeoffFoot": "both",
+            "times": [
+              {
+                "deleted": false,
+                "performance": 100,
+                "stiffness": null,
+                "time": 0.468
+              },
+              {
+                "deleted": false,
+                "performance": 85.9,
+                "stiffness": null,
+                "time": 0.402
+              }
+            ],
+            "type": "dropJump"
+          },
+          {
+            "avgFlightTime": 0.8180000000000001,
+            "avgHeightReached": 82.0513305,
+            "height": "60",
+            "sensitivity": 100,
+            "stiffness": null,
+            "takeoffFoot": "both",
+            "times": [
+              {
+                "deleted": false,
+                "performance": 100,
+                "stiffness": null,
+                "time": 1.302
+              },
+              {
+                "deleted": false,
+                "performance": 25.65,
+                "stiffness": null,
+                "time": 0.334
+              }
+            ],
+            "type": "dropJump"
+          }
+        ],
+        "heightUnit": "cm",
+        "maxAvgHeightReached": 82.0513305,
+        "takeoffFoot": "both",
+        "type": "multipleDropJump"
+      },
+      "studyInfo": {
+        "description": "Salto de Caída",
+        "name": "Drop Jump",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    },
+    {
+      "date": "2025-03-12T15:03:37.281Z",
+      "results": {
+        "abalakov": {
+          "avgFlightTime": 0.667,
+          "avgHeightReached": 54.55451362500001,
+          "takeoffFoot": "both",
+          "times": [
+            {
+              "deleted": false,
+              "performance": 100,
+              "stiffness": null,
+              "time": 0.667
+            }
+          ],
+          "type": "abalakov"
+        },
+        "cmj": {
+          "avgFlightTime": 0.27125,
+          "avgHeightReached": 9.0223259765625,
+          "takeoffFoot": "both",
+          "times": [
+            {
+              "deleted": false,
+              "performance": 16.64,
+              "stiffness": null,
+              "time": 0.1
+            },
+            {
+              "deleted": false,
+              "performance": 100,
+              "stiffness": null,
+              "time": 0.601
+            },
+            {
+              "deleted": false,
+              "performance": 16.64,
+              "stiffness": null,
+              "time": 0.1
+            },
+            {
+              "deleted": false,
+              "performance": 83.19,
+              "stiffness": null,
+              "time": 0.5
+            },
+            {
+              "deleted": false,
+              "performance": 16.81,
+              "stiffness": null,
+              "time": 0.101
+            },
+            {
+              "deleted": false,
+              "performance": 49.92,
+              "stiffness": null,
+              "time": 0.3
+            },
+            {
+              "deleted": false,
+              "performance": 16.81,
+              "stiffness": null,
+              "time": 0.101
+            },
+            {
+              "deleted": false,
+              "performance": 61.06,
+              "stiffness": null,
+              "time": 0.367
+            }
+          ],
+          "type": "cmj"
+        },
+        "squatJump": {
+          "avgFlightTime": 0.5718571428571428,
+          "avgHeightReached": 40.10090007397959,
+          "takeoffFoot": "both",
+          "times": [
+            {
+              "deleted": false,
+              "performance": 13.32,
+              "stiffness": null,
+              "time": 0.2
+            },
+            {
+              "deleted": false,
+              "performance": 17.79,
+              "stiffness": null,
+              "time": 0.267
+            },
+            {
+              "deleted": false,
+              "performance": 26.65,
+              "stiffness": null,
+              "time": 0.4
+            },
+            {
+              "deleted": false,
+              "performance": 6.66,
+              "stiffness": null,
+              "time": 0.1
+            },
+            {
+              "deleted": false,
+              "performance": 100,
+              "stiffness": null,
+              "time": 1.501
+            },
+            {
+              "deleted": false,
+              "performance": 57.83,
+              "stiffness": null,
+              "time": 0.868
+            },
+            {
+              "deleted": false,
+              "performance": 44.44,
+              "stiffness": null,
+              "time": 0.667
+            }
+          ],
+          "type": "squatJump"
+        },
+        "type": "bosco"
+      },
+      "studyInfo": {
+        "description": "Combinación de Tests",
+        "name": "BOSCO Test",
+        "preview": {
+          "equipment": [
+            "Alfombra de Contacto"
+          ]
+        }
+      }
+    }
+  ],
+  "country": "AR",
+  "discipline": "basketball",
+  "gender": "F",
+  "height": "181",
+  "heightUnit": "cm",
+  "institution": "Las Palmas",
+  "name": "Adriel Zarate",
+  "state": "X",
+  "weight": "77",
+  "weightUnit": "kgs"
+}
