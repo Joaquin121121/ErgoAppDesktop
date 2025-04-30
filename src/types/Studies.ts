@@ -201,6 +201,8 @@ export interface BaseResult {
   sensitivity: number;
 }
 
+// CMJ Result, SquatJump Result, Abalakov Result and Custom Study Result are stored as basic_result in the database
+
 export interface CMJResult extends BaseResult {
   type: "cmj";
   load: number;
@@ -226,7 +228,7 @@ export interface MultipleJumpsResult extends BaseResult {
   criteria: "numberOfJumps" | "stiffness" | "time";
   criteriaValue: number | null;
   avgFloorTime: number;
-  stiffness: number[];
+  stiffness?: number[]; // Helper to avoid extra calculations
   performance: number[];
   avgStiffness: number;
   avgPerformance: number;
