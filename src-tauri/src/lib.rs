@@ -10,7 +10,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             Builder::default()
-                .add_migrations("sqlite:app.db", migrations::get_migrations())
+                .add_migrations("sqlite:ergolab.db", migrations::get_migrations())
                 .build()
         )
         .setup(|app| {

@@ -14,6 +14,7 @@ import { availableEquipment } from "../types/Studies";
 import ReusableFilter from "../components/ReusableFilter";
 import { useUser } from "../contexts/UserContext";
 import { useBlur } from "../contexts/BlurContext";
+
 function About({
   isExpanded,
   animation,
