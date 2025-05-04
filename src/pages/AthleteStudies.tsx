@@ -71,6 +71,10 @@ function AthleteStudies({
     };
   }, []);
 
+  useEffect(() => {
+    console.log(athlete.completedStudies);
+  }, [athlete.completedStudies]);
+
   const onDelete = async () => {
     setAthlete({
       ...athlete,
@@ -252,7 +256,7 @@ function AthleteStudies({
               return (
                 <CompletedStudyCard
                   disabled={comparing && !validStudiesToCompare[index].valid}
-                  key={key}
+                  key={index}
                   study={study}
                   onDelete={(date) => setStudyToDelete(date)}
                   onClick={() => {

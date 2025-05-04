@@ -9,6 +9,7 @@ use std::thread;
 use tauri::AppHandle;
 use tauri::Emitter;
 use tauri::Manager;
+use std::path::PathBuf;
 
 lazy_static! {
     static ref ACTIVE_PORTS: Arc<Mutex<HashMap<String, Box<dyn SerialPort + Send>>>> =

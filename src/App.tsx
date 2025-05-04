@@ -39,6 +39,9 @@ import TrainingMenu from "./pages/TrainingMenu";
 import { NewPlanProvider } from "./contexts/NewPlanContext";
 import LoginPage from "./pages/LoginPage";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+// Import useDatabaseSync for type checking only
+import { useDatabaseSync } from "./hooks/useDatabaseSync";
+
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
@@ -110,6 +113,8 @@ function App() {
   const [showUpdate, setShowUpdate] = useState(false);
   const [hasGlobalError, setHasGlobalError] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Note: Database sync is now fully managed by the ConnectionStatus component
 
   const appWindow = Window.getCurrent();
   const keys = [

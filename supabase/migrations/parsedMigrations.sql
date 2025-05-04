@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS "athlete" (
     "comments" TEXT,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "deleted_at" TIMESTAMP,
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    FOREIGN KEY ("coach_id") REFERENCES "coach"("id")
 );
 
 CREATE TABLE IF NOT EXISTS "coach" (
@@ -32,14 +33,14 @@ CREATE TABLE IF NOT EXISTS "coach" (
     "last_name" TEXT NOT NULL,
     "info" TEXT,
     "specialty" TEXT,
-    "uid" TEXT PRIMARY KEY,
+    "id" TEXT PRIMARY KEY,
     "created_at" TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS "base_result" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "id" TEXT PRIMARY KEY,
     "takeoff_foot" TEXT NOT NULL CHECK (takeoff_foot IN ('right', 'left', 'both')),
     "sensitivity" REAL NOT NULL,
     "created_at" TIMESTAMP NOT NULL,
@@ -50,21 +51,21 @@ CREATE TABLE IF NOT EXISTS "base_result" (
 );
 
 CREATE TABLE IF NOT EXISTS "basic_result" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "id" TEXT PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
     "type" TEXT NOT NULL CHECK (type IN ('cmj', 'abalakov', 'squatJump', 'custom')),
     "load" REAL NOT NULL,
     "loadunit" TEXT NOT NULL CHECK (loadunit IN ('kgs', 'lbs')),
-    "base_result_id" INTEGER NOT NULL,
-    "bosco_result_id" INTEGER,
+    "base_result_id" TEXT NOT NULL,
+    "bosco_result_id" TEXT,
     FOREIGN KEY ("base_result_id") REFERENCES "base_result"("id"),
     FOREIGN KEY ("bosco_result_id") REFERENCES "bosco_result"("id")
 );
 
 CREATE TABLE IF NOT EXISTS "bosco_result" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "id" TEXT PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
@@ -73,18 +74,18 @@ CREATE TABLE IF NOT EXISTS "bosco_result" (
 );
 
 CREATE TABLE IF NOT EXISTS "drop_jump_result" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "id" TEXT PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
     "height" TEXT NOT NULL,
     "stiffness" NUMERIC NOT NULL,
-    "base_result_id" INTEGER NOT NULL,
+    "base_result_id" TEXT NOT NULL,
     FOREIGN KEY ("base_result_id") REFERENCES "base_result"("id")
 );
 
 CREATE TABLE IF NOT EXISTS "event" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "id" TEXT PRIMARY KEY,
     "event_type" TEXT NOT NULL,
     "event_name" TEXT NOT NULL,
     "event_date" TIMESTAMP NOT NULL,
@@ -94,14 +95,14 @@ CREATE TABLE IF NOT EXISTS "event" (
     "deleted_at" TIMESTAMP,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "athlete_id" TEXT NOT NULL,
-    FOREIGN KEY ("coach_id") REFERENCES "coach"("uid"),
+    FOREIGN KEY ("coach_id") REFERENCES "coach"("id"),
     FOREIGN KEY ("athlete_id") REFERENCES "athlete"("id")
 );
 
 CREATE TABLE IF NOT EXISTS "jump_time" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "id" TEXT PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "base_result_id" INTEGER NOT NULL,
+    "base_result_id" TEXT NOT NULL,
     "index" INTEGER NOT NULL,
     "time" REAL NOT NULL,
     "deleted" BOOLEAN NOT NULL,
@@ -114,7 +115,7 @@ CREATE TABLE IF NOT EXISTS "jump_time" (
 );
 
 CREATE TABLE IF NOT EXISTS "multiple_drop_jump_result" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "id" TEXT PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
@@ -126,13 +127,13 @@ CREATE TABLE IF NOT EXISTS "multiple_drop_jump_result" (
 );
 
 CREATE TABLE IF NOT EXISTS "multiple_jumps_result" (
-    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+    "id" TEXT PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
     "criteria" TEXT NOT NULL CHECK (criteria IN ('numberOfJumps', 'stiffness', 'time')),
     "criteria_value" NUMERIC,
-    "base_result_id" INTEGER NOT NULL,
+    "base_result_id" TEXT NOT NULL,
     FOREIGN KEY ("base_result_id") REFERENCES "base_result"("id")
 );
 
@@ -170,7 +171,7 @@ END;
 CREATE TRIGGER IF NOT EXISTS set_last_changed_coach
 AFTER UPDATE ON "coach"
 BEGIN
-    UPDATE "coach" SET last_changed = CURRENT_TIMESTAMP WHERE uid = NEW.uid;
+    UPDATE "coach" SET last_changed = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
 -- drop_jump_result table
@@ -208,8 +209,13 @@ BEGIN
     UPDATE "multiple_jumps_result" SET last_changed = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END; 
 
+/* -- Insert coach data
+INSERT OR REPLACE INTO "coach" ("email", "first_name", "last_name", "info", "specialty", "id", "created_at", "last_changed", "deleted_at")
+VALUES
+  ('joaquindelrio16@gmail.com', 'Joaquin', 'Del Rio', 'Entrenador de natacion', 'Fuerza', '650cbaf0-8953-4412-a4dd-16f31f55bd45', '2025-04-28T15:30:00+00:00', '2025-04-28T15:30:00+00:00', NULL);
+
 -- Insert athletes data
-INSERT INTO "athlete" ("id", "coach_id", "name", "birth_date", "country", "state", "gender", "height", "height_unit", "weight", "weight_unit", "discipline", "category", "institution", "comments", "last_changed", "deleted_at", "created_at")
+INSERT OR REPLACE INTO "athlete" ("id", "coach_id", "name", "birth_date", "country", "state", "gender", "height", "height_unit", "weight", "weight_unit", "discipline", "category", "institution", "comments", "last_changed", "deleted_at", "created_at")
 VALUES
   ('f48c9a39-4b15-46ba-9660-ce039bb69d6a', '650cbaf0-8953-4412-a4dd-16f31f55bd45', 'Anibal', '2008-07-17', 'AR', 'X', 'M', '167', 'cm', '67', 'kgs', 'football', '1', 'IACC', '', '2025-04-27T19:18:43.394859+00:00', NULL, '2025-04-28T15:35:18.408741+00:00'),
   ('6b8d39ed-eaa6-4c53-8029-f1b26350241a', '650cbaf0-8953-4412-a4dd-16f31f55bd45', 'Joaquin Del Rio', '2025-02-21', 'AR', 'X', 'M', '180', 'cm', '80', 'kgs', 'football', 'U21', '', '', '2025-04-27T19:18:43.394859+00:00', NULL, '2025-04-28T15:35:18.408741+00:00'),
@@ -230,4 +236,4 @@ VALUES
   ('ea2cf47f-14aa-4c69-8693-9a9730c7c039', '650cbaf0-8953-4412-a4dd-16f31f55bd45', 'Marcelo Dominguez', '2025-02-21', 'AR', 'X', 'M', '175', 'cm', '93', 'kgs', 'basketball', 'Primera', 'Las Palmas', '', '2025-04-27T19:18:43.394859+00:00', NULL, '2025-04-28T15:35:18.408741+00:00'),
   ('c4c9f2e0-a88d-40ad-9997-d6851701ea0c', '650cbaf0-8953-4412-a4dd-16f31f55bd45', 'Lautaro Rincon', '2025-02-21', 'AR', 'X', 'M', '175', 'cm', '95', 'kgs', 'basketball', 'Primera', 'Las Palmas', '', '2025-04-27T19:18:43.394859+00:00', NULL, '2025-04-28T15:35:18.408741+00:00'),
   ('78de8d59-54aa-4502-9638-c3ce17a97772', '650cbaf0-8953-4412-a4dd-16f31f55bd45', 'Juan Loza', '2025-02-21', 'AR', 'X', 'M', '166', 'cm', '63', 'kgs', 'basketball', 'Primera', 'Las Palmas', '', '2025-04-27T19:18:43.394859+00:00', NULL, '2025-04-28T15:35:18.408741+00:00'),
-  ('ab22dcad-f079-474e-9b2f-0e1df5a9e03a', '650cbaf0-8953-4412-a4dd-16f31f55bd45', 'Lauti Garay', '2025-02-21', 'AR', 'X', 'M', '168', 'cm', '110', 'kgs', 'basketball', 'Primera', 'Las Palmas', '', '2025-04-27T19:18:43.394859+00:00', NULL, '2025-04-28T15:35:18.408741+00:00'); 
+  ('ab22dcad-f079-474e-9b2f-0e1df5a9e03a', '650cbaf0-8953-4412-a4dd-16f31f55bd45', 'Lauti Garay', '2025-02-21', 'AR', 'X', 'M', '168', 'cm', '110', 'kgs', 'basketball', 'Primera', 'Las Palmas', '', '2025-04-27T19:18:43.394859+00:00', NULL, '2025-04-28T15:35:18.408741+00:00');   */

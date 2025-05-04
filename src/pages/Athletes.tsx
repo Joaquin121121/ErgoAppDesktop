@@ -12,6 +12,7 @@ import AthleteFilter from "../components/AthleteFilter";
 import { athleteAgeRanges } from "../types/Athletes";
 import { useAthleteComparison } from "../contexts/AthleteComparisonContext";
 import { useBlur } from "../contexts/BlurContext";
+import getAthletes from "../hooks/parseAthletes";
 // New interface for filter state
 interface FilterState {
   age: string[];
@@ -127,29 +128,6 @@ function Athletes({
     return Object.values(validations).every((validation) => validation());
   };
 
-  // Load athletes
-  const loadAthletes = async () => {
-    try {
-      const result = await readDirectoryJsons("athletes");
-      const parsedAthletes = result.files
-        .map((item) => transformToAthlete(item.content))
-        .filter((athlete) => athlete !== null);
-      const formattedAthletes: [string, any][] = parsedAthletes.map(
-        (athlete) => {
-          return [athlete.name, athlete];
-        }
-      );
-      setLoadedAthletes(formattedAthletes);
-      setInstitutions(
-        Array.from(
-          new Set(parsedAthletes.map((athlete) => athlete.institution))
-        )
-      );
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   // Other handlers
   const handleFilter = () => {
     setIsBlurred(true);
@@ -228,6 +206,10 @@ function Athletes({
 
   // Effects
   useEffect(() => {
+    const loadAthletes = async () => {
+      const athletes = await getAthletes();
+      setLoadedAthletes(athletes.map((athlete) => [athlete.name, athlete]));
+    };
     loadAthletes();
     resetAthlete();
     setSelectedAthletes([]);
@@ -250,6 +232,10 @@ function Athletes({
     }
     setIsBlurred(false);
   }, [athleteToDelete.length]);
+
+  useEffect(() => {
+    console.log(loadedAthletes);
+  }, [loadedAthletes]);
 
   useEffect(() => {
     const updatePosition = () => {

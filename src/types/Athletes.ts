@@ -1,6 +1,7 @@
 import { CompletedStudy } from "./Studies";
 
 export interface Athlete {
+  id: string;
   name: string;
   birthDate: Date;
   country: string;
@@ -15,6 +16,9 @@ export interface Athlete {
   institution: string;
   comments: string;
   completedStudies: CompletedStudy[];
+  createdAt: Date;
+  deletedAt: Date;
+  lastChanged: Date;
 }
 
 export function isAthlete(value: unknown): value is Athlete {
@@ -137,6 +141,7 @@ export function transformToAthlete(data: unknown): Athlete | null {
       : [];
 
     const athlete: Athlete = {
+      id: String(input.id),
       name: String(input.name || ""),
       birthDate,
       country: String(input.country || ""),
@@ -151,6 +156,12 @@ export function transformToAthlete(data: unknown): Athlete | null {
       institution: String(input.institution || ""),
       comments: String(input.comments || ""),
       completedStudies,
+      createdAt: new Date(),
+      deletedAt:
+        input.deletedAt && input.deletedAt instanceof Date
+          ? input.deletedAt
+          : null,
+      lastChanged: new Date(),
     };
 
     return isAthlete(athlete) ? athlete : null;

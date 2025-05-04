@@ -370,6 +370,10 @@ function CompletedStudyInfo({
     }, 300);
   };
 
+  useEffect(() => {
+    console.log("Jump Times: ", jumpTimes);
+  }, [jumpTimes]);
+
   const onCloseTable = () => {
     if (tableAnimation !== navAnimations.popupFadeInTop) {
       return;

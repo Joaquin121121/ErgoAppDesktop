@@ -8,28 +8,10 @@ import React, {
 } from "react";
 import { CalendarEvent } from "../components/Calendar";
 import { supabase } from "../supabase";
-import { useOnlineStatus } from "../hooks/useOnlineStatus";
-import {
-  addPendingRequest,
-  getPendingRequests,
-  removePendingRequest,
-} from "../utils/offlineStorage";
-
-// Local storage keys
-const STORED_EVENTS_KEY = "ergoapp_events";
 
 // Type definitions for event listeners
 type ChangeType = "add" | "update" | "delete" | "sync";
 type ChangeListener = (type: ChangeType, event?: CalendarEvent) => void;
-
-// Type definition for pending requests
-interface PendingRequest {
-  id: string;
-  type: "insert" | "update" | "delete";
-  table: string;
-  data: any;
-  timestamp: number;
-}
 
 interface CalendarContextType {
   selectedDate: Date;
@@ -43,8 +25,6 @@ interface CalendarContextType {
   addEvent: (event: Omit<CalendarEvent, "id">) => Promise<void>;
   updateEvent: (event: CalendarEvent) => Promise<void>;
   deleteEvent: (id: string | number) => Promise<void>;
-  isOnline: boolean;
-  pendingSyncCount: number;
   // Add change listener functions
   addChangeListener: (listener: ChangeListener) => void;
   removeChangeListener: (listener: ChangeListener) => void;
@@ -54,125 +34,16 @@ const CalendarContext = createContext<CalendarContextType | undefined>(
   undefined
 );
 
-// Helper function to load events from local storage
-const loadEventsFromStorage = (): CalendarEvent[] => {
-  try {
-    const storedEvents = localStorage.getItem(STORED_EVENTS_KEY);
-    if (storedEvents) {
-      const parsedEvents = JSON.parse(storedEvents);
-      // Convert string dates back to Date objects if needed
-      return parsedEvents.map((event: any) => ({
-        ...event,
-        // Ensure event_date is properly formatted
-        event_date: event.event_date,
-      }));
-    }
-  } catch (error) {
-    console.error("Failed to load events from storage:", error);
-  }
-  return [];
-};
-
-// Helper function to save events to local storage
-const saveEventsToStorage = (events: CalendarEvent[]) => {
-  try {
-    localStorage.setItem(STORED_EVENTS_KEY, JSON.stringify(events));
-  } catch (error) {
-    console.error("Failed to save events to storage:", error);
-  }
-};
-
-// Helper to check if an event ID matches a temporary ID
-const isMatchingTempId = (
-  eventId: string | number,
-  tempId: string
-): boolean => {
-  if (typeof eventId === "string") {
-    return eventId === tempId;
-  }
-  return false;
-};
-
-// Helper to identify temporary events (those created offline)
-const isTempEvent = (eventId: string | number): boolean => {
-  return typeof eventId === "string" && eventId.startsWith("temp_");
-};
-
 // Helper to get current timestamp in ISO format
 const getCurrentTimestamp = (): string => {
   return new Date().toISOString();
-};
-
-// Helper to clean up temporary events that have been processed
-const cleanupProcessedTempEvents = (
-  events: CalendarEvent[],
-  pendingRequests: PendingRequest[]
-): CalendarEvent[] => {
-  // If there are no pending requests, remove all temp events
-  if (pendingRequests.length === 0) {
-    return events.filter((event) => !isTempEvent(event.id));
-  }
-
-  // Get all tempIds from pending requests
-  const pendingTempIds = pendingRequests
-    .filter((req) => req.table === "event" && req.type === "insert")
-    .map((req) => req.data.tempId)
-    .filter(Boolean);
-
-  // Keep only temp events that are still pending
-  return events.filter((event) => {
-    if (!isTempEvent(event.id)) return true;
-    return pendingTempIds.includes(event.id);
-  });
-};
-
-// Helper to resolve conflicts between events with same ID
-const resolveConflict = (
-  localEvent: CalendarEvent,
-  serverEvent: CalendarEvent
-): CalendarEvent => {
-  // If local event has a last_changed timestamp and it's more recent than server event
-  if (
-    localEvent.last_changed &&
-    serverEvent.last_changed &&
-    new Date(localEvent.last_changed) > new Date(serverEvent.last_changed)
-  ) {
-    // Keep local changes but use server ID
-    return {
-      ...localEvent,
-      id: serverEvent.id,
-    };
-  }
-
-  // Otherwise use server version
-  return serverEvent;
-};
-
-// Helper to check network connection in real-time
-const checkNetworkConnection = async (): Promise<boolean> => {
-  try {
-    // Try to reach Supabase with a small request
-    const { data, error } = await supabase
-      .from("event")
-      .select("id")
-      .limit(1)
-      .maybeSingle();
-    return !error;
-  } catch (e) {
-    console.error("Network check failed:", e);
-    return false;
-  }
 };
 
 export const CalendarProvider = ({ children }: { children: ReactNode }) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [addingEvent, setAddingEvent] = useState(false);
   const [eventInfo, setEventInfo] = useState<CalendarEvent | null>(null);
-  const [events, setEventsState] = useState<CalendarEvent[]>(() =>
-    loadEventsFromStorage()
-  );
-  const [pendingSyncCount, setPendingSyncCount] = useState<number>(0);
-  const { isOnline } = useOnlineStatus();
+  const [events, setEventsState] = useState<CalendarEvent[]>([]);
 
   // Add change listeners for components that need to react to event changes
   const [changeListeners, setChangeListeners] = useState<ChangeListener[]>([]);
@@ -201,12 +72,10 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
     setChangeListeners((prev) => prev.filter((l) => l !== listener));
   }, []);
 
-  // Enhance fetchEvents to explicitly handle deletions
+  // Fetch events from database
   const fetchEvents = useCallback(async () => {
-    if (!isOnline) return;
-
     try {
-      console.log("Fetching all events from Supabase for sync");
+      console.log("Fetching all events from Supabase");
       const { data, error } = await supabase.from("event").select("*");
 
       if (error) {
@@ -220,106 +89,21 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
       }
 
       console.log(`Fetched ${data.length} events from Supabase`);
-
-      // Create a Set of server event IDs for quick lookup
-      const serverEventIds = new Set(data.map((event) => event.id));
-      console.log("Server event IDs:", Array.from(serverEventIds));
-
-      setEventsState((prevEvents) => {
-        // Keep track of changes made
-        let changes = { added: 0, updated: 0, deleted: 0 };
-
-        // 1. Find events that exist locally but not on server (were deleted)
-        const deletedEvents = prevEvents.filter(
-          (event) =>
-            !isTempEvent(event.id) &&
-            typeof event.id === "number" &&
-            !serverEventIds.has(event.id)
-        );
-
-        if (deletedEvents.length > 0) {
-          console.log(
-            `Found ${deletedEvents.length} events deleted on server:`,
-            deletedEvents.map((e) => e.id)
-          );
-          changes.deleted = deletedEvents.length;
-
-          // Notify listeners about each deleted event
-          deletedEvents.forEach((event) => {
-            notifyListeners("delete", { id: event.id } as CalendarEvent);
-          });
-        }
-
-        // 2. Keep temporary events and events that still exist on server
-        const remainingEvents = prevEvents.filter(
-          (event) =>
-            isTempEvent(event.id) ||
-            typeof event.id !== "number" ||
-            serverEventIds.has(event.id)
-        );
-
-        // 3. Process server events - add new ones and update existing ones
-        const serverEventsMap: Record<number, CalendarEvent> = {};
-        const updatedEvents = [...remainingEvents];
-
-        data.forEach((serverEvent) => {
-          const eventData = serverEvent as CalendarEvent;
-          const existingIndex = remainingEvents.findIndex(
-            (e) => e.id === eventData.id
-          );
-
-          if (existingIndex === -1) {
-            // Event doesn't exist locally, add it
-            updatedEvents.push(eventData);
-            changes.added++;
-            console.log(`Adding new event from server: ${eventData.id}`);
-            notifyListeners("add", eventData);
-          } else {
-            // Event exists locally, update it if needed
-            const localEvent = remainingEvents[existingIndex];
-            const resolvedEvent = resolveConflict(localEvent, eventData);
-
-            if (resolvedEvent !== localEvent) {
-              updatedEvents[existingIndex] = resolvedEvent;
-              changes.updated++;
-              console.log(
-                `Updating existing event from server: ${eventData.id}`
-              );
-              notifyListeners("update", resolvedEvent);
-            }
-          }
-        });
-
-        console.log(
-          `Sync complete: ${changes.added} added, ${changes.updated} updated, ${changes.deleted} deleted`
-        );
-
-        // Only save if changes were made
-        if (changes.added > 0 || changes.updated > 0 || changes.deleted > 0) {
-          console.log("Changes detected, saving to local storage");
-          saveEventsToStorage(updatedEvents);
-          notifyListeners("sync");
-        } else {
-          console.log("No changes detected during sync");
-        }
-
-        return updatedEvents;
-      });
+      setEventsState(data);
+      notifyListeners("sync");
     } catch (error) {
-      console.error("Failed to fetch events for sync:", error);
+      console.error("Failed to fetch events:", error);
     }
-  }, [isOnline, notifyListeners]);
+  }, [notifyListeners]);
 
   // Setup Supabase realtime subscription
   useEffect(() => {
-    if (!isOnline) return;
-
-    console.log("Setting up enhanced realtime subscription for event table");
+    console.log("Setting up realtime subscription for event table");
 
     // Create a single channel with multiple handlers for different operations
     const channel = supabase.channel("events-channel");
 
-    // DELETE handler - most important for our issue
+    // DELETE handler
     channel.on(
       "postgres_changes",
       { event: "DELETE", schema: "public", table: "event" },
@@ -355,11 +139,7 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
                 ...prevEvents.slice(existingIndex + 1),
               ];
 
-              // Save to storage and notify listeners
-              saveEventsToStorage(updatedEvents);
               notifyListeners("delete", { id: deletedId } as CalendarEvent);
-
-              console.log(`Event ${deletedId} removed from local state`);
               return updatedEvents;
             } else {
               console.log(
@@ -394,7 +174,6 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
               `Adding new event with ID ${newEvent.id} to local state`
             );
             const updatedEvents = [...prevEvents, newEvent];
-            saveEventsToStorage(updatedEvents);
             notifyListeners("add", newEvent);
             return updatedEvents;
           }
@@ -430,19 +209,14 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
               `Updating event with ID ${updatedEvent.id} in local state`
             );
 
-            // Apply conflict resolution if needed
-            const oldEvent = prevEvents[existingIndex];
-            const resolvedEvent = resolveConflict(oldEvent, updatedEvent);
-
             // Create a new array with the updated event
             const updatedEvents = [
               ...prevEvents.slice(0, existingIndex),
-              resolvedEvent,
+              updatedEvent,
               ...prevEvents.slice(existingIndex + 1),
             ];
 
-            saveEventsToStorage(updatedEvents);
-            notifyListeners("update", resolvedEvent);
+            notifyListeners("update", updatedEvent);
             return updatedEvents;
           }
 
@@ -459,382 +233,25 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
       console.log("Supabase realtime subscription status:", status);
     });
 
-    // Setup periodic full fetch to catch any missed events
-    const fullSyncInterval = setInterval(() => {
-      console.log("Performing periodic full sync with Supabase");
-      fetchEvents();
-    }, 60000); // Every minute
+    // Initial fetch of events
+    fetchEvents();
 
     // Cleanup on unmount
     return () => {
       console.log("Cleaning up Supabase realtime subscription");
       channel.unsubscribe();
-      clearInterval(fullSyncInterval);
     };
-  }, [isOnline, notifyListeners, fetchEvents]);
+  }, [fetchEvents, notifyListeners]);
 
-  // Process any pending offline requests
-  const processPendingRequests = useCallback(async () => {
-    if (!isOnline) return Promise.resolve(); // Return resolved promise when offline
-
-    console.log("Processing pending requests...");
-    const pendingRequests = getPendingRequests();
-    if (pendingRequests.length === 0) {
-      console.log("No pending requests to process");
-      return Promise.resolve(); // Return resolved promise when no pending requests
-    }
-
-    console.log(`Found ${pendingRequests.length} pending requests to process`);
-    setPendingSyncCount(pendingRequests.length);
-
-    // Sort requests by timestamp to ensure proper order
-    const sortedRequests = [...pendingRequests].sort(
-      (a, b) => a.timestamp - b.timestamp
-    );
-
-    let processedCount = 0;
-    let successfulRequestIds = []; // Track successfully processed request IDs
-
-    // Process deletes first to ensure they happen before potential server synchronization
-    const deleteRequests = sortedRequests.filter(
-      (req) => req.type === "delete"
-    );
-    const otherRequests = sortedRequests.filter((req) => req.type !== "delete");
-
-    // Prioritize delete requests first, then other types
-    const prioritizedRequests = [...deleteRequests, ...otherRequests];
-
-    try {
-      for (const request of prioritizedRequests) {
-        try {
-          if (request.table !== "event") {
-            console.log(`Skipping non-event request: ${request.table}`);
-            continue;
-          }
-
-          console.log(
-            `Processing ${request.type} request for event`,
-            request.data
-          );
-          let result;
-
-          if (request.type === "insert") {
-            // Remove any fields that shouldn't be sent to the server
-            const { tempId, ...rawData } = request.data;
-
-            // Extract only valid fields for the database
-            const {
-              coach_id = "1", // Default coach_id to "1" if not provided
-              event_type,
-              event_name,
-              athlete_name,
-              event_date,
-              duration,
-              last_changed,
-            } = rawData;
-
-            // Create validated data with only fields that exist in the database
-            const validEventData = {
-              coach_id,
-              event_type,
-              event_name,
-              athlete_name,
-              event_date,
-              duration,
-              last_changed: last_changed || getCurrentTimestamp(),
-            };
-
-            console.log(
-              "Inserting event from pending request:",
-              validEventData
-            );
-
-            try {
-              result = await supabase
-                .from("event")
-                .insert(validEventData)
-                .select();
-
-              console.log("Insert result:", result);
-
-              if (result.error) {
-                console.error("Insert error:", result.error);
-              } else {
-                // Success - add to the list of processed requests
-                successfulRequestIds.push(request.id);
-
-                // If successful, update any temporary events with the real ID
-                if (result?.data && result.data.length > 0) {
-                  const realEvent = result.data[0];
-                  console.log(
-                    "Successfully inserted event, got real ID:",
-                    realEvent.id
-                  );
-
-                  setEventsState((prev) => {
-                    // Replace the temporary event with the real one
-                    const tempId = request.data.tempId;
-                    console.log(
-                      `Looking for temp event with ID ${tempId} to replace`
-                    );
-
-                    const updated = prev.map((e) => {
-                      // Check if this is the temporary event we're replacing
-                      if (isMatchingTempId(e.id, tempId)) {
-                        console.log(
-                          `Found and replacing temp event ${tempId} with real event ${realEvent.id}`
-                        );
-                        const finalEvent = realEvent as CalendarEvent;
-                        notifyListeners("add", finalEvent);
-                        return finalEvent;
-                      }
-                      return e;
-                    });
-                    saveEventsToStorage(updated);
-                    return updated;
-                  });
-                }
-              }
-            } catch (error) {
-              console.error("Exception during insert:", error);
-            }
-          } else if (request.type === "update") {
-            if (request.table === "event") {
-              try {
-                const reqData = request.data as Partial<CalendarEvent>;
-                // Extract the id from the request data
-                const eventId = reqData.id;
-
-                if (!eventId) {
-                  console.error(
-                    "Cannot process update - missing ID in request data:",
-                    request.data
-                  );
-                  successfulRequestIds.push(request.id);
-                  continue;
-                }
-
-                // Remove the id from the data being sent for update
-                const { id, ...updateData } = reqData;
-
-                // Filter valid fields for the update
-                const validKeys = [
-                  "coach_id",
-                  "event_type",
-                  "event_name",
-                  "athlete_name",
-                  "event_date",
-                  "duration",
-                  "last_changed",
-                ];
-
-                const validEventData: Record<string, any> = {};
-
-                Object.keys(updateData).forEach((key) => {
-                  if (validKeys.includes(key)) {
-                    validEventData[key] = (updateData as any)[key];
-                  }
-                });
-
-                // Add last_changed if not present
-                if (!validEventData.last_changed) {
-                  validEventData.last_changed = new Date().toISOString();
-                }
-
-                console.log(
-                  "Processing pending update for event ID:",
-                  eventId,
-                  "with data:",
-                  validEventData
-                );
-
-                const { data, error } = await supabase
-                  .from("event")
-                  .update(validEventData)
-                  .eq("id", eventId)
-                  .select();
-
-                if (error) {
-                  console.error("Error processing pending update:", error);
-
-                  // If row not found, we can mark the request as completed
-                  if (error.code === "PGRST116") {
-                    console.log(
-                      "Event not found, marking update request as completed"
-                    );
-                    successfulRequestIds.push(request.id);
-                  }
-                } else {
-                  console.log("Successfully processed pending update:", data);
-                  successfulRequestIds.push(request.id);
-
-                  // Update local state with server response
-                  if (data && data.length > 0) {
-                    setEventsState((prev) => {
-                      const updated = prev.map((event) => {
-                        if (event.id === eventId) {
-                          return data[0] as CalendarEvent;
-                        }
-                        return event;
-                      });
-                      saveEventsToStorage(updated);
-                      return updated;
-                    });
-                  }
-                }
-              } catch (error) {
-                console.error("Failed to process pending update:", error);
-              }
-            }
-          } else if (request.type === "delete") {
-            // For deletes, we don't check timestamps - last operation wins
-            console.log(`Deleting event with ID ${request.data.id}`);
-
-            try {
-              result = await supabase
-                .from("event")
-                .delete()
-                .eq("id", request.data.id);
-
-              console.log("Delete result:", result);
-
-              if (result.error) {
-                console.error("Delete error:", result.error);
-
-                // If the error is "not found", consider it successful
-                if (
-                  result.error.code === "23503" ||
-                  result.error.message.includes("not found")
-                ) {
-                  console.log(
-                    "Record already deleted or doesn't exist - marking as successful"
-                  );
-                  successfulRequestIds.push(request.id);
-                }
-              } else {
-                // Success - add to the list of processed requests
-                successfulRequestIds.push(request.id);
-
-                // The delete operation is already reflected in UI due to optimistic updates
-                // Just notify listeners in case any components need to know
-                notifyListeners("delete", {
-                  id: request.data.id,
-                } as CalendarEvent);
-              }
-            } catch (error) {
-              console.error("Exception during delete:", error);
-            }
-          }
-
-          processedCount++;
-        } catch (error) {
-          console.error(`Error processing request:`, error);
-        }
-      }
-
-      console.log(
-        `Processed ${processedCount} of ${prioritizedRequests.length} pending requests`
-      );
-      console.log(
-        `Successfully completed ${successfulRequestIds.length} requests`
-      );
-
-      // Remove all successful requests at once
-      if (successfulRequestIds.length > 0) {
-        console.log(
-          `Removing ${successfulRequestIds.length} completed requests from storage`
-        );
-        successfulRequestIds.forEach((id) => {
-          try {
-            removePendingRequest(id);
-          } catch (error) {
-            console.error(`Error removing request ${id}:`, error);
-          }
-        });
-      }
-
-      // Clean up any orphaned temporary events
-      const remainingRequests = getPendingRequests();
-      setEventsState((prev) => {
-        const cleanedEvents = cleanupProcessedTempEvents(
-          prev,
-          remainingRequests
-        );
-        if (cleanedEvents.length !== prev.length) {
-          console.log(
-            `Cleaned up ${
-              prev.length - cleanedEvents.length
-            } orphaned temporary events`
-          );
-          saveEventsToStorage(cleanedEvents);
-        }
-        return cleanedEvents;
-      });
-
-      // Update the pending count
-      const newPendingCount = getPendingRequests().filter(
-        (req) => req.table === "event"
-      ).length;
-      console.log(`Updated pending count: ${newPendingCount}`);
-      setPendingSyncCount(newPendingCount);
-
-      return Promise.resolve(); // Return a resolved promise when done
-    } catch (error) {
-      console.error("Error processing pending requests:", error);
-      return Promise.reject(error); // Return rejected promise on error
-    }
-  }, [isOnline, notifyListeners]);
-
-  // Initial data fetch and process any pending requests
-  useEffect(() => {
-    if (isOnline) {
-      // Important: Process pending requests before fetching all events
-      // to ensure deletes are processed first
-      processPendingRequests().then(() => {
-        // Only after pending requests are processed, fetch all events
-        // This ensures offline deletes are sent to the server before
-        // we pull all events back down
-        fetchEvents();
-      });
-    }
-  }, [fetchEvents, isOnline, processPendingRequests]);
-
-  // Process pending requests when online status changes
-  useEffect(() => {
-    console.log(`Online status changed: ${isOnline ? "ONLINE" : "OFFLINE"}`);
-
-    if (isOnline) {
-      console.log("Back online - processing pending requests");
-      // Small delay to ensure network is stable
-      const timer = setTimeout(() => {
-        // Process pending requests first, then fetch all events
-        processPendingRequests().then(() => {
-          console.log("Pending requests processed, now fetching all events");
-          fetchEvents();
-        });
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
-
-    // Update pending count
-    const pendingCount = getPendingRequests().filter(
-      (req) => req.table === "event"
-    ).length;
-    console.log(`Current pending count: ${pendingCount}`);
-    setPendingSyncCount(pendingCount);
-  }, [isOnline, processPendingRequests, fetchEvents]);
-
-  // Custom setEvents function that handles storage
+  // Simple setEvents function
   const setEvents = useCallback((newEvents: CalendarEvent[]) => {
     setEventsState(newEvents);
-    saveEventsToStorage(newEvents);
   }, []);
 
   // Add a new event
   const addEvent = useCallback(
     async (event: Omit<CalendarEvent, "id">) => {
-      // Add timestamp for conflict resolution
+      // Add timestamp for tracking
       const timestamp = getCurrentTimestamp();
 
       // Extract only valid fields for the insert
@@ -858,78 +275,29 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
         athlete_id,
       };
 
-      // Generate a temporary unique ID for optimistic updates
-      const tempId = `temp_${Date.now()}`;
-      const tempEvent = {
-        ...validEventData,
-        id: tempId,
-      } as CalendarEvent;
+      try {
+        console.log("Adding event to Supabase:", validEventData);
 
-      // Optimistically update UI
-      setEventsState((prev) => {
-        const newEvents = [...prev, tempEvent];
-        saveEventsToStorage(newEvents);
-        // Notify listeners of the new event
-        notifyListeners("add", tempEvent);
-        return newEvents;
-      });
+        const { data, error } = await supabase
+          .from("event")
+          .insert(validEventData)
+          .select();
 
-      // Check network connection in real-time
-      const isCurrentlyOnline = await checkNetworkConnection();
-
-      if (isCurrentlyOnline) {
-        try {
-          console.log("Sending insert to Supabase with data:", validEventData);
-
-          const { data, error } = await supabase
-            .from("event")
-            .insert(validEventData)
-            .select();
-
-          if (error) {
-            console.error("Error adding event:", error);
-            // Store for offline processing with tempId reference
-            addPendingRequest({
-              type: "insert",
-              table: "event",
-              data: { ...validEventData, tempId },
-            });
-            setPendingSyncCount((prev) => prev + 1);
-          } else if (data && data.length > 0) {
-            console.log("Successfully inserted event in Supabase:", data[0]);
-            // Replace temp event with real one
-            setEventsState((prev) => {
-              const updated = prev.map((e) => {
-                if (isMatchingTempId(e.id, tempId)) {
-                  const finalEvent = data[0] as CalendarEvent;
-                  // Notify about the resolved event with real ID
-                  notifyListeners("update", finalEvent);
-                  return finalEvent;
-                }
-                return e;
-              });
-              saveEventsToStorage(updated);
-              return updated;
-            });
-          }
-        } catch (error) {
-          console.error("Failed to add event:", error);
-          // Store for offline processing
-          addPendingRequest({
-            type: "insert",
-            table: "event",
-            data: { ...validEventData, tempId },
-          });
-          setPendingSyncCount((prev) => prev + 1);
+        if (error) {
+          console.error("Error adding event:", error);
+          throw error;
         }
-      } else {
-        // Store for offline processing
-        addPendingRequest({
-          type: "insert",
-          table: "event",
-          data: { ...validEventData, tempId },
-        });
-        setPendingSyncCount((prev) => prev + 1);
+
+        if (data && data.length > 0) {
+          // Add the new event to state
+          const newEvent = data[0] as CalendarEvent;
+          setEventsState((prev) => [...prev, newEvent]);
+          notifyListeners("add", newEvent);
+          console.log("Successfully added event:", newEvent);
+        }
+      } catch (error) {
+        console.error("Failed to add event:", error);
+        throw error;
       }
     },
     [notifyListeners]
@@ -938,11 +306,10 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
   // Update an existing event
   const updateEvent = useCallback(
     async (event: CalendarEvent) => {
-      // Add timestamp for conflict resolution
+      // Add timestamp for tracking
       const timestamp = getCurrentTimestamp();
 
       // Filter event data to include only valid columns for the event table
-      // This prevents errors from trying to update columns that don't exist
       const {
         id,
         coach_id,
@@ -964,79 +331,32 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
         athlete_id,
       };
 
-      // Optimistically update UI
-      setEventsState((prev) => {
-        const updated = prev.map((e) => {
-          if (e.id === event.id) {
-            const updatedEvent = {
-              ...validEventData,
-              id: e.id,
-            } as CalendarEvent;
-            notifyListeners("update", updatedEvent);
-            return updatedEvent;
-          }
-          return e;
-        });
-        saveEventsToStorage(updated);
-        return updated;
-      });
+      try {
+        console.log("Updating event in Supabase:", validEventData);
 
-      // Check network connection in real-time
-      const isCurrentlyOnline = await checkNetworkConnection();
+        const { data, error } = await supabase
+          .from("event")
+          .update(validEventData)
+          .eq("id", id)
+          .select();
 
-      if (isCurrentlyOnline) {
-        try {
-          console.log("Sending update to Supabase with data:", validEventData);
-
-          const { data, error } = await supabase
-            .from("event")
-            .update(validEventData)
-            .eq("id", event.id)
-            .select();
-
-          if (error) {
-            console.error("Error updating event:", error);
-            // Store for offline processing
-            addPendingRequest({
-              type: "update",
-              table: "event",
-              data: { ...validEventData, id: event.id },
-            });
-            setPendingSyncCount((prev) => prev + 1);
-          } else if (data && data.length > 0) {
-            console.log("Successfully updated event in Supabase:", data[0]);
-            // Update with the server response to ensure we have the latest data
-            setEventsState((prev) => {
-              const updated = prev.map((e) => {
-                if (e.id === event.id) {
-                  const finalEvent = data[0] as CalendarEvent;
-                  notifyListeners("update", finalEvent);
-                  return finalEvent;
-                }
-                return e;
-              });
-              saveEventsToStorage(updated);
-              return updated;
-            });
-          }
-        } catch (error) {
-          console.error("Failed to update event:", error);
-          // Store for offline processing
-          addPendingRequest({
-            type: "update",
-            table: "event",
-            data: { ...validEventData, id: event.id },
-          });
-          setPendingSyncCount((prev) => prev + 1);
+        if (error) {
+          console.error("Error updating event:", error);
+          throw error;
         }
-      } else {
-        // Store for offline processing
-        addPendingRequest({
-          type: "update",
-          table: "event",
-          data: { ...validEventData, id: event.id },
-        });
-        setPendingSyncCount((prev) => prev + 1);
+
+        if (data && data.length > 0) {
+          // Update the event in state
+          const updatedEvent = data[0] as CalendarEvent;
+          setEventsState((prev) =>
+            prev.map((e) => (e.id === id ? updatedEvent : e))
+          );
+          notifyListeners("update", updatedEvent);
+          console.log("Successfully updated event:", updatedEvent);
+        }
+      } catch (error) {
+        console.error("Failed to update event:", error);
+        throw error;
       }
     },
     [notifyListeners]
@@ -1045,37 +365,23 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
   // Delete an event
   const deleteEvent = useCallback(
     async (id: string | number) => {
-      // Optimistically update UI
-      setEventsState((prev) => {
-        const filtered = prev.filter((e) => e.id !== id);
-        saveEventsToStorage(filtered);
-        notifyListeners("delete", { id } as CalendarEvent);
-        return filtered;
-      });
+      try {
+        console.log("Deleting event from Supabase:", id);
 
-      // Check network connection in real-time
-      const isCurrentlyOnline = await checkNetworkConnection();
+        const { error } = await supabase.from("event").delete().eq("id", id);
 
-      if (isCurrentlyOnline) {
-        try {
-          const { error } = await supabase.from("event").delete().eq("id", id);
-
-          if (error) {
-            console.error("Error deleting event:", error);
-            // Store for offline processing
-            addPendingRequest({ type: "delete", table: "event", data: { id } });
-            setPendingSyncCount((prev) => prev + 1);
-          }
-        } catch (error) {
-          console.error("Failed to delete event:", error);
-          // Store for offline processing
-          addPendingRequest({ type: "delete", table: "event", data: { id } });
-          setPendingSyncCount((prev) => prev + 1);
+        if (error) {
+          console.error("Error deleting event:", error);
+          throw error;
         }
-      } else {
-        // Store for offline processing
-        addPendingRequest({ type: "delete", table: "event", data: { id } });
-        setPendingSyncCount((prev) => prev + 1);
+
+        // Remove the event from state
+        setEventsState((prev) => prev.filter((e) => e.id !== id));
+        notifyListeners("delete", { id } as CalendarEvent);
+        console.log("Successfully deleted event:", id);
+      } catch (error) {
+        console.error("Failed to delete event:", error);
+        throw error;
       }
     },
     [notifyListeners]
@@ -1095,8 +401,6 @@ export const CalendarProvider = ({ children }: { children: ReactNode }) => {
         addEvent,
         updateEvent,
         deleteEvent,
-        isOnline,
-        pendingSyncCount,
         addChangeListener,
         removeChangeListener,
       }}
