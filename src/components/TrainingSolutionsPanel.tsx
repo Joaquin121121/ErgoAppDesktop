@@ -19,7 +19,7 @@ const TrainingSolutionsPanel: React.FC<TrainingSolutionsPanelProps> = ({
 }) => {
   return (
     <div
-      className="bg-white rounded-2xl shadow-sm flex flex-col items-center h-full transition-[width] duration-500 ease-in-out"
+      className="bg-white rounded-2xl shadow-sm flex flex-col items-start h-full transition-[width] duration-500 ease-in-out"
       style={{ width: isCreatingPlan ? "30%" : "60%" }}
     >
       <div className="flex items-center justify-center gap-x-8 py-4 mb-4 bg-lightRed w-full rounded-t-2xl ">

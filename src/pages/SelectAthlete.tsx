@@ -14,6 +14,7 @@ import { formattedDisciplines } from "../constants/data";
 import { getStateByCodeAndCountry } from "country-state-city/lib/state";
 import { useSearchParams } from "react-router-dom";
 import _ from "lodash";
+import { saveAthlete } from "../hooks/parseAthletes";
 
 const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const [searchBarFocus, setSearchBarFocus] = useState(false);
@@ -331,12 +332,9 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     }
 
     try {
-      const result = await saveJson(
-        `${naturalToCamelCase(athlete.name)}.json`,
-        athlete,
-        "athletes"
-      );
-      console.log(result);
+      console.log("athlete", athlete);
+      const result = await saveAthlete(athlete);
+      console.log("result", result);
       customNavigate("back", "selectAthlete", from ? "athletes" : "startTest");
       setTimeout(() => {
         navigate(from ? "/athletes" : "/startTest");

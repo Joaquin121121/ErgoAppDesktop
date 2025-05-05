@@ -7,6 +7,8 @@ import TonalButton from "../components/TonalButton";
 import TrainingPlanCreator from "../components/TrainingPlanCreator";
 import TrainingSolutionsPanel from "../components/TrainingSolutionsPanel";
 import ModelChoicePopup from "../components/ModelChoicePopup";
+import SessionInfoStage from "../components/SessionInfoStage";
+import navAnimations from "../styles/animations.module.css";
 
 const TrainingMenu = ({
   isExpanded,
@@ -53,6 +55,7 @@ const TrainingMenu = ({
   const [creatingPlan, setCreatingPlan] = useState(false);
   const [collapseAccordion, setCollapseAccordion] = useState(false);
   const [displayPopup, setDisplayPopup] = useState(false);
+  const [currentStage, setCurrentStage] = useState("initialStage");
 
   const onClose = async () => {
     customNavigate("back", "trainingMenu", "athleteMenu");
@@ -62,7 +65,47 @@ const TrainingMenu = ({
   };
 
   const handleToggleCreatingPlan = () => {
+    setStagesAnimations(initialAnimations);
+    setCurrentStage("initialStage");
     setCreatingPlan(!creatingPlan);
+  };
+
+  const initialAnimations = {
+    initialStage: navAnimations.fadeInRight,
+    sessionInfoStage: navAnimations.fadeInRight,
+  };
+
+  const [stagesAnimations, setStagesAnimations] = useState(initialAnimations);
+
+  const creationStages = {
+    initialStage: (
+      <TrainingPlanCreator
+        isCreatingPlan={creatingPlan}
+        onNext={() => {
+          goToStage("initialStage", "sessionInfoStage");
+        }}
+        displayPopup={() => {
+          setIsBlurred(true);
+          setDisplayPopup(true);
+        }}
+        animation={stagesAnimations.initialStage}
+        handleToggleCreatingPlan={handleToggleCreatingPlan}
+      />
+    ),
+    sessionInfoStage: (
+      <SessionInfoStage animation={stagesAnimations.sessionInfoStage} />
+    ),
+  };
+
+  const goToStage = (prevStage: string, nextStage: string) => {
+    setStagesAnimations({
+      ...stagesAnimations,
+      [prevStage]: navAnimations.fadeOutLeft,
+      [nextStage]: navAnimations.fadeInRight,
+    });
+    setTimeout(() => {
+      setCurrentStage(nextStage);
+    }, 200);
   };
 
   useEffect(() => {
@@ -115,15 +158,23 @@ const TrainingMenu = ({
             onClick={onClose}
           />
         </div>
-        <div className="flex-grow self-end w-[90%] flex justify-between transition-all duration-300 ease-in-out pr-8">
-          <TrainingPlanCreator
-            isCreatingPlan={creatingPlan}
-            onToggleCreatingPlan={handleToggleCreatingPlan}
-            displayPopup={() => {
-              setIsBlurred(true);
-              setDisplayPopup(true);
-            }}
-          />
+        <div className="self-end w-[90%] flex justify-between items-start transition-all duration-300 ease-in-out pr-8">
+          <div
+            className={`bg-white rounded-2xl relative shadow-sm  transition-[width,opacity] duration-500 ease-in-out -ml-8 mr-16 ${
+              isBlurred && "blur-md pointer-events-none"
+            }`}
+            style={{ width: creatingPlan ? "70%" : "40%" }}
+          >
+            {creatingPlan && (
+              <div
+                className="absolute hover:opacity-70 z-50 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
+                onClick={handleToggleCreatingPlan}
+              >
+                <img src="/close.png" className="h-6 w-6" alt="" />
+              </div>
+            )}
+            {creationStages[currentStage]}
+          </div>
 
           <TrainingSolutionsPanel
             isCreatingPlan={creatingPlan}

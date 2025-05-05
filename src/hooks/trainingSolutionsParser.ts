@@ -211,11 +211,18 @@ const assessRSI = (multipleJumpsTest: MultipleJumpsResult | undefined) => {
 
 export const parseTrainingSolutions = (date: Date) => {
   const { athlete } = useStudyContext();
-  const study = athlete.completedStudies.find(
-    (study) => study.date === date.toISOString()
+  const study = athlete.completedStudies.find((study) =>
+    typeof study.date === "string"
+      ? study.date === date.toISOString()
+      : study.date.toISOString() === date.toISOString()
   );
 
-  if (!study) return [];
+  if (!study) {
+    console.log(study);
+    console.log(athlete.completedStudies);
+    console.log("No study found for date", date);
+    return [];
+  }
 
   const studiesToCompare = [
     "cmj",

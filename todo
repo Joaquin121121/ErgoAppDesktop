@@ -13,11 +13,11 @@ Implementar sincronizacion con version mobile
 Implementar registro, login, persistencia de sesión
 Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
 Sacar licencia
+Parsers
 
 Si hay tiempo:
 Implementar resumen BOSCO test pre-guardar (despues)
 Personalizar menu de instalacion
 Ordenar tests por ultimo uso
 Decidir que se auto añada vs que se sobreescriba un atleta al ser seleccionado con otro ya seleccionado en seleccion multiple
-Tratar de que la pantalla se auto expanda manteniendo el boton de cerrar visible
-Pendiente de Marti
+Animacion de preview de plan en primera pantalla de crear plan que vaya variando de acuerdo a semanas, sesiones

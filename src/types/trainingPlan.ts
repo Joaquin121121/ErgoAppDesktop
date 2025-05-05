@@ -39,9 +39,9 @@ export interface Session {
 
 export interface PlanState {
   nOfWeeks: number;
-  useAsModel: boolean;
   modelId: string;
   sessions: Session[];
+  nOfSessions: number;
 }
 
 export interface NewPlanContextType {
@@ -62,6 +62,7 @@ export interface NewPlanContextType {
   ) => void;
   removeTrainingBlock: (sessionIndex: number, blockIndex: number) => void;
   resetPlan: () => void;
+  updateNOfSessions: (n: number) => void;
 }
 
 // Default values
@@ -85,7 +86,7 @@ export const defaultSession: Session = {
 
 export const defaultPlanState: PlanState = {
   nOfWeeks: 4,
-  useAsModel: false,
   modelId: "",
   sessions: [],
+  nOfSessions: 0,
 };

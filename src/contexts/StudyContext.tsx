@@ -10,6 +10,7 @@ type SelectedAthlete = Athlete | null;
 
 // Initial athlete state
 const initialAthlete: Athlete = {
+  id: "",
   name: "",
   birthDate: new Date(),
   country: "",
@@ -24,6 +25,9 @@ const initialAthlete: Athlete = {
   institution: "",
   comments: "",
   completedStudies: [],
+  createdAt: new Date(),
+  deletedAt: null,
+  lastChanged: new Date(),
 };
 
 // Context interface

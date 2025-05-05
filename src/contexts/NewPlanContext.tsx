@@ -32,7 +32,7 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const toggleUseAsModel = () => {
-    setPlanState((prev) => ({ ...prev, useAsModel: !prev.useAsModel }));
+    setPlanState((prev) => ({ ...prev, modelId: "" }));
   };
 
   const updateModelId = (id: string) => {
@@ -41,6 +41,10 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateModelName = (name: string) => {
     setPlanState((prev) => ({ ...prev, modelName: name }));
+  };
+
+  const updateNOfSessions = (n: number) => {
+    setPlanState((prev) => ({ ...prev, nOfSessions: n }));
   };
 
   const addSession = () => {
@@ -117,6 +121,7 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
         updateTrainingBlock,
         removeTrainingBlock,
         resetPlan,
+        updateNOfSessions,
       }}
     >
       {children}

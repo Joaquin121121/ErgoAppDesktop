@@ -10,41 +10,57 @@ import { useNewPlan } from "../contexts/NewPlanContext";
 
 interface TrainingPlanCreatorProps {
   isCreatingPlan: boolean;
-  onToggleCreatingPlan: () => void;
+  onNext: () => void;
   displayPopup: () => void;
+  animation: string;
+  handleToggleCreatingPlan: () => void;
 }
 
 const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
   isCreatingPlan,
-  onToggleCreatingPlan,
+  onNext,
   displayPopup,
+  animation,
+  handleToggleCreatingPlan,
 }) => {
   const [formState, setFormState] = useState({
     nOfWeeks: { value: "", error: "" },
+    nOfSessions: { value: "", error: "" },
   });
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [useAsModel, setUseAsModel] = useState(false);
 
-  const { planState, updateModelId } = useNewPlan();
+  const { planState, updateModelId, updateNOfSessions, updateWeeks } =
+    useNewPlan();
 
-  const { isBlurred, setIsBlurred } = useBlur();
+  const localOnNext = () => {
+    if (parseInt(formState.nOfWeeks.value) === 0) {
+      setFormState({
+        ...formState,
+        nOfWeeks: { value: "", error: "El numero de semanas no puede ser 0" },
+      });
+      return;
+    }
+    if (parseInt(formState.nOfSessions.value) === 0) {
+      setFormState({
+        ...formState,
+        nOfSessions: {
+          value: "",
+          error: "El numero de sesiones no puede ser 0",
+        },
+      });
+      return;
+    }
+    updateNOfSessions(parseInt(formState.nOfSessions.value));
+    updateWeeks(parseInt(formState.nOfWeeks.value));
+    onNext();
+  };
 
   return (
-    <div
-      className={`bg-white rounded-2xl relative shadow-sm flex flex-col items-center transition-[width,opacity] duration-500 ease-in-out -ml-8 mr-16 ${
-        isBlurred && "blur-md pointer-events-none"
-      }`}
-      style={{ width: isCreatingPlan ? "70%" : "40%" }}
-    >
+    <div className={`flex flex-col items-center ${animation}`}>
       {isCreatingPlan ? (
         <>
-          <div
-            className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
-            onClick={onToggleCreatingPlan}
-          >
-            <img src="/close.png" className="h-6 w-6" alt="" />
-          </div>
-          <div className="flex my-10 items-center justify-center gap-x-4">
+          <div className="flex my-10 items-center justify-center gap-x-4 ">
             <p className="text-2xl text-secondary">
               Nuevo Plan de Entrenamiento
             </p>
@@ -63,12 +79,14 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
                   inputStyles.focused
                 } `}
                 value={formState.nOfWeeks.value}
-                onChange={(e) =>
-                  setFormState({
-                    ...formState,
-                    nOfWeeks: { value: e.target.value, error: "" },
-                  })
-                }
+                onChange={(e) => {
+                  if (parseInt(e.target.value) > 0) {
+                    setFormState({
+                      ...formState,
+                      nOfWeeks: { value: e.target.value, error: "" },
+                    });
+                  }
+                }}
               />
               <p className="text-lg text-darkGray">semanas</p>
             </div>
@@ -117,7 +135,7 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
               </>
             )}
 
-            {useAsModel ? (
+            {useAsModel && (
               <>
                 <p className="mt-8 text-lg">Nombre del Modelo</p>
                 <input
@@ -131,7 +149,31 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
                   }`}
                 />
               </>
-            ) : (
+            )}
+            <p className=" text-lg mb-2 mt-8">Numero de sesiones</p>
+            <div className="flex gap-x-4 items-center">
+              <input
+                type="number"
+                className={`${
+                  inputStyles.input
+                } bg-offWhite rounded-2xl shadow-sm pl-2 w-20 h-10 text-tertiary ${
+                  validationAttempted &&
+                  formState.nOfSessions.error &&
+                  inputStyles.focused
+                } `}
+                value={formState.nOfSessions.value}
+                onChange={(e) => {
+                  if (parseInt(e.target.value) > 0) {
+                    setFormState({
+                      ...formState,
+                      nOfSessions: { value: e.target.value, error: "" },
+                    });
+                  }
+                }}
+              />
+              <p className="text-lg text-darkGray">sesiones</p>
+            </div>
+            {!useAsModel && (
               <OutlinedButton
                 title="Usar Modelo Preexistente"
                 onClick={displayPopup}
@@ -144,7 +186,7 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
                 title="Crear Plan"
                 icon="add"
                 containerStyles="self-center mt-4 mb-8"
-                onClick={onToggleCreatingPlan}
+                onClick={localOnNext}
               />
             </div>
           </div>
@@ -167,7 +209,7 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
             title="Crear Plan"
             icon="add"
             containerStyles="self-center mb-8"
-            onClick={onToggleCreatingPlan}
+            onClick={handleToggleCreatingPlan}
           />
         </>
       )}
