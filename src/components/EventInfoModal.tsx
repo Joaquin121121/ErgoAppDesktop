@@ -175,6 +175,7 @@ function EventInfoModal({
 
   const addAthlete = () => {
     setAnimation(styles.popupFadeOutTop);
+    resetAthlete();
     customNavigate("forward", "dashboard", "newAthlete");
     setTimeout(() => {
       navigate("/newAthlete?from=dashboard");

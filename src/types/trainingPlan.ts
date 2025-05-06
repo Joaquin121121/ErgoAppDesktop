@@ -9,6 +9,12 @@ export interface Progression {
   effort: number;
 }
 
+export interface Exercise {
+  id: string;
+  name: string;
+  videoRef: string;
+}
+
 export interface VolumeReduction {
   [fatigueLevel: string]: number;
 }
@@ -51,7 +57,7 @@ export interface NewPlanContextType {
   toggleUseAsModel: () => void;
   updateModelId: (id: string) => void;
   updateModelName: (name: string) => void;
-  addSession: () => void;
+  addSession: (session: Session) => void;
   updateSession: (index: number, session: Session) => void;
   removeSession: (index: number) => void;
   addTrainingBlock: (sessionIndex: number) => void;

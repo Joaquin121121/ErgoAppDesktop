@@ -1,11 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import SeamlessLoopPlayer from "./SeamlessLoopPlayer";
 import TonalButton from "./TonalButton";
 import navAnimations from "../styles/animations.module.css";
 import { useState } from "react";
 import inputStyles from "../styles/inputStyles.module.css";
 import OutlinedButton from "./OutlinedButton";
-import { useBlur } from "../contexts/BlurContext";
 import { useNewPlan } from "../contexts/NewPlanContext";
 
 interface TrainingPlanCreatorProps {
@@ -25,6 +24,8 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
 }) => {
   const [formState, setFormState] = useState({
     nOfWeeks: { value: "", error: "" },
+    modelName: { value: "", error: "" },
+
     nOfSessions: { value: "", error: "" },
   });
   const [validationAttempted, setValidationAttempted] = useState(false);
@@ -34,14 +35,21 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
     useNewPlan();
 
   const localOnNext = () => {
-    if (parseInt(formState.nOfWeeks.value) === 0) {
+    setValidationAttempted(true);
+    if (
+      parseInt(formState.nOfWeeks.value) === 0 ||
+      formState.nOfWeeks.value === ""
+    ) {
       setFormState({
         ...formState,
         nOfWeeks: { value: "", error: "El numero de semanas no puede ser 0" },
       });
       return;
     }
-    if (parseInt(formState.nOfSessions.value) === 0) {
+    if (
+      parseInt(formState.nOfSessions.value) === 0 ||
+      formState.nOfSessions.value === ""
+    ) {
       setFormState({
         ...formState,
         nOfSessions: {
@@ -51,8 +59,19 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
       });
       return;
     }
+    if (useAsModel && formState.modelName.value === "") {
+      setFormState({
+        ...formState,
+        modelName: {
+          value: "",
+          error: "El nombre del modelo no puede estar vacío",
+        },
+      });
+      return;
+    }
     updateNOfSessions(parseInt(formState.nOfSessions.value));
     updateWeeks(parseInt(formState.nOfWeeks.value));
+    updateModelId(formState.modelName.value);
     onNext();
   };
 
@@ -80,7 +99,7 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
                 } `}
                 value={formState.nOfWeeks.value}
                 onChange={(e) => {
-                  if (parseInt(e.target.value) > 0) {
+                  if (parseInt(e.target.value) > 0 || e.target.value === "") {
                     setFormState({
                       ...formState,
                       nOfWeeks: { value: e.target.value, error: "" },
@@ -144,9 +163,15 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
                     inputStyles.input
                   } bg-offWhite rounded-2xl shadow-sm pl-2 w-80 h-10 text-tertiary ${
                     validationAttempted &&
-                    formState.nOfWeeks.error &&
+                    formState.modelName.error &&
                     inputStyles.focused
                   }`}
+                  onChange={(e) => {
+                    setFormState({
+                      ...formState,
+                      modelName: { value: e.target.value, error: "" },
+                    });
+                  }}
                 />
               </>
             )}
@@ -163,7 +188,7 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
                 } `}
                 value={formState.nOfSessions.value}
                 onChange={(e) => {
-                  if (parseInt(e.target.value) > 0) {
+                  if (parseInt(e.target.value) > 0 || e.target.value === "") {
                     setFormState({
                       ...formState,
                       nOfSessions: { value: e.target.value, error: "" },

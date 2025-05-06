@@ -91,6 +91,7 @@ function AddEventModal({
   };
 
   const addAthlete = () => {
+    resetAthlete();
     customNavigate("forward", "dashboard", "newAthlete");
     setAnimation(styles.popupFadeOutTop);
     setTimeout(() => {

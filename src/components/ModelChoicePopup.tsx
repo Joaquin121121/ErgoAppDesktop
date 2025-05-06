@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import navAnimations from "../styles/animations.module.css";
 import OutlinedButton from "./OutlinedButton";
-import scrollbarStyles from "../styles/scrollbar.module.css";
 import inputStyles from "../styles/inputStyles.module.css";
 import { useNewPlan } from "../contexts/NewPlanContext";
 function ModelChoicePopup({
@@ -61,7 +60,7 @@ function ModelChoicePopup({
 
   return (
     <div
-      className={`bg-white absolute shadow-sm rounded-2xl left-[40%] top-16 flex flex-col items-center w-1/2 ${animation} ${scrollbarStyles.customScrollbar}`}
+      className={`bg-white absolute shadow-sm rounded-2xl left-[40%] top-16 flex flex-col items-center w-1/2 ${animation} `}
     >
       <div
         className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"

@@ -9,7 +9,8 @@ import TrainingSolutionsPanel from "../components/TrainingSolutionsPanel";
 import ModelChoicePopup from "../components/ModelChoicePopup";
 import SessionInfoStage from "../components/SessionInfoStage";
 import navAnimations from "../styles/animations.module.css";
-
+import SessionOverviewStage from "../components/SessionOverviewStage";
+import NewExercisePopup from "../components/NewExercisePopup";
 const TrainingMenu = ({
   isExpanded,
   animation,
@@ -56,6 +57,19 @@ const TrainingMenu = ({
   const [collapseAccordion, setCollapseAccordion] = useState(false);
   const [displayPopup, setDisplayPopup] = useState(false);
   const [currentStage, setCurrentStage] = useState("initialStage");
+  const [showPopup, setShowPopup] = useState<
+    "exercise" | "exerciseBlock" | null
+  >(null);
+
+  const showExercisePopup = (type: "exercise" | "exerciseBlock") => {
+    setShowPopup(type);
+    setIsBlurred(true);
+  };
+
+  const closeExercisePopup = () => {
+    setShowPopup(null);
+    setIsBlurred(false);
+  };
 
   const onClose = async () => {
     customNavigate("back", "trainingMenu", "athleteMenu");
@@ -73,6 +87,7 @@ const TrainingMenu = ({
   const initialAnimations = {
     initialStage: navAnimations.fadeInRight,
     sessionInfoStage: navAnimations.fadeInRight,
+    sessionOverviewStage: navAnimations.fadeInRight,
   };
 
   const [stagesAnimations, setStagesAnimations] = useState(initialAnimations);
@@ -93,7 +108,18 @@ const TrainingMenu = ({
       />
     ),
     sessionInfoStage: (
-      <SessionInfoStage animation={stagesAnimations.sessionInfoStage} />
+      <SessionInfoStage
+        animation={stagesAnimations.sessionInfoStage}
+        onNext={() => {
+          goToStage("sessionInfoStage", "sessionOverviewStage");
+        }}
+      />
+    ),
+    sessionOverviewStage: (
+      <SessionOverviewStage
+        animation={stagesAnimations.sessionOverviewStage}
+        showPopup={showExercisePopup}
+      />
     ),
   };
 
@@ -158,9 +184,15 @@ const TrainingMenu = ({
             onClick={onClose}
           />
         </div>
-        <div className="self-end w-[90%] flex justify-between items-start transition-all duration-300 ease-in-out pr-8">
+        <div
+          className={`self-end w-[90%] flex justify-between items-start transition-all duration-300 ease-in-out pr-8`}
+        >
+          {showPopup && (
+            <NewExercisePopup onClose={closeExercisePopup} type={showPopup} />
+          )}
+
           <div
-            className={`bg-white rounded-2xl relative shadow-sm  transition-[width,opacity] duration-500 ease-in-out -ml-8 mr-16 ${
+            className={`bg-white rounded-2xl overflow-hidden relative shadow-sm  transition-[width,opacity] duration-500 ease-in-out -ml-8 mr-16 ${
               isBlurred && "blur-md pointer-events-none"
             }`}
             style={{ width: creatingPlan ? "70%" : "40%" }}

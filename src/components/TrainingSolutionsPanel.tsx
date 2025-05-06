@@ -40,17 +40,17 @@ const TrainingSolutionsPanel: React.FC<TrainingSolutionsPanelProps> = ({
         />
       ) : (
         <>
-          <p className="text-xl text-center">
-            No hay soluciones de entrenamiento disponibles.
+          <p className="text-xl text-center w-full">
+            No hay soluciones de entrenamiento disponibles
           </p>
-          <p className="mt-4 text-darkGray text-center text-lg mb-8">
+          <p className="mt-4 text-darkGray text-center text-lg mb-8 w-full">
             Realice tests sobre el atleta para obtener soluciones de
             entrenamiento.
           </p>
           <TonalButton
             title="Realizar Tests"
             onClick={goToTests}
-            containerStyles="mb-8"
+            containerStyles="mb-8 self-center"
             icon="next"
           />
         </>

@@ -47,10 +47,10 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
     setPlanState((prev) => ({ ...prev, nOfSessions: n }));
   };
 
-  const addSession = () => {
+  const addSession = (session: Session) => {
     setPlanState((prev) => ({
       ...prev,
-      sessions: [...prev.sessions, { ...defaultSession }],
+      sessions: [...prev.sessions, session],
     }));
   };
 
