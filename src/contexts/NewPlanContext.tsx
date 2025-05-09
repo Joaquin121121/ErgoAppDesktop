@@ -1,12 +1,5 @@
-import React, {
-  createContext,
-  useState,
-  useContext,
-  ReactNode,
-  useEffect,
-} from "react";
+import React, { createContext, useState, useContext, ReactNode } from "react";
 import {
-  DayName,
   Progression,
   VolumeReduction,
   EffortReduction,
@@ -14,10 +7,11 @@ import {
   Session,
   PlanState,
   NewPlanContextType,
+  SelectedExercise,
   defaultTrainingBlock,
-  defaultSession,
   defaultPlanState,
 } from "../types/trainingPlan";
+import { v4 as uuidv4 } from "uuid";
 
 // Create context
 const NewPlanContext = createContext<NewPlanContextType | undefined>(undefined);
@@ -26,6 +20,49 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [planState, setPlanState] = useState<PlanState>(defaultPlanState);
+
+  // New state variables to hold the exercise block/exercise currently being edited
+  const [currentExerciseBlock, setCurrentExerciseBlock] =
+    useState<TrainingBlock | null>(null);
+  const [currentSelectedExercise, setCurrentSelectedExercise] =
+    useState<SelectedExercise | null>(null);
+
+  // Save functions to push current block/exercise into the appropriate session
+  const saveExerciseBlock = (sessionIndex: number) => {
+    if (!currentExerciseBlock) return;
+    setPlanState((prev) => {
+      const updatedSessions = [...prev.sessions];
+      if (!updatedSessions[sessionIndex]) return prev; // guard
+      updatedSessions[sessionIndex].exercises = [
+        ...updatedSessions[sessionIndex].exercises,
+        currentExerciseBlock,
+      ];
+      setCurrentExerciseBlock(null);
+      return { ...prev, sessions: updatedSessions };
+    });
+  };
+
+  const saveSelectedExercise = (
+    sessionIndex: number,
+    currentSelectedExercise: SelectedExercise
+  ) => {
+    if (!currentSelectedExercise) return;
+    const processedExercise = {
+      ...currentSelectedExercise,
+      id: uuidv4(),
+    };
+
+    setPlanState((prev) => {
+      const updatedSessions = [...prev.sessions];
+      if (!updatedSessions[sessionIndex]) return prev; // guard
+      updatedSessions[sessionIndex].exercises = [
+        ...updatedSessions[sessionIndex].exercises,
+        processedExercise,
+      ];
+      setCurrentSelectedExercise(null);
+      return { ...prev, sessions: updatedSessions };
+    });
+  };
 
   const updateWeeks = (weeks: number) => {
     setPlanState((prev) => ({ ...prev, nOfWeeks: weeks }));
@@ -37,10 +74,6 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
 
   const updateModelId = (id: string) => {
     setPlanState((prev) => ({ ...prev, modelId: id }));
-  };
-
-  const updateModelName = (name: string) => {
-    setPlanState((prev) => ({ ...prev, modelName: name }));
   };
 
   const updateNOfSessions = (n: number) => {
@@ -73,30 +106,77 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
   const addTrainingBlock = (sessionIndex: number) => {
     setPlanState((prev) => {
       const updatedSessions = [...prev.sessions];
-      updatedSessions[sessionIndex].trainingBlocks = [
-        ...updatedSessions[sessionIndex].trainingBlocks,
+      updatedSessions[sessionIndex].exercises = [
+        ...updatedSessions[sessionIndex].exercises,
         { ...defaultTrainingBlock },
       ];
       return { ...prev, sessions: updatedSessions };
     });
   };
 
+  const addExercise = (
+    sessionIndex: number,
+    series: number,
+    reps: string,
+    fatigueParameter: "volume" | "effort" | null,
+    handleFatigue: VolumeReduction | EffortReduction | undefined,
+    effort: number,
+    exerciseId: string,
+    name: string,
+    restTime: number,
+    progression: Progression[]
+  ) => {
+    setPlanState((prev) => {
+      const updatedSessions = [...prev.sessions];
+
+      const newExercise: SelectedExercise = {
+        type: "selectedExercise",
+        name: name,
+        id: uuidv4(),
+        exerciseId: exerciseId,
+        seriesN: series,
+        reps: reps,
+        effort: effort,
+        reduceVolume:
+          fatigueParameter === "volume"
+            ? (handleFatigue as VolumeReduction) || {}
+            : {},
+        reduceEffort:
+          fatigueParameter === "effort"
+            ? (handleFatigue as EffortReduction) || {}
+            : {},
+        restTime: restTime,
+        progression: progression,
+      };
+
+      updatedSessions[sessionIndex].exercises = [
+        ...updatedSessions[sessionIndex].exercises,
+        newExercise,
+      ];
+
+      return { ...prev, sessions: updatedSessions };
+    });
+    console.log(planState.sessions[sessionIndex].exercises);
+  };
+
   const updateTrainingBlock = (
     sessionIndex: number,
-    blockIndex: number,
+    exerciseId: string,
     block: TrainingBlock
   ) => {
     setPlanState((prev) => {
       const updatedSessions = [...prev.sessions];
-      updatedSessions[sessionIndex].trainingBlocks[blockIndex] = block;
+      updatedSessions[sessionIndex].exercises[exerciseId] = block;
       return { ...prev, sessions: updatedSessions };
     });
   };
 
-  const removeTrainingBlock = (sessionIndex: number, blockIndex: number) => {
+  const removeExercise = (sessionIndex: number, exerciseId: string) => {
     setPlanState((prev) => {
       const updatedSessions = [...prev.sessions];
-      updatedSessions[sessionIndex].trainingBlocks.splice(blockIndex, 1);
+      updatedSessions[sessionIndex].exercises = updatedSessions[
+        sessionIndex
+      ].exercises.filter((exercise) => exercise.id !== exerciseId);
       return { ...prev, sessions: updatedSessions };
     });
   };
@@ -113,15 +193,21 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
         updateWeeks,
         toggleUseAsModel,
         updateModelId,
-        updateModelName,
         addSession,
         updateSession,
         removeSession,
         addTrainingBlock,
+        addExercise,
         updateTrainingBlock,
-        removeTrainingBlock,
+        removeExercise,
         resetPlan,
         updateNOfSessions,
+        currentExerciseBlock,
+        setCurrentExerciseBlock,
+        currentSelectedExercise,
+        setCurrentSelectedExercise,
+        saveExerciseBlock,
+        saveSelectedExercise,
       }}
     >
       {children}

@@ -1,6 +1,7 @@
 MVP
 Ver de mejorar navegacion entre tests bosco y drop jumps. Arreglar graficos de drop jumps, mejorar para mostrar titulos y labels relevantes
 Ampliar variedad de comparaciones
+Determinar que hacer con multiples sesiones en un mismo dia
 Testear algoritmo de soluciones de entrenamiento en todos los casos
 Permitir comparar boscos con graficos simples.
 Maximo de tamaño para tablas/habilitar overflow

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNewPlan } from "../contexts/NewPlanContext";
 import inputStyles from "../styles/inputStyles.module.css";
 import TonalButton from "./TonalButton";
@@ -23,7 +23,7 @@ function SessionInfoStage({
   animation: string;
   onNext: () => void;
 }) {
-  const { planState, setPlanState } = useNewPlan();
+  const { planState, addSession, updateSession } = useNewPlan();
   const [localAnimation, setLocalAnimation] = useState(animation);
   const [sessionN, setSessionN] = useState(0);
 
@@ -50,17 +50,14 @@ function SessionInfoStage({
     const newSession: Session = {
       name: formState.name.value,
       days: formState.days.value,
-      trainingBlocks: [],
+      exercises: [],
     };
 
-    setPlanState((prev) => ({
-      ...prev,
-      sessions: prev.sessions[sessionN]
-        ? prev.sessions.map((session, index) =>
-            index === sessionN ? newSession : session
-          )
-        : [...prev.sessions, newSession],
-    }));
+    if (planState.sessions[sessionN]) {
+      updateSession(sessionN, newSession);
+    } else {
+      addSession(newSession);
+    }
     setLocalAnimation(navAnimations.fadeOutRight);
     setTimeout(() => {
       const newSessionN = sessionN - 1;
@@ -94,18 +91,16 @@ function SessionInfoStage({
     const newSession: Session = {
       name: formState.name.value,
       days: formState.days.value,
-      trainingBlocks: [],
+      exercises: [],
     };
 
-    setPlanState((prev) => ({
-      ...prev,
-      sessions: prev.sessions[sessionN]
-        ? prev.sessions.map((session, index) =>
-            index === sessionN ? newSession : session
-          )
-        : [...prev.sessions, newSession],
-    }));
+    if (planState.sessions[sessionN]) {
+      updateSession(sessionN, newSession);
+    } else {
+      addSession(newSession);
+    }
     if (sessionN === planState.nOfSessions - 1) {
+      setLocalAnimation(navAnimations.fadeOutLeft);
       onNext();
       return;
     }
@@ -126,10 +121,6 @@ function SessionInfoStage({
       setLocalAnimation(navAnimations.fadeInRight);
     }, 200);
   };
-
-  useEffect(() => {
-    console.log(planState.sessions);
-  }, [planState.sessions]);
 
   return (
     <div className={`flex flex-col items-center ${localAnimation}`}>
@@ -171,8 +162,18 @@ function SessionInfoStage({
                 formState.days.value.includes(day.value)
                   ? "bg-lightRed text-secondary"
                   : "bg-offWhite"
-              }`}
+              }
+              ${
+                planState.sessions
+                  .filter((_, i) => i !== sessionN)
+                  .some((e) => e.days.includes(day.value)) &&
+                "opacity-40 cursor-not-allowed"
+              }
+              `}
               onClick={() => handleDayClick(day.value)}
+              disabled={planState.sessions
+                .filter((_, i) => i !== sessionN)
+                .some((e) => e.days.includes(day.value))}
             >
               {day.name}
             </button>

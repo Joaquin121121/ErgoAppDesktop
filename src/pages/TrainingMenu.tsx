@@ -57,6 +57,7 @@ const TrainingMenu = ({
   const [collapseAccordion, setCollapseAccordion] = useState(false);
   const [displayPopup, setDisplayPopup] = useState(false);
   const [currentStage, setCurrentStage] = useState("initialStage");
+  const [sessionIndex, setSessionIndex] = useState(0);
   const [showPopup, setShowPopup] = useState<
     "exercise" | "exerciseBlock" | null
   >(null);
@@ -119,6 +120,8 @@ const TrainingMenu = ({
       <SessionOverviewStage
         animation={stagesAnimations.sessionOverviewStage}
         showPopup={showExercisePopup}
+        setSessionIndex={setSessionIndex}
+        sessionIndex={sessionIndex}
       />
     ),
   };
@@ -188,7 +191,11 @@ const TrainingMenu = ({
           className={`self-end w-[90%] flex justify-between items-start transition-all duration-300 ease-in-out pr-8`}
         >
           {showPopup && (
-            <NewExercisePopup onClose={closeExercisePopup} type={showPopup} />
+            <NewExercisePopup
+              onClose={closeExercisePopup}
+              type={showPopup}
+              sessionIndex={sessionIndex}
+            />
           )}
 
           <div

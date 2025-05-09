@@ -83,5 +83,7 @@
   "multipleDropJump": "Drop Jump",
   "testSession": "Sesión de Testing",
   "trainingSession": "Sesión de Entrenamiento",
-  "competition": "Competencia"
+  "competition": "Competencia",
+  "volume": "Volumen",
+  "effort": "Carácter del Esfuerzo"
 }

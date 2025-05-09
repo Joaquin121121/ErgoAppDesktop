@@ -1,4 +1,9 @@
 import { CalendarEvent } from "../components/Calendar";
+import {
+  RangeEntry,
+  VolumeReduction,
+  EffortReduction,
+} from "../types/trainingPlan";
 
 export function formatDateString(date: Date): string {
   return new Date(date)
@@ -256,3 +261,24 @@ export const findOverlappingEvents = (
 
   return false; // No overlap found
 };
+
+export function getReductionFromRangeEntries(
+  type: "volume" | "effort",
+  rangeEntries: RangeEntry[]
+): VolumeReduction | EffortReduction {
+  if (!rangeEntries) return null;
+  const reductionObject: VolumeReduction | EffortReduction = {};
+
+  rangeEntries.forEach((entry) => {
+    const [min, max] = entry.range;
+    const label = min === max ? `${min}` : `${min}-${max}`;
+
+    // For volume reductions, the key would be fatigue level
+    // For effort reductions, the key would be effort level
+    const key = type === "volume" ? `fatigue-${label}` : `effort-${label}`;
+
+    reductionObject[key] = entry.percentageDrop;
+  });
+
+  return reductionObject;
+}

@@ -1,21 +1,36 @@
 import React, { useEffect } from "react";
 import { useState } from "react";
 import navAnimations from "../styles/animations.module.css";
-import inputStyles from "../styles/inputStyles.module.css";
-import { Exercise } from "../types/trainingPlan";
-import ExerciseCard from "./ExerciseCard";
-import OutlinedButton from "./OutlinedButton";
-
+import {
+  EffortReduction,
+  Exercise,
+  Progression,
+  VolumeReduction,
+} from "../types/trainingPlan";
+import SelectExercises from "./SelectExercises";
+import ExerciseData from "./ExerciseData";
+import LoadManagement from "./LoadManagement";
+import { RangeEntry } from "../utils/fatigueHandling";
+import { useNewPlan } from "../contexts/NewPlanContext";
 function NewExercisePopup({
   onClose,
   type = "exercise",
+  sessionIndex,
 }: {
   onClose: () => void;
   type: string;
+  sessionIndex: number;
 }) {
   const [animation, setAnimation] = useState(navAnimations.popupFadeInTop);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchBarFocus, setSearchBarFocus] = useState(false);
+  const [currentSection, setCurrentSection] =
+    useState<string>("selectExercises");
+
+  const {
+    currentExerciseBlock,
+    currentSelectedExercise,
+    setCurrentSelectedExercise,
+    saveSelectedExercise,
+  } = useNewPlan();
 
   const exercises = [
     {
@@ -45,10 +60,15 @@ function NewExercisePopup({
     },
   ];
 
-  const [filteredExercises, setFilteredExercises] = useState(exercises);
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
 
-  const localOnClose = () => {
+  const [animations, setAnimations] = useState({
+    selectExercises: "",
+    exerciseData: "",
+    loadManagement: "",
+  });
+
+  const localOnContinue = () => {
     setAnimation(navAnimations.popupFadeOutTop);
     setTimeout(() => {
       onClose();
@@ -56,109 +76,105 @@ function NewExercisePopup({
   };
 
   const onSelectExercise = (exercise: Exercise) => {
-    if (selectedExercises.includes(exercise)) {
-      setSelectedExercises(selectedExercises.filter((e) => e !== exercise));
+    if (selectedExercises.some((e) => e.id === exercise.id)) {
+      setSelectedExercises(
+        selectedExercises.filter((e) => e.id !== exercise.id)
+      );
     } else {
       setSelectedExercises([...selectedExercises, exercise]);
     }
     if (type === "exercise") {
-      localOnClose();
+      continueExerciseBlock();
     }
   };
 
   const continueExerciseBlock = () => {
-    console.log(selectedExercises);
+    goTo("selectExercises", "exerciseData");
   };
 
-  useEffect(() => {
-    setFilteredExercises(
-      exercises.filter((exercise) =>
-        exercise.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-  }, [searchTerm]);
+  const goTo = (previous: string, next: string) => {
+    setAnimations({
+      ...animations,
+      [previous]: navAnimations.fadeOutLeft,
+      [next]: navAnimations.fadeInRight,
+    });
+    setTimeout(() => {
+      setCurrentSection(next);
+    }, 200);
+  };
+
+  const onSave = (
+    progression: Progression[] | null,
+    fatigueHandling: VolumeReduction | EffortReduction | null,
+    factorToReduce: "volume" | "effort" | undefined
+  ) => {
+    let newSelectedExercise = {
+      ...currentSelectedExercise,
+    };
+    if (factorToReduce === "volume") {
+      newSelectedExercise.reduceVolume = {
+        ...newSelectedExercise.reduceVolume,
+        ...fatigueHandling,
+      };
+    } else if (factorToReduce === "effort") {
+      newSelectedExercise.reduceEffort = {
+        ...newSelectedExercise.reduceEffort,
+        ...fatigueHandling,
+      };
+    }
+    newSelectedExercise.progression = progression;
+    saveSelectedExercise(sessionIndex, newSelectedExercise);
+    setAnimation(navAnimations.popupFadeOutTop);
+    setTimeout(() => {
+      onClose();
+    }, 200);
+  };
+
+  const sections = {
+    selectExercises: (
+      <SelectExercises
+        animation={animations.selectExercises}
+        exercises={exercises}
+        selectedExercises={selectedExercises}
+        onSelectExercise={onSelectExercise}
+        type={type}
+        onContinue={
+          type === "exerciseBlock" ? continueExerciseBlock : undefined
+        }
+      />
+    ),
+    exerciseData: (
+      <ExerciseData
+        animation={animations.exerciseData}
+        selectedExercises={selectedExercises}
+        onContinue={() => {
+          goTo("exerciseData", "loadManagement");
+        }}
+        sessionIndex={sessionIndex}
+      />
+    ),
+    loadManagement: (
+      <LoadManagement
+        animation={animations.loadManagement}
+        selectedExercises={selectedExercises}
+        onSave={onSave}
+      />
+    ),
+  };
 
   return (
     <div
-      className={`bg-white  absolute shadow-sm rounded-2xl left-[30%] top-2  flex flex-col items-center  h-auto z-50 ${animation} `}
+      className={`bg-white absolute shadow-sm rounded-2xl left-[30%] top-2 flex flex-col items-center h-auto z-50 ${animation} overflow-y-scroll `}
+      style={{ maxHeight: "95vh" }}
     >
       <div
-        className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
-        onClick={localOnClose}
+        className="absolute z-50 hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
+        onClick={localOnContinue}
       >
         <img src="/close.png" className="h-6 w-6" alt="" />
       </div>
-      <p className="text-secondary text-2xl mt-8">
-        Añadir {type === "exercise" ? "Ejercicio" : "Bloque de Ejercicios"}
-      </p>
-      <p className="text-darkGray text-lg mt-4 mb-8">
-        Haga click en un ejercicio para seleccionarlo
-      </p>
-      <div
-        className={`h-10 w-1/2 relative rounded-2xl bg-offWhite shadow-sm flex items-center px-4 ${
-          searchBarFocus && inputStyles.focused
-        }`}
-      >
-        <img src="/search.png" className="h-6 w-6 mr-2" alt="Search" />
 
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-grow h-full focus:outline-none bg-offWhite "
-          onFocus={() => setSearchBarFocus(true)}
-          onBlur={() => setSearchBarFocus(false)}
-          placeholder="Buscar ejercicio..."
-        />
-        {searchTerm && (
-          <img
-            src="/close.png"
-            className="h-5 w-5 hover:opacity-70 cursor-pointer active:opacity-40"
-            onClick={() => setSearchTerm("")}
-            alt="Clear"
-          />
-        )}
-      </div>
-      <div className="flex gap-x-8">
-        <div className="grid grid-cols-2 py-4 gap-x-[5%] gap-y-52 w-[40vw] mt-4  px-12 overflow-y-scroll max-h-[60vh]  flex-grow items-start ">
-          {filteredExercises.map((exercise) => (
-            <ExerciseCard
-              exercise={exercise}
-              onSelectExercise={onSelectExercise}
-              selected={selectedExercises.includes(exercise)}
-            />
-          ))}
-        </div>
-        {type === "exerciseBlock" && (
-          <div className="flex flex-col items-center w-80">
-            <p className="text-secondary text-xl mt-12">
-              Ejercicios Seleccionados
-            </p>
-            <div className="flex flex-col w-80 px-10 max-h-[40vh] overflow-y-scroll">
-              {selectedExercises.map((exercise) => (
-                <div className="mt-4 flex items-center gap-x-2">
-                  <p className="text-lg ">{exercise.name}</p>
-                  <img
-                    src="/close.png"
-                    className="h-6 w-6 hover:opacity-70 cursor-pointer active:opacity-40"
-                    onClick={() =>
-                      setSelectedExercises(
-                        selectedExercises.filter((e) => e !== exercise)
-                      )
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-            <OutlinedButton
-              title="Continuar"
-              icon="next"
-              onClick={continueExerciseBlock}
-              containerStyles="mt-8 self-center"
-            />
-          </div>
-        )}
-      </div>
+      {sections[currentSection]}
     </div>
   );
 }

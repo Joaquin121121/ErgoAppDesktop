@@ -2,17 +2,22 @@ import React, { useEffect, useState } from "react";
 import { useNewPlan } from "../contexts/NewPlanContext";
 import OutlinedButton from "./OutlinedButton";
 import TonalButton from "./TonalButton";
+import ExerciseAccordionItem from "./ExerciseAccordionItem";
+
 function SessionOverviewStage({
   animation,
   showPopup,
+  sessionIndex,
+  setSessionIndex,
 }: {
   animation: string;
   showPopup: (type: "exercise" | "exerciseBlock") => void;
+  sessionIndex: number;
+  setSessionIndex: (index: number) => void;
 }) {
-  const { planState } = useNewPlan();
+  const { planState, removeExercise } = useNewPlan();
   const [localAnimation, setLocalAnimation] = useState(animation);
-
-  const [sessionN, setSessionN] = useState(0);
+  const [currentWeek, setCurrentWeek] = useState(0);
 
   const addExercise = () => {
     showPopup("exercise");
@@ -21,19 +26,61 @@ function SessionOverviewStage({
   const addExerciseBlock = () => {
     showPopup("exerciseBlock");
   };
+  const handleDelete = (id: string) => {
+    removeExercise(sessionIndex, id);
+  };
+
   return (
-    <div className={`flex flex-col items-center ${animation}`}>
+    <div className={`flex flex-col items-center ${localAnimation}`}>
       <p className="text-secondary text-3xl mt-8 self-center">
-        Sesion {sessionN + 1}
+        {planState.sessions[sessionIndex].name}
       </p>
-      <div className="w-full flex mt-10 justify-around items-center">
-        <p className="text-darkGray text-xl">Ejercicio</p>
-        <p className="text-darkGray text-xl">Sets</p>
-        <p className="text-darkGray text-xl">Reps</p>
-        <p className="text-darkGray text-xl">RIR</p>
-        <p className="text-darkGray text-xl">Intensidad</p>
-        <p className="text-darkGray text-xl">Descanso</p>
+      <div className="w-[90%] mx-auto grid grid-cols-8 gap-x-4 mt-10 ">
+        <p className="text-darkGray text-xl text-center col-span-2">
+          Ejercicio
+        </p>
+        <p className="text-darkGray text-xl text-center">Sets</p>
+        <p className="text-darkGray text-xl text-center">Reps</p>
+        <p className="text-darkGray text-xl text-center">Intensidad</p>
+        <p className="text-darkGray text-xl text-center">Descanso</p>
+        <div className="h-7 w-7"></div>
+        <div className="h-10 w-10"></div>
       </div>
+      {planState.sessions[sessionIndex].exercises.map((exercise, index) => {
+        if (exercise.type === "selectedExercise") {
+          const repsArray = exercise.reps.split("-");
+          const progression = Array.from(
+            { length: repsArray.length },
+            (_, i) => ({
+              week: i + 1,
+              series: exercise.seriesN,
+              repetitions: repsArray[i],
+              effort: exercise.effort,
+            })
+          );
+
+          return (
+            <ExerciseAccordionItem
+              key={exercise.id}
+              name={exercise.name}
+              seriesN={exercise.seriesN}
+              reps={exercise.reps}
+              effort={exercise.effort}
+              restTime={exercise.restTime}
+              id={exercise.id}
+              currentWeek={currentWeek}
+              onDelete={handleDelete}
+              progression={progression}
+            />
+          );
+        }
+        return (
+          <div key={index}>
+            <p>{exercise.name}</p>
+          </div>
+        );
+      })}
+
       <OutlinedButton
         title="Añadir Ejercicio"
         icon="addRed"
@@ -54,10 +101,10 @@ function SessionOverviewStage({
                 index !== planState.sessions.length - 1 && "border-r-secondary"
               } hover:opacity-70 hover:cursor-pointer active:opacity-40 focus:outline-none rounded-none`}
               style={{
-                backgroundColor: sessionN === index && "#FFC1C1",
-                color: sessionN === index && "#e81d23",
+                backgroundColor: sessionIndex === index && "#FFC1C1",
+                color: sessionIndex === index && "#e81d23",
               }}
-              onClick={() => setSessionN(index)}
+              onClick={() => setSessionIndex(index)}
             >
               {session.name}
             </button>

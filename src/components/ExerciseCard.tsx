@@ -9,10 +9,6 @@ function ExerciseCard({
   onSelectExercise: (exercise: Exercise) => void;
   selected: boolean;
 }) {
-  useEffect(() => {
-    console.log(selected);
-  }, [selected]);
-
   return (
     <div
       className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl flex relative flex-col hover:scale-105 hover:cursor-pointer transition-transform active:opacity-70 duration-300 ease-in-out border border-gray "
