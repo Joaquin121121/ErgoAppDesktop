@@ -5,6 +5,7 @@ import LoadManagement from "./LoadManagement";
 import { Exercise } from "../types/trainingPlan";
 import { useNewPlan } from "../contexts/NewPlanContext";
 import navAnimations from "../styles/animations.module.css";
+import { validateReps } from "../utils/utils";
 
 function ExerciseData({
   animation,
@@ -76,6 +77,21 @@ function ExerciseData({
       setFormState({
         ...formState,
         repetitions: { value: formState.repetitions.value, error: "required" },
+      });
+      return;
+    }
+    if (
+      !validateReps(
+        formState.repetitions.value,
+        parseInt(formState.series.value)
+      )
+    ) {
+      setFormState({
+        ...formState,
+        repetitions: {
+          value: formState.repetitions.value,
+          error: "invalidFormat",
+        },
       });
       return;
     }
@@ -217,6 +233,12 @@ function ExerciseData({
               serie
             </p>
           </div>
+          {formState.repetitions.error === "invalidFormat" && (
+            <p className="mt-2 text-sm text-secondary">
+              Formato no valido (ingrese un unico valor o tantos valores como
+              series, separados por '-' o '/')
+            </p>
+          )}
           <p className="text-darkGray text-lg mt-8 mb-2">
             Carácter del Esfuerzo
           </p>

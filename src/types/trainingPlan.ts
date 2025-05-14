@@ -15,6 +15,10 @@ export interface DisplayProgression {
   effort: string;
 }
 
+export interface DisplayProgressionCollection {
+  [id: string]: DisplayProgression[];
+}
+
 export interface Exercise {
   id: string;
   name: string;

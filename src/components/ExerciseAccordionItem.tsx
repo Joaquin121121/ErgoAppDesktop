@@ -6,6 +6,7 @@ import {
 import React, { useState, useRef, useEffect } from "react";
 import inputStyles from "../styles/inputStyles.module.css";
 import { useNewPlan } from "../contexts/NewPlanContext";
+import { formatProgression, validateReps } from "../utils/utils";
 
 interface ExerciseAccordionItemProps {
   id: string;
@@ -81,16 +82,6 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     setIsExpanded(!isExpanded);
   };
 
-  const formatProgression = (progression: Progression[]) => {
-    return progression.map((p) => {
-      return {
-        series: p.series.toString(),
-        repetitions: p.repetitions,
-        effort: p.effort.toString(),
-      };
-    });
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormState({
@@ -125,6 +116,12 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     if (intValue < 1) {
       setFormState(initialFormState);
       return;
+    }
+    if (name === "reps") {
+      if (!validateReps(value, seriesN)) {
+        setFormState(initialFormState);
+        return;
+      }
     }
     setPlanState((prev) => {
       const updatedSessions = [...prev.sessions];
@@ -164,7 +161,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
       typeof newProgression[index][field] === "number"
         ? newProgression[index][field]
         : parseInt(newProgression[index][field]);
-    if (name === "effort") {
+    if (field === "effort") {
       if (intValue > 10) {
         setDisplayProgression(formatProgression(progression));
         return;
@@ -176,6 +173,15 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     }
 
     if (field === "repetitions") {
+      if (
+        !validateReps(
+          newProgression[index][field],
+          newProgression[index].series
+        )
+      ) {
+        setDisplayProgression(formatProgression(progression));
+        return;
+      }
       newProgression[index][field] = newProgression[index][field];
     } else {
       newProgression[index][field] = Number(newProgression[index][field]);
@@ -261,7 +267,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           type="number"
         />
         <input
-          className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${
+          className={`text-xl text-center my-auto rounded-2xl w-32 mx-auto ${
             inputStyles.input
           } ${formState.reps.error ? inputStyles.error : ""}`}
           value={formState.reps.value}

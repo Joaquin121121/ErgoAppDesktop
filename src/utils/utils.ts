@@ -4,6 +4,8 @@ import {
   VolumeReduction,
   EffortReduction,
   Progression,
+  DisplayProgressionCollection,
+  TrainingBlock,
 } from "../types/trainingPlan";
 
 export function formatDateString(date: Date): string {
@@ -284,6 +286,71 @@ export function getReductionFromRangeEntries(
   return reductionObject;
 }
 
+export const validateReps = (input: string, seriesN: number): boolean => {
+  console.log(
+    "Input:",
+    input,
+    "SeriesN:",
+    seriesN,
+    "SeriesN type:",
+    typeof seriesN
+  );
+
+  // First check if it's a single positive integer
+  if (/^[1-9]\d*$/.test(input)) {
+    console.log("Single integer match");
+    return true;
+  }
+
+  // For multiple series, check format
+  if (seriesN <= 1) {
+    console.log("SeriesN <= 1");
+    return false;
+  }
+
+  // Check if input uses consistent separator (- or /)
+  const separator = input.includes("-")
+    ? "-"
+    : input.includes("/")
+    ? "/"
+    : null;
+  console.log("Separator:", separator);
+  if (!separator) {
+    console.log("No valid separator found");
+    return false;
+  }
+
+  // Split and validate each part
+  const parts = input.split(separator);
+  console.log(
+    "Parts:",
+    parts,
+    "Parts length:",
+    parts.length,
+    "Parts length type:",
+    typeof parts.length
+  );
+
+  // Check length first
+  if (Number(parts.length) !== Number(seriesN)) {
+    console.log("Wrong number of parts:", parts.length, "expected:", seriesN);
+    return false;
+  }
+
+  // Then check each part
+  for (const part of parts) {
+    const num = parseInt(part);
+    console.log("Checking part:", part, "parsed as:", num);
+    if (isNaN(num) || num <= 0) {
+      console.log("Invalid number:", part);
+      return false;
+    }
+  }
+
+  console.log("All validations passed");
+  return true;
+};
+
 export const generateInitialProgression = (
   nOfWeeks: number,
   seriesN: number,
@@ -319,4 +386,23 @@ export const generateInitialProgression = (
   }
 
   return progression;
+};
+
+export const formatProgression = (progression: Progression[]) => {
+  return progression.map((p) => {
+    return {
+      series: p.series.toString(),
+      repetitions: p.repetitions,
+      effort: p.effort.toString(),
+    };
+  });
+};
+
+export const initializeDisplayProgressionCollection = (
+  trainingBlock: TrainingBlock
+) => {
+  return trainingBlock.selectedExercises.reduce((acc, exercise) => {
+    acc[exercise.id] = formatProgression(exercise.progression);
+    return acc;
+  }, {} as DisplayProgressionCollection);
 };

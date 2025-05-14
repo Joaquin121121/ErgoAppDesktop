@@ -554,7 +554,7 @@ function LoadManagement({
                     }}
                   />
                   <input
-                    className={`text-lg text-center rounded-2xl focus:outline-none w-20 self-center mx-auto border border-transparent ${inputStyles.input}`}
+                    className={`text-lg text-center rounded-2xl focus:outline-none w-32 self-center mx-auto border border-transparent ${inputStyles.input}`}
                     value={
                       currentRepetitionsValue.index === index
                         ? currentRepetitionsValue.value
