@@ -3,6 +3,7 @@ import { useNewPlan } from "../contexts/NewPlanContext";
 import OutlinedButton from "./OutlinedButton";
 import TonalButton from "./TonalButton";
 import ExerciseAccordionItem from "./ExerciseAccordionItem";
+import BlockAccordionItem from "./BlockAccordionItem";
 
 function SessionOverviewStage({
   animation,
@@ -26,12 +27,15 @@ function SessionOverviewStage({
   const addExerciseBlock = () => {
     showPopup("exerciseBlock");
   };
-  const handleDelete = (id: string) => {
-    removeExercise(sessionIndex, id);
-  };
+  useEffect(() => {
+    console.log(planState.sessions[sessionIndex].exercises);
+  }, [planState.sessions[sessionIndex].exercises]);
 
   return (
     <div className={`flex flex-col items-center ${localAnimation}`}>
+      <p className="absolute left-4 top-4 text-secondary text-lg font-light">
+        Semana {currentWeek + 1}
+      </p>
       <p className="text-secondary text-3xl mt-8 self-center">
         {planState.sessions[sessionIndex].name}
       </p>
@@ -48,37 +52,28 @@ function SessionOverviewStage({
       </div>
       {planState.sessions[sessionIndex].exercises.map((exercise, index) => {
         if (exercise.type === "selectedExercise") {
-          const repsArray = exercise.reps.split("-");
-          const progression = Array.from(
-            { length: repsArray.length },
-            (_, i) => ({
-              week: i + 1,
-              series: exercise.seriesN,
-              repetitions: repsArray[i],
-              effort: exercise.effort,
-            })
-          );
-
           return (
             <ExerciseAccordionItem
               key={exercise.id}
-              name={exercise.name}
-              seriesN={exercise.seriesN}
-              reps={exercise.reps}
-              effort={exercise.effort}
-              restTime={exercise.restTime}
               id={exercise.id}
               currentWeek={currentWeek}
-              onDelete={handleDelete}
-              progression={progression}
+              sessionIndex={sessionIndex}
             />
           );
         }
-        return (
-          <div key={index}>
-            <p>{exercise.name}</p>
-          </div>
-        );
+        if (
+          exercise.type === "trainingBlock" &&
+          exercise.selectedExercises.length > 0
+        ) {
+          return (
+            <BlockAccordionItem
+              key={exercise.id}
+              id={exercise.id}
+              currentWeek={currentWeek}
+              sessionIndex={sessionIndex}
+            />
+          );
+        }
       })}
 
       <OutlinedButton
@@ -97,6 +92,7 @@ function SessionOverviewStage({
         {planState.sessions.map((session, index) => {
           return (
             <button
+              key={session.id}
               className={` py-2 px-4  ${
                 index !== planState.sessions.length - 1 && "border-r-secondary"
               } hover:opacity-70 hover:cursor-pointer active:opacity-40 focus:outline-none rounded-none`}

@@ -9,6 +9,12 @@ export interface Progression {
   effort: number;
 }
 
+export interface DisplayProgression {
+  series: string;
+  repetitions: string;
+  effort: string;
+}
+
 export interface Exercise {
   id: string;
   name: string;
@@ -18,15 +24,18 @@ export interface Exercise {
 export interface SelectedExercise {
   type: "selectedExercise"; // Not to be included in db schema
   id: string;
+  sessionId: string;
   name: string; // Not to be included in db schema
   exerciseId: string;
   seriesN: number;
   reps: string;
   effort: number;
-  reduceVolume: VolumeReduction;
-  reduceEffort: EffortReduction;
+  reduceVolume?: VolumeReduction;
+  reduceEffort?: EffortReduction;
   restTime: number;
   progression: Progression[];
+  comments: string;
+  blockId?: string;
 }
 
 export interface VolumeReduction {
@@ -38,29 +47,33 @@ export interface EffortReduction {
 }
 
 export interface TrainingBlock {
-  id: string;
   type: "trainingBlock";
+  id: string;
+  sessionId: string;
   name: string;
   seriesN: number;
   reps: string;
   effort: number;
-  fatigueManagement: boolean;
   reduceVolume?: VolumeReduction;
   reduceEffort?: EffortReduction;
-  exercisesInSeries: SelectedExercise[];
-  blockModel: string;
+  selectedExercises: SelectedExercise[]; //Dont include in db schema
+  exercisesInSeries: SelectedExercise[]; //Dont include in db schema
+  blockModel: "sequential" | "series";
   progression: Progression[];
   comments: string;
   restTime: number;
 }
 
 export interface Session {
+  id: string;
+  planId: string;
   name: string;
   days: DayName[];
   exercises: (SelectedExercise | TrainingBlock)[];
 }
 
 export interface PlanState {
+  id: string;
   nOfWeeks: number;
   modelId: string;
   sessions: Session[];
@@ -77,28 +90,29 @@ export interface NewPlanContextType {
   updateWeeks: (weeks: number) => void;
   toggleUseAsModel: () => void;
   updateModelId: (id: string) => void;
-  addSession: (session: Session) => void;
-  updateSession: (index: number, session: Session) => void;
-  removeSession: (index: number) => void;
-  addTrainingBlock: (sessionIndex: number) => void;
-  addExercise: (
-    sessionIndex: number,
-    series: number,
-    reps: string,
-    fatigueParameter: "volume" | "effort" | null,
-    handleFatigue: VolumeReduction | EffortReduction | undefined,
-    effort: number,
-    exerciseId: string,
-    name: string,
-    restTime: number,
-    progression: Progression[]
+  addSession: (session: Omit<Session, "id" | "planId">) => void;
+  updateSession: (
+    index: number,
+    session: Omit<Session, "id" | "planId">
   ) => void;
+  removeSession: (index: number) => void;
+  addTrainingBlock: (
+    sessionIndex: number,
+    exerciseData: Exercise[],
+    selectedExercise: SelectedExercise, //contains the default data for the block
+    blockModel: "sequential" | "series"
+  ) => void;
+
   updateTrainingBlock: (
     sessionIndex: number,
     exerciseId: string,
     block: TrainingBlock
   ) => void;
-  removeExercise: (sessionIndex: number, exerciseId: string) => void;
+  removeExercise: (
+    sessionIndex: number,
+    exerciseId: string,
+    blockId?: string
+  ) => void;
   resetPlan: () => void;
   updateNOfSessions: (n: number) => void;
   currentExerciseBlock: TrainingBlock | null;
@@ -109,7 +123,6 @@ export interface NewPlanContextType {
   setCurrentSelectedExercise: React.Dispatch<
     React.SetStateAction<SelectedExercise | null>
   >;
-  saveExerciseBlock: (sessionIndex: number) => void;
   saveSelectedExercise: (
     sessionIndex: number,
     currentSelectedExercise: SelectedExercise
@@ -120,25 +133,31 @@ export interface NewPlanContextType {
 export const defaultTrainingBlock: TrainingBlock = {
   id: "",
   type: "trainingBlock",
+  sessionId: "",
   name: "",
   seriesN: 3,
   reps: "8-12",
   effort: 70,
-  fatigueManagement: false,
+  reduceVolume: {},
+  reduceEffort: {},
+  selectedExercises: [],
   exercisesInSeries: [],
-  blockModel: "",
+  blockModel: "sequential",
   progression: [],
   comments: "",
   restTime: 60,
 };
 
 export const defaultSession: Session = {
+  id: "",
+  planId: "",
   name: "",
   days: [],
   exercises: [],
 };
 
 export const defaultPlanState: PlanState = {
+  id: "",
   nOfWeeks: 4,
   modelId: "",
   sessions: [],
@@ -160,5 +179,20 @@ export const defaultProgression: Progression[] = [
     series: 3,
     repetitions: "10-12",
     effort: 90,
+  },
+  {
+    series: 3,
+    repetitions: "12-14",
+    effort: 95,
+  },
+  {
+    series: 3,
+    repetitions: "14-16",
+    effort: 100,
+  },
+  {
+    series: 4,
+    repetitions: "14-16",
+    effort: 100,
   },
 ];

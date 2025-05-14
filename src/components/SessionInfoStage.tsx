@@ -47,7 +47,7 @@ function SessionInfoStage({
   };
 
   const previousSession = () => {
-    const newSession: Session = {
+    const newSession: Omit<Session, "id" | "planId"> = {
       name: formState.name.value,
       days: formState.days.value,
       exercises: [],
@@ -88,7 +88,7 @@ function SessionInfoStage({
       }));
       return;
     }
-    const newSession: Session = {
+    const newSession: Omit<Session, "id" | "planId"> = {
       name: formState.name.value,
       days: formState.days.value,
       exercises: [],

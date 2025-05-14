@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { VALIDATION_LIMITS } from "../constants/data";
 import { MultipleDropJumpStudy } from "../types/Studies";
 import { useBlur } from "../contexts/BlurContext";
+import navAnimations from "../styles/animations.module.css";
 
 const initialDropJumpHeights = [
   { cm: "20", ft: "0'8" },
@@ -45,6 +46,9 @@ function StartTest({
   } = useStudyContext();
 
   const { isBlurred, setIsBlurred } = useBlur();
+  const [popupAnimation, setPopupAnimation] = useState(
+    navAnimations.popupFadeInTop
+  );
   const [displayInfo, setDisplayInfo] = useState(false);
   const [testInProgress, setTestInProgress] = useState(false);
   const [noAthlete, setNoAthlete] = useState(false);
@@ -84,8 +88,12 @@ function StartTest({
   };
 
   const hideInfo = () => {
-    setDisplayInfo(false);
-    setIsBlurred(false);
+    setPopupAnimation(navAnimations.popupFadeOutTop);
+    setTimeout(() => {
+      setDisplayInfo(false);
+      setIsBlurred(false);
+      setPopupAnimation(navAnimations.popupFadeInTop);
+    }, 200);
   };
 
   const startTest = () => {
@@ -703,7 +711,9 @@ function StartTest({
         />
       </div>
       {displayInfo && (
-        <div className="bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/4 top-8 flex flex-col items-center px-16 py-8">
+        <div
+          className={`bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/2 -translate-x-1/2 top-8 flex flex-col items-center px-16 py-8 ${popupAnimation}`}
+        >
           <div
             className="absolute top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
             onClick={hideInfo}

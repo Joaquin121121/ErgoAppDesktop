@@ -15,6 +15,8 @@ Implementar registro, login, persistencia de sesión
 Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
 Sacar licencia
 Parsers
+Hacer placeholders de ui de plan para mantener tamaño de display de sesiones consistente
+Boton de deshacer
 
 Si hay tiempo:
 Implementar resumen BOSCO test pre-guardar (despues)

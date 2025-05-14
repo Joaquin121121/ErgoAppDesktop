@@ -10,6 +10,7 @@ import {
   SelectedExercise,
   defaultTrainingBlock,
   defaultPlanState,
+  Exercise,
 } from "../types/trainingPlan";
 import { v4 as uuidv4 } from "uuid";
 
@@ -19,28 +20,16 @@ const NewPlanContext = createContext<NewPlanContextType | undefined>(undefined);
 export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const [planState, setPlanState] = useState<PlanState>(defaultPlanState);
+  const [planState, setPlanState] = useState<PlanState>({
+    ...defaultPlanState,
+    id: uuidv4(),
+  });
 
   // New state variables to hold the exercise block/exercise currently being edited
   const [currentExerciseBlock, setCurrentExerciseBlock] =
     useState<TrainingBlock | null>(null);
   const [currentSelectedExercise, setCurrentSelectedExercise] =
     useState<SelectedExercise | null>(null);
-
-  // Save functions to push current block/exercise into the appropriate session
-  const saveExerciseBlock = (sessionIndex: number) => {
-    if (!currentExerciseBlock) return;
-    setPlanState((prev) => {
-      const updatedSessions = [...prev.sessions];
-      if (!updatedSessions[sessionIndex]) return prev; // guard
-      updatedSessions[sessionIndex].exercises = [
-        ...updatedSessions[sessionIndex].exercises,
-        currentExerciseBlock,
-      ];
-      setCurrentExerciseBlock(null);
-      return { ...prev, sessions: updatedSessions };
-    });
-  };
 
   const saveSelectedExercise = (
     sessionIndex: number,
@@ -80,17 +69,30 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
     setPlanState((prev) => ({ ...prev, nOfSessions: n }));
   };
 
-  const addSession = (session: Session) => {
+  const addSession = (session: Omit<Session, "id" | "planId">) => {
+    const completeSession: Session = {
+      ...session,
+      id: uuidv4(),
+      planId: planState.id,
+    };
     setPlanState((prev) => ({
       ...prev,
-      sessions: [...prev.sessions, session],
+      sessions: [...prev.sessions, completeSession],
     }));
   };
 
-  const updateSession = (index: number, session: Session) => {
+  const updateSession = (
+    index: number,
+    session: Omit<Session, "id" | "planId">
+  ) => {
+    const completeSession: Session = {
+      ...session,
+      id: planState.sessions[index].id,
+      planId: planState.id,
+    };
     setPlanState((prev) => {
       const updatedSessions = [...prev.sessions];
-      updatedSessions[index] = session;
+      updatedSessions[index] = completeSession;
       return { ...prev, sessions: updatedSessions };
     });
   };
@@ -103,60 +105,54 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
     });
   };
 
-  const addTrainingBlock = (sessionIndex: number) => {
-    setPlanState((prev) => {
-      const updatedSessions = [...prev.sessions];
-      updatedSessions[sessionIndex].exercises = [
-        ...updatedSessions[sessionIndex].exercises,
-        { ...defaultTrainingBlock },
-      ];
-      return { ...prev, sessions: updatedSessions };
-    });
-  };
-
-  const addExercise = (
+  const addTrainingBlock = (
     sessionIndex: number,
-    series: number,
-    reps: string,
-    fatigueParameter: "volume" | "effort" | null,
-    handleFatigue: VolumeReduction | EffortReduction | undefined,
-    effort: number,
-    exerciseId: string,
-    name: string,
-    restTime: number,
-    progression: Progression[]
+    exerciseData: Exercise[],
+    selectedExercise: SelectedExercise, //contains the default data for the block
+    blockModel: "sequential" | "series"
   ) => {
+    const processedSelectedExercises: SelectedExercise[] = exerciseData.map(
+      (exercise) => ({
+        id: uuidv4(),
+        type: "selectedExercise",
+        sessionId: planState.sessions[sessionIndex].id,
+        name: exercise.name,
+        exerciseId: exercise.id,
+        seriesN: selectedExercise.seriesN,
+        reps: selectedExercise.reps,
+        effort: selectedExercise.effort,
+        reduceVolume: selectedExercise.reduceVolume,
+        reduceEffort: selectedExercise.reduceEffort,
+        restTime: selectedExercise.restTime,
+        progression: selectedExercise.progression,
+        comments: "",
+      })
+    );
+    const processedTrainingBlock: TrainingBlock = {
+      id: uuidv4(),
+      type: "trainingBlock",
+      sessionId: planState.sessions[sessionIndex].id,
+      name: selectedExercise.name,
+      seriesN: selectedExercise.seriesN,
+      reps: selectedExercise.reps,
+      effort: selectedExercise.effort,
+      reduceVolume: selectedExercise.reduceVolume,
+      reduceEffort: selectedExercise.reduceEffort,
+      selectedExercises: processedSelectedExercises,
+      exercisesInSeries: [],
+      blockModel: blockModel,
+      progression: selectedExercise.progression,
+      comments: "",
+      restTime: selectedExercise.restTime,
+    };
     setPlanState((prev) => {
       const updatedSessions = [...prev.sessions];
-
-      const newExercise: SelectedExercise = {
-        type: "selectedExercise",
-        name: name,
-        id: uuidv4(),
-        exerciseId: exerciseId,
-        seriesN: series,
-        reps: reps,
-        effort: effort,
-        reduceVolume:
-          fatigueParameter === "volume"
-            ? (handleFatigue as VolumeReduction) || {}
-            : {},
-        reduceEffort:
-          fatigueParameter === "effort"
-            ? (handleFatigue as EffortReduction) || {}
-            : {},
-        restTime: restTime,
-        progression: progression,
-      };
-
       updatedSessions[sessionIndex].exercises = [
         ...updatedSessions[sessionIndex].exercises,
-        newExercise,
+        processedTrainingBlock,
       ];
-
       return { ...prev, sessions: updatedSessions };
     });
-    console.log(planState.sessions[sessionIndex].exercises);
   };
 
   const updateTrainingBlock = (
@@ -171,7 +167,35 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
     });
   };
 
-  const removeExercise = (sessionIndex: number, exerciseId: string) => {
+  const removeExercise = (
+    //Also good for removing blocks
+    sessionIndex: number,
+    exerciseId: string,
+    blockId?: string
+  ) => {
+    if (blockId) {
+      setPlanState((prev) => {
+        const updatedSessions = [...prev.sessions];
+        const block = updatedSessions[sessionIndex].exercises.find(
+          (e) => e.id === blockId
+        ) as TrainingBlock;
+        if (!block) return prev;
+        block.selectedExercises = block.selectedExercises.filter(
+          (e) => e.id !== exerciseId
+        );
+        if (block.selectedExercises.length > 0) {
+          updatedSessions[sessionIndex].exercises = updatedSessions[
+            sessionIndex
+          ].exercises.map((e) => (e.id === blockId ? block : e));
+        } else {
+          updatedSessions[sessionIndex].exercises = updatedSessions[
+            sessionIndex
+          ].exercises.filter((e) => e.id !== blockId);
+        }
+
+        return { ...prev, sessions: updatedSessions };
+      });
+    }
     setPlanState((prev) => {
       const updatedSessions = [...prev.sessions];
       updatedSessions[sessionIndex].exercises = updatedSessions[
@@ -197,7 +221,6 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
         updateSession,
         removeSession,
         addTrainingBlock,
-        addExercise,
         updateTrainingBlock,
         removeExercise,
         resetPlan,
@@ -206,7 +229,6 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
         setCurrentExerciseBlock,
         currentSelectedExercise,
         setCurrentSelectedExercise,
-        saveExerciseBlock,
         saveSelectedExercise,
       }}
     >

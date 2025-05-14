@@ -12,6 +12,7 @@ import ExerciseData from "./ExerciseData";
 import LoadManagement from "./LoadManagement";
 import { RangeEntry } from "../utils/fatigueHandling";
 import { useNewPlan } from "../contexts/NewPlanContext";
+import TrainingBlockData from "./TrainingBlockData";
 function NewExercisePopup({
   onClose,
   type = "exercise",
@@ -30,6 +31,7 @@ function NewExercisePopup({
     currentSelectedExercise,
     setCurrentSelectedExercise,
     saveSelectedExercise,
+    addTrainingBlock,
   } = useNewPlan();
 
   const exercises = [
@@ -66,6 +68,7 @@ function NewExercisePopup({
     selectExercises: "",
     exerciseData: "",
     loadManagement: "",
+    // trainingBlockData: "",
   });
 
   const localOnContinue = () => {
@@ -106,7 +109,8 @@ function NewExercisePopup({
   const onSave = (
     progression: Progression[] | null,
     fatigueHandling: VolumeReduction | EffortReduction | null,
-    factorToReduce: "volume" | "effort" | undefined
+    factorToReduce: "volume" | "effort" | undefined,
+    blockModel: "sequential" | "series" | undefined
   ) => {
     let newSelectedExercise = {
       ...currentSelectedExercise,
@@ -123,11 +127,24 @@ function NewExercisePopup({
       };
     }
     newSelectedExercise.progression = progression;
-    saveSelectedExercise(sessionIndex, newSelectedExercise);
-    setAnimation(navAnimations.popupFadeOutTop);
-    setTimeout(() => {
-      onClose();
-    }, 200);
+    if (type === "exercise") {
+      saveSelectedExercise(sessionIndex, newSelectedExercise);
+      setAnimation(navAnimations.popupFadeOutTop);
+      setTimeout(() => {
+        onClose();
+      }, 200);
+    } else {
+      addTrainingBlock(
+        sessionIndex,
+        selectedExercises,
+        newSelectedExercise,
+        blockModel
+      );
+      setAnimation(navAnimations.popupFadeOutTop);
+      setTimeout(() => {
+        onClose();
+      }, 200);
+    }
   };
 
   const sections = {
@@ -160,6 +177,12 @@ function NewExercisePopup({
         onSave={onSave}
       />
     ),
+    // trainingBlockData: (
+    //   <TrainingBlockData
+    //     animation={animations.trainingBlockData}
+    //     sessionN={sessionIndex}
+    //   />
+    // ),
   };
 
   return (

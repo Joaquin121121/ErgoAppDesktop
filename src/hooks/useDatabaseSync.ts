@@ -129,13 +129,6 @@ export function useDatabaseSync() {
     return time1 > time2;
   };
 
-  // Convert snake_case column names to camelCase and vice versa
-  const snakeToCamel = (str: string): string =>
-    str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-
-  const camelToSnake = (str: string): string =>
-    str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-
   // Sync a single table between Supabase and SQLite
   const syncTable = useCallback(
     async (tableName: string, primaryKey: string, lastSync: string) => {
@@ -648,6 +641,116 @@ export function useDatabaseSync() {
     ]
   );
 
+  // Function to sync a specific table
+  const syncSpecificTable = useCallback(
+    async (tableName: string, force: boolean = false) => {
+      const now = Date.now();
+
+      if (isSyncInProgressRef.current) {
+        console.log("Sync already in progress, skipping this request");
+        return;
+      }
+
+      if (!isOnline) {
+        setError("Cannot sync while offline");
+        setSyncStatus("error");
+        return;
+      }
+
+      try {
+        isSyncInProgressRef.current = true;
+        setSyncStatus("syncing");
+        setError(null);
+
+        await ensureSyncMetaTable();
+        const lastSync = await getLastSyncTime();
+        const now = new Date().toISOString();
+
+        const table = TABLES.find((t) => t.name === tableName);
+        if (!table) {
+          throw new Error(`Table ${tableName} not found in sync configuration`);
+        }
+
+        const tableStats = await syncTable(
+          table.name,
+          table.primaryKey,
+          lastSync
+        );
+
+        // Update sync stats for this table
+        setSyncStats((prev) => ({
+          ...prev,
+          uploaded: prev.uploaded + tableStats.uploaded,
+          downloaded: prev.downloaded + tableStats.downloaded,
+          tables: {
+            ...prev.tables,
+            [tableName]: tableStats,
+          },
+        }));
+
+        await setLastSyncTimeInDB(now);
+        setLastSyncTime(new Date(now));
+        setSyncStatus("success");
+      } catch (error) {
+        console.error(`Error syncing table ${tableName}:`, error);
+        setError(error instanceof Error ? error.message : String(error));
+        setSyncStatus("error");
+      } finally {
+        isSyncInProgressRef.current = false;
+      }
+    },
+    [
+      isOnline,
+      ensureSyncMetaTable,
+      getLastSyncTime,
+      setLastSyncTimeInDB,
+      syncTable,
+    ]
+  );
+
+  // Function to upload data to local DB and sync
+  const uploadAndSyncTable = useCallback(
+    async (tableName: string, data: any[]) => {
+      try {
+        const db = await Database.load("sqlite:ergolab.db");
+        const table = TABLES.find((t) => t.name === tableName);
+
+        if (!table) {
+          throw new Error(`Table ${tableName} not found in sync configuration`);
+        }
+
+        // Add last_changed timestamp to each record
+        const now = new Date().toISOString();
+        const dataWithTimestamp = data.map((record) => ({
+          ...record,
+          last_changed: now,
+        }));
+
+        // Insert or update records in local DB
+        for (const record of dataWithTimestamp) {
+          const columns = Object.keys(record);
+          const placeholders = columns.map(() => "?").join(", ");
+
+          await db.execute(
+            `INSERT OR REPLACE INTO "${tableName}" ("${columns.join(
+              '", "'
+            )}") VALUES (${placeholders})`,
+            columns.map((col) => record[col])
+          );
+        }
+
+        // If local upload successful, sync with Supabase
+        await syncSpecificTable(tableName);
+
+        return true;
+      } catch (error) {
+        console.error(`Error in uploadAndSyncTable for ${tableName}:`, error);
+        throw error;
+      }
+    },
+    [syncSpecificTable]
+  );
+
   // Trigger sync when coming back online
   useEffect(() => {
     let mounted = true;
@@ -693,6 +796,8 @@ export function useDatabaseSync() {
 
   return {
     syncAllTables,
+    syncSpecificTable,
+    uploadAndSyncTable,
     syncStatus,
     lastSyncTime,
     syncStats,

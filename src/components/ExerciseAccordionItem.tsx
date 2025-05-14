@@ -1,55 +1,49 @@
+import {
+  Progression,
+  SelectedExercise,
+  TrainingBlock,
+} from "../types/trainingPlan";
 import React, { useState, useRef, useEffect } from "react";
-
-interface ProgressionWeek {
-  week: number;
-  series: number | string;
-  repetitions: number | string;
-  effort: number | string;
-}
+import inputStyles from "../styles/inputStyles.module.css";
+import { useNewPlan } from "../contexts/NewPlanContext";
 
 interface ExerciseAccordionItemProps {
-  name: string;
-  seriesN: string | number;
-  reps: string;
-  effort: string | number;
-  restTime: string | number;
   id: string;
+  sessionIndex: number;
   currentWeek: number;
-  onDelete: (id: string) => void;
-  progression?: ProgressionWeek[];
+  blockId?: string;
+  last?: boolean;
 }
 
 const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
-  name,
-  seriesN,
-  reps,
-  effort,
-  restTime,
   id,
+  sessionIndex,
   currentWeek,
-  onDelete,
-  progression = [],
+  blockId,
+  last = false,
 }) => {
+  const { planState, setPlanState, removeExercise } = useNewPlan();
+
+  const { name, seriesN, reps, effort, restTime, progression } = blockId
+    ? (
+        planState.sessions[sessionIndex].exercises.find(
+          (e) => e.id === blockId
+        ) as TrainingBlock
+      ).selectedExercises.find((e) => e.id === id)
+    : planState.sessions[sessionIndex].exercises.find((e) => e.id === id);
+
   const [isExpanded, setIsExpanded] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | undefined>(0);
 
-  // Generate example progression data if none is provided
-  const progressionData =
-    progression.length > 0
-      ? progression
-      : Array.from({ length: 4 }, (_, i) => ({
-          week: i + 1,
-          series:
-            typeof seriesN === "number"
-              ? seriesN
-              : parseInt(seriesN as string) || 3,
-          repetitions: reps.split("-")[i] || reps.split("-")[0],
-          effort:
-            typeof effort === "number"
-              ? effort
-              : parseInt(effort as string) || 8,
-        }));
+  const initialFormState = {
+    seriesN: { value: seriesN, error: null },
+    reps: { value: reps, error: null },
+    effort: { value: effort, error: null },
+    restTime: { value: restTime, error: null },
+  };
+  const [formState, setFormState] = useState(initialFormState);
+  const [displayProgression, setDisplayProgression] = useState([]);
 
   useEffect(() => {
     if (isExpanded) {
@@ -87,22 +81,219 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     setIsExpanded(!isExpanded);
   };
 
+  const formatProgression = (progression: Progression[]) => {
+    return progression.map((p) => {
+      return {
+        series: p.series.toString(),
+        repetitions: p.repetitions,
+        effort: p.effort.toString(),
+      };
+    });
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormState({
+      ...formState,
+      [name]: { ...formState[name], value: value },
+    });
+  };
+  const handleProgressionChange = (
+    index: number,
+    field: keyof Progression,
+    value: string
+  ) => {
+    const newProgression: Progression[] = [...displayProgression];
+
+    if (field === "repetitions") {
+      newProgression[index][field] = value;
+    } else {
+      newProgression[index][field] = parseInt(value);
+    }
+    setDisplayProgression(newProgression);
+  };
+
+  const onInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const intValue = parseInt(value);
+    if (name === "effort") {
+      if (intValue > 10) {
+        setFormState(initialFormState);
+        return;
+      }
+    }
+    if (intValue < 1) {
+      setFormState(initialFormState);
+      return;
+    }
+    setPlanState((prev) => {
+      const updatedSessions = [...prev.sessions];
+      if (blockId) {
+        const block = updatedSessions[sessionIndex].exercises.find(
+          (e) => e.id === blockId
+        ) as TrainingBlock;
+        if (!block) return prev;
+        const exercise = block.selectedExercises.find(
+          (e) => e.id === id
+        ) as SelectedExercise;
+        if (!exercise) return prev;
+        exercise[name] = intValue;
+        block.selectedExercises = block.selectedExercises.map((e) =>
+          e.id === id ? exercise : e
+        );
+        updatedSessions[sessionIndex].exercises = updatedSessions[
+          sessionIndex
+        ].exercises.map((e) => (e.id === blockId ? block : e));
+      } else {
+        const exercise = updatedSessions[sessionIndex].exercises.find(
+          (e) => e.id === id
+        );
+        if (!exercise) return prev;
+        exercise[name] = intValue;
+        updatedSessions[sessionIndex].exercises = updatedSessions[
+          sessionIndex
+        ].exercises.map((e) => (e.id === id ? exercise : e));
+      }
+      return { ...prev, sessions: updatedSessions };
+    });
+  };
+
+  const onProgressionBlur = (index: number, field: keyof Progression) => {
+    const newProgression: Progression[] = [...displayProgression];
+    const intValue =
+      typeof newProgression[index][field] === "number"
+        ? newProgression[index][field]
+        : parseInt(newProgression[index][field]);
+    if (name === "effort") {
+      if (intValue > 10) {
+        setDisplayProgression(formatProgression(progression));
+        return;
+      }
+    }
+    if (intValue < 1) {
+      setDisplayProgression(formatProgression(progression));
+      return;
+    }
+
+    if (field === "repetitions") {
+      newProgression[index][field] = newProgression[index][field];
+    } else {
+      newProgression[index][field] = Number(newProgression[index][field]);
+    }
+    setPlanState((prev) => {
+      const updatedSessions = [...prev.sessions];
+      if (blockId) {
+        const block = updatedSessions[sessionIndex].exercises.find(
+          (e) => e.id === blockId
+        ) as TrainingBlock;
+        if (!block) return prev;
+        const exercise = block.selectedExercises.find(
+          (e) => e.id === id
+        ) as SelectedExercise;
+        if (!exercise) return prev;
+        if (field === "repetitions") {
+          exercise.progression[index][field] = newProgression[index][field];
+        } else {
+          exercise.progression[index][field] = newProgression[index][field];
+        }
+        block.selectedExercises = block.selectedExercises.map((e) =>
+          e.id === id ? exercise : e
+        );
+        updatedSessions[sessionIndex].exercises = updatedSessions[
+          sessionIndex
+        ].exercises.map((e) => (e.id === blockId ? block : e));
+      } else {
+        const exercise = updatedSessions[sessionIndex].exercises.find(
+          (e) => e.id === id
+        );
+        if (!exercise) return prev;
+        if (field === "repetitions") {
+          exercise.progression[index][field] = newProgression[index][field];
+        } else {
+          exercise.progression[index][field] = newProgression[index][field];
+        }
+        updatedSessions[sessionIndex].exercises = updatedSessions[
+          sessionIndex
+        ].exercises.map((e) => (e.id === id ? exercise : e));
+      }
+      return { ...prev, sessions: updatedSessions };
+    });
+    setDisplayProgression(newProgression);
+  };
+
+  useEffect(() => {
+    setDisplayProgression(formatProgression(progression));
+  }, [progression]);
+
+  useEffect(() => {
+    console.log(
+      "Session:",
+      planState.sessions[sessionIndex].exercises.find(
+        (e) => e.id === blockId
+      ) as TrainingBlock
+    );
+  }, [
+    planState.sessions[sessionIndex].exercises.find(
+      (e) => e.id === blockId
+    ) as TrainingBlock,
+  ]);
   return (
     <>
       {/* Header - Always visible */}
-      <div className="w-[90%] mx-auto grid grid-cols-8 gap-x-4 mt-4 border border-lightRed rounded-2xl">
-        <p className="col-span-2 text-xl text-center my-auto py-2">{name}</p>
-        <p className="text-xl text-center my-auto py-2">{seriesN}</p>
-        <p className="text-xl text-center my-auto py-2">
-          {reps.split("-")[currentWeek]}
+      <div
+        className={`mx-auto grid grid-cols-8 gap-x-4   ${
+          blockId
+            ? `w-full ${!last && "border-b border-gray"}`
+            : "mt-4 border border-lightRed w-[90%] rounded-2xl"
+        }`}
+      >
+        <p className="col-span-2 text-xl text-center my-auto py-2 rounded-2xl mx-auto">
+          {name}
         </p>
-        <p className="text-xl text-center my-auto py-2">{effort}</p>
-        <p className="text-xl text-center my-auto py-2">{restTime}</p>
+        <input
+          className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${
+            inputStyles.input
+          } ${formState.seriesN.error ? inputStyles.error : ""}`}
+          value={formState.seriesN.value}
+          onChange={handleInputChange}
+          onBlur={onInputBlur}
+          name="seriesN"
+          type="number"
+        />
+        <input
+          className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${
+            inputStyles.input
+          } ${formState.reps.error ? inputStyles.error : ""}`}
+          value={formState.reps.value}
+          onChange={handleInputChange}
+          onBlur={onInputBlur}
+          name="reps"
+        />
+        <input
+          className={`text-xl text-center my-auto  rounded-2xl w-16 mx-auto ${
+            inputStyles.input
+          } ${formState.effort.error ? inputStyles.error : ""}`}
+          value={formState.effort.value}
+          onChange={handleInputChange}
+          onBlur={onInputBlur}
+          name="effort"
+          type="number"
+        />
+        <input
+          className={`text-xl text-center my-auto  rounded-2xl w-16 mx-auto ${
+            inputStyles.input
+          } ${formState.restTime.error ? inputStyles.error : ""}`}
+          value={formState.restTime.value}
+          onChange={handleInputChange}
+          onBlur={onInputBlur}
+          name="restTime"
+          type="number"
+        />
         <div
           className="flex flex-grow justify-center items-center"
           onClick={(e) => {
             e.stopPropagation();
-            onDelete(id);
+            removeExercise(sessionIndex, id, blockId);
           }}
         >
           <img
@@ -132,30 +323,60 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           height: height !== undefined ? `${height}px` : "auto",
           overflow: "hidden",
           transition: "height 0.3s ease-in-out",
-          width: "90%",
+          width: blockId ? "100%" : "90%",
           margin: "0 auto",
         }}
       >
-        <div className="px-8 py-4 border-l border-r border-b border-lightRed rounded-b-2xl">
+        <div className="py-4 border-l border-r border-b border-lightRed rounded-b-2xl">
           {/* Progress data in grid format */}
-          <div className="grid grid-cols-8 gap-x-8 gap-y-4">
-            {progressionData.map((week, index) => (
+          <div className="grid grid-cols-8 gap-x-4 gap-y-4">
+            {displayProgression.map((week, index) => (
               <React.Fragment key={index}>
-                <p className="text-darkGray text-center col-span-2 my-auto text-lg">
-                  Semana {week.week}
+                <p
+                  className={`text-center col-span-2 my-auto text-lg ${
+                    currentWeek === index ? "text-secondary" : "text-darkGray"
+                  }`}
+                >
+                  Semana {index + 1}
                 </p>
-                <p className="text-lg text-center rounded-2xl  my-auto">
-                  {week.series}
-                </p>
-                <p className="text-lg text-center rounded-2xl   my-auto ">
-                  {week.repetitions}
-                </p>
-                <p className="text-lg text-center rounded-2xl   my-auto">
-                  {week.effort}
-                </p>
-                <p className="text-lg text-center rounded-2xl   my-auto">
-                  {restTime}
-                </p>
+                <input
+                  className={`text-lg text-center rounded-2xl w-16 mx-auto border border-transparent ${inputStyles.input}`}
+                  type="number"
+                  value={week.series}
+                  onChange={(e) =>
+                    handleProgressionChange(index, "series", e.target.value)
+                  }
+                  onBlur={() => onProgressionBlur(index, "series")}
+                />
+                <input
+                  className={`text-lg text-center rounded-2xl w-16 mx-auto border border-transparent ${inputStyles.input}`}
+                  value={week.repetitions}
+                  onChange={(e) =>
+                    handleProgressionChange(
+                      index,
+                      "repetitions",
+                      e.target.value
+                    )
+                  }
+                  onBlur={() => onProgressionBlur(index, "repetitions")}
+                />
+                <input
+                  className={`text-lg text-center rounded-2xl w-16 mx-auto border border-transparent ${inputStyles.input}`}
+                  type="number"
+                  value={week.effort}
+                  onChange={(e) =>
+                    handleProgressionChange(index, "effort", e.target.value)
+                  }
+                  onBlur={() => onProgressionBlur(index, "effort")}
+                />
+                <input
+                  className={`text-lg text-center rounded-2xl w-16 mx-auto border border-transparent ${inputStyles.input}`}
+                  type="number"
+                  value={restTime}
+                  name="restTime"
+                  onChange={handleInputChange}
+                  onBlur={onInputBlur}
+                />
                 <div></div>
                 <div></div>
               </React.Fragment>

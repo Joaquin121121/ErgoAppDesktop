@@ -11,6 +11,8 @@ import SessionInfoStage from "../components/SessionInfoStage";
 import navAnimations from "../styles/animations.module.css";
 import SessionOverviewStage from "../components/SessionOverviewStage";
 import NewExercisePopup from "../components/NewExercisePopup";
+import OutlinedButton from "../components/OutlinedButton";
+import TrainingVolumePopup from "../components/TrainingVolumePopup";
 const TrainingMenu = ({
   isExpanded,
   animation,
@@ -61,14 +63,25 @@ const TrainingMenu = ({
   const [showPopup, setShowPopup] = useState<
     "exercise" | "exerciseBlock" | null
   >(null);
+  const [displayVolumePopup, setDisplayVolumePopup] = useState(false);
 
   const showExercisePopup = (type: "exercise" | "exerciseBlock") => {
     setShowPopup(type);
     setIsBlurred(true);
   };
 
+  const showVolumePopup = () => {
+    setDisplayVolumePopup(true);
+    setIsBlurred(true);
+  };
+
   const closeExercisePopup = () => {
     setShowPopup(null);
+    setIsBlurred(false);
+  };
+
+  const closeVolumePopup = () => {
+    setDisplayVolumePopup(false);
     setIsBlurred(false);
   };
 
@@ -165,21 +178,29 @@ const TrainingMenu = ({
   return (
     <>
       <div
-        className={`flex-1 relative flex flex-col items-center  transition-all duration-300 ease-in-out ${animation}`}
+        className={`flex-1 relative flex flex-col items-center  transition-all duration-300 ease-in-out ${animation} ${
+          displayVolumePopup ? "blur-md pointer-events-none" : ""
+        }`}
         style={{
           paddingLeft: isExpanded ? "100px" : "32px",
         }}
       >
         <div
-          className={`my-10 w-full flex justify-around items-center ${
+          className={`my-10 w-full flex justify-around items-center${
             isBlurred && "blur-md pointer-events-none"
           }`}
         >
+          <div className="w-[122px]" />
           <div className="w-[122px]" />
           <p className="text-3xl">
             Entrenamiento:{" "}
             <span className="text-secondary">{athlete.name}</span>
           </p>
+          <OutlinedButton
+            title="Ver Rendimiento"
+            onClick={showVolumePopup}
+            icon="performance"
+          />
           <TonalButton
             inverse
             title="Volver"
@@ -188,7 +209,8 @@ const TrainingMenu = ({
           />
         </div>
         <div
-          className={`self-end w-[90%] flex justify-between items-start transition-all duration-300 ease-in-out pr-8`}
+          className={`self-end w-[90%] flex justify-between items-start transition-all duration-300 ease-in-out pr-8 
+            mb-4`}
         >
           {showPopup && (
             <NewExercisePopup
@@ -237,6 +259,12 @@ const TrainingMenu = ({
             setDisplayPopup(false);
           }}
           externalClose={closePopup}
+        />
+      )}
+      {displayVolumePopup && (
+        <TrainingVolumePopup
+          closePopup={closeVolumePopup}
+          sessionIndex={sessionIndex}
         />
       )}
     </>

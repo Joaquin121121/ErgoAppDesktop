@@ -3,6 +3,7 @@ import {
   RangeEntry,
   VolumeReduction,
   EffortReduction,
+  Progression,
 } from "../types/trainingPlan";
 
 export function formatDateString(date: Date): string {
@@ -282,3 +283,40 @@ export function getReductionFromRangeEntries(
 
   return reductionObject;
 }
+
+export const generateInitialProgression = (
+  nOfWeeks: number,
+  seriesN: number,
+  reps: string,
+  effort: number
+) => {
+  const progression: Progression[] = [];
+
+  for (let i = 0; i < nOfWeeks; i++) {
+    // Calculate progressive effort (increase by 5 each week)
+    const currentEffort = Math.min(10, effort + i);
+
+    // Handle progressive repetitions
+    let currentReps = reps;
+    if (reps.includes("-") || reps.includes("/")) {
+      // Handle range format (e.g., "6-8" or "6/8")
+      const separator = reps.includes("-") ? "-" : "/";
+      const [start, end] = reps.split(separator).map(Number);
+      const newStart = start + i * 2;
+      const newEnd = end + i * 2;
+      currentReps = `${newStart}${separator}${newEnd}`;
+    } else {
+      // Handle single number format
+      const repNum = parseInt(reps);
+      currentReps = (repNum + i * 2).toString();
+    }
+
+    progression.push({
+      series: seriesN,
+      repetitions: currentReps,
+      effort: currentEffort,
+    });
+  }
+
+  return progression;
+};

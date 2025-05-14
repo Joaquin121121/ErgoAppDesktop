@@ -9,7 +9,6 @@ import {
   rebalanceAroundAnchor,
 } from "../utils/fatigueHandling";
 import {
-  defaultProgression,
   EffortReduction,
   Exercise,
   Progression,
@@ -18,7 +17,8 @@ import {
 import TonalButton from "./TonalButton";
 import { RangeEntry } from "../types/trainingPlan";
 import { getReductionFromRangeEntries } from "../utils/utils";
-
+import { useNewPlan } from "../contexts/NewPlanContext";
+import { generateInitialProgression } from "../utils/utils";
 function LoadManagement({
   animation,
   selectedExercises,
@@ -29,19 +29,28 @@ function LoadManagement({
   onSave: (
     progression: Progression[] | null,
     fatigueHandling: VolumeReduction | EffortReduction | null,
-    factorToReduce: "volume" | "effort" | undefined
+    factorToReduce: "volume" | "effort" | undefined,
+    blockModel: "sequential" | "series" | undefined
   ) => void;
 }) {
+  const { planState, currentSelectedExercise } = useNewPlan();
   const { t } = useTranslation();
 
-  const [progression, setProgression] =
-    useState<Progression[]>(defaultProgression);
+  const defaultProgression = currentSelectedExercise
+    ? generateInitialProgression(
+        planState.nOfWeeks,
+        currentSelectedExercise.seriesN,
+        currentSelectedExercise.reps,
+        currentSelectedExercise.effort
+      )
+    : [];
+
+  const [progression, setProgression] = useState<Progression[]>(
+    defaultProgression.slice(0, planState.nOfWeeks)
+  );
   const [handleProgression, setHandleProgression] = useState(true);
   const [progressionModified, setProgressionModified] = useState(false);
 
-  const [repetitions, setRepetitions] = useState(
-    defaultProgression[0].repetitions
-  );
   /* ------------------------------ Local state ----------------------------- */
   const initialFatigueHandling: RangeEntry[] = [
     { range: [1, 5], percentageDrop: 0 },
@@ -70,6 +79,9 @@ function LoadManagement({
     null
   );
   const [modified, setModified] = useState(false);
+  const [blockModel, setBlockModel] = useState<"sequential" | "series">(
+    "sequential"
+  );
 
   /* --------------------- Progression editing state ----------------------- */
   const [currentSeriesValue, setCurrentSeriesValue] = useState({
@@ -242,7 +254,7 @@ function LoadManagement({
   };
 
   const resetProgressionState = () => {
-    setProgression(defaultProgression);
+    setProgression(defaultProgression.slice(0, planState.nOfWeeks));
     setCurrentSeriesValue({ value: "", index: -1 });
     setCurrentRepetitionsValue({ value: "", index: -1 });
     setCurrentEffortValue({ value: "", index: -1 });
@@ -278,7 +290,6 @@ function LoadManagement({
     const value = e.target.value;
     // Accept all changes to the input field, validation happens on blur
     setCurrentRepetitionsValue((prev) => ({ ...prev, value }));
-    setRepetitions(value);
   };
 
   const handleRepetitionsModification = () => {
@@ -408,7 +419,8 @@ function LoadManagement({
     onSave(
       progressionData,
       getReductionFromRangeEntries(factorToReduceData, fatigueData),
-      factorToReduceData
+      factorToReduceData,
+      blockModel
     );
   };
 
@@ -446,6 +458,30 @@ function LoadManagement({
         )}
       </p>
       <div className="flex flex-col pl-20 w-full">
+        <div className="flex gap-x-8 mt-8 mb-2 items-center">
+          <p className="text-darkGray text-lg">Modo de Ejecución</p>
+          <button
+            className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+              blockModel === "sequential"
+                ? "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+                : ""
+            }`}
+            onClick={() => setBlockModel("sequential")}
+          >
+            Secuencial
+          </button>
+          <button
+            className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+              blockModel === "series"
+                ? "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
+                : ""
+            }`}
+            onClick={() => setBlockModel("series")}
+          >
+            En Serie
+          </button>
+        </div>
+
         <div className="flex gap-x-8 mt-8 mb-2 items-center">
           <p className="text-darkGray text-lg">Gestión de Progreso</p>
           <button
@@ -488,12 +524,14 @@ function LoadManagement({
                 Carácter del Esfuerzo
               </p>
               {progression.map((p, index) => (
-                <>
+                <React.Fragment
+                  key={`week-${index + 1}-${p.series}-${p.repetitions}`}
+                >
                   <p className="text-darkGray text col-span-2 text-center">
                     Semana {index + 1}
                   </p>
                   <input
-                    className={`text-lg text-center rounded-2xl focus:outline-none w-20 self-center mx-auto ${inputStyles.input}`}
+                    className={`text-lg text-center rounded-2xl focus:outline-none w-20 self-center mx-auto border border-transparent ${inputStyles.input}`}
                     value={
                       currentSeriesValue.index === index
                         ? currentSeriesValue.value
@@ -516,7 +554,7 @@ function LoadManagement({
                     }}
                   />
                   <input
-                    className={`text-lg text-center rounded-2xl focus:outline-none w-20 self-center mx-auto ${inputStyles.input}`}
+                    className={`text-lg text-center rounded-2xl focus:outline-none w-20 self-center mx-auto border border-transparent ${inputStyles.input}`}
                     value={
                       currentRepetitionsValue.index === index
                         ? currentRepetitionsValue.value
@@ -539,7 +577,7 @@ function LoadManagement({
                     }}
                   />
                   <input
-                    className={`text-lg text-center rounded-2xl focus:outline-none w-20 self-center mx-auto col-span-2 ${inputStyles.input}`}
+                    className={`text-lg text-center rounded-2xl focus:outline-none w-20 self-center mx-auto col-span-2 border border-transparent ${inputStyles.input}`}
                     value={
                       currentEffortValue.index === index
                         ? currentEffortValue.value
@@ -561,7 +599,7 @@ function LoadManagement({
                       setCurrentEffortValue({ value: "", index: -1 });
                     }}
                   />
-                </>
+                </React.Fragment>
               ))}
             </div>
             <p className="mt-8 self-center pr-20">
@@ -641,9 +679,11 @@ function LoadManagement({
               <div className="w-6 h-6" />
 
               {[...fatigueHandling].reverse().map((e, index) => (
-                <>
+                <React.Fragment
+                  key={`fatigue-${e.range[0]}-${e.range[1] || e.range[0]}`}
+                >
                   <input
-                    className={`text-lg text-center rounded-2xl focus:outline-none w-20 self-center mx-auto ${inputStyles.input}`}
+                    className={`text-lg text-center rounded-2xl focus:outline-none w-20 self-center mx-auto border border-transparent ${inputStyles.input}`}
                     value={
                       currentFatigueValue.index === index
                         ? currentFatigueValue.value
@@ -675,7 +715,7 @@ function LoadManagement({
                   />
 
                   <input
-                    className={`text-lg text-center rounded-2xl focus:outline-none w-20 self-center mx-auto col-span-2 ${inputStyles.input}`}
+                    className={`text-lg text-center rounded-2xl focus:outline-none w-20 self-center mx-auto col-span-2 border border-transparent ${inputStyles.input}`}
                     value={
                       currentPercentageDrop.index === index
                         ? currentPercentageDrop.value
@@ -711,7 +751,7 @@ function LoadManagement({
                       handleDelete(fatigueHandling.length - 1 - index)
                     }
                   />
-                </>
+                </React.Fragment>
               ))}
 
               {/* Adding new range */}
