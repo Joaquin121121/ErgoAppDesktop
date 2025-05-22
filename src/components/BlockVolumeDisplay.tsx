@@ -13,9 +13,11 @@ import { DisplayProgressionCollection } from "../types/trainingPlan";
 function BlockVolumeDisplay({
   sessionIndex,
   id,
+  currentWeek,
 }: {
   sessionIndex: number;
   id: string;
+  currentWeek: number;
 }) {
   const { t } = useTranslation();
   const { planState, setPlanState } = useNewPlan();
@@ -78,11 +80,17 @@ function BlockVolumeDisplay({
     } else {
       newProgression[index][field] = Number(newProgression[index][field]);
     }
-    const newTrainingBlock = { ...trainingBlock };
+    const newTrainingBlock: TrainingBlock = { ...trainingBlock };
     newTrainingBlock.selectedExercises.find(
       (e) => e.id === exerciseId
     ).progression = newProgression;
+    newTrainingBlock.selectedExercises.find((e) => e.id === exerciseId).series =
+      newProgression[currentWeek].series;
+    newTrainingBlock.selectedExercises.find(
+      (e) => e.id === exerciseId
+    ).repetitions = newProgression[currentWeek].repetitions;
     const newPlanState = { ...planState };
+
     newPlanState.sessions[sessionIndex].exercises = newPlanState.sessions[
       sessionIndex
     ].exercises.map((e) => (e.id === exerciseId ? newTrainingBlock : e));

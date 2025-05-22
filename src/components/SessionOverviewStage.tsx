@@ -10,15 +10,16 @@ function SessionOverviewStage({
   showPopup,
   sessionIndex,
   setSessionIndex,
+  currentWeek,
 }: {
   animation: string;
   showPopup: (type: "exercise" | "exerciseBlock") => void;
   sessionIndex: number;
   setSessionIndex: (index: number) => void;
+  currentWeek: number;
 }) {
   const { planState, removeExercise } = useNewPlan();
   const [localAnimation, setLocalAnimation] = useState(animation);
-  const [currentWeek, setCurrentWeek] = useState(0);
 
   const addExercise = () => {
     showPopup("exercise");

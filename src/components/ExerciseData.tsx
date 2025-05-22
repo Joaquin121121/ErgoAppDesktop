@@ -80,21 +80,7 @@ function ExerciseData({
       });
       return;
     }
-    if (
-      !validateReps(
-        formState.repetitions.value,
-        parseInt(formState.series.value)
-      )
-    ) {
-      setFormState({
-        ...formState,
-        repetitions: {
-          value: formState.repetitions.value,
-          error: "invalidFormat",
-        },
-      });
-      return;
-    }
+
     if (formState.effort.value === "") {
       setFormState({
         ...formState,
@@ -106,8 +92,8 @@ function ExerciseData({
     setCurrentSelectedExercise({
       ...currentSelectedExercise,
       type: "selectedExercise",
-      seriesN: parseInt(formState.series.value),
-      reps: formState.repetitions.value,
+      series: parseInt(formState.series.value),
+      repetitions: formState.repetitions.value,
       effort: parseInt(formState.effort.value),
       exerciseId: selectedExercises[0].id,
       name: exerciseName || formState.name.value,
@@ -225,6 +211,22 @@ function ExerciseData({
                 }
               }}
               value={formState.repetitions.value}
+              onBlur={(e) => {
+                if (
+                  !validateReps(
+                    e.target.value,
+                    parseInt(formState.series.value)
+                  )
+                ) {
+                  setFormState({
+                    ...formState,
+                    repetitions: {
+                      value: "",
+                      error: "invalidFormat",
+                    },
+                  });
+                }
+              }}
             />
             <p className="text-darkGray ">
               Use un guión (-) para indicar un rango de repeticiones &nbsp;
@@ -235,8 +237,8 @@ function ExerciseData({
           </div>
           {formState.repetitions.error === "invalidFormat" && (
             <p className="mt-2 text-sm text-secondary">
-              Formato no valido (ingrese un unico valor o tantos valores como
-              series, separados por '-' o '/')
+              Formato no valido (ingrese un unico valor, un rango separado por
+              '-' o una variacion intraserie separada por '/')
             </p>
           )}
           <p className="text-darkGray text-lg mt-8 mb-2">

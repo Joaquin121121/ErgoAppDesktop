@@ -14,6 +14,7 @@ interface UserContextType {
   loginWithGoogle: () => Promise<{ error: any }>;
   logout: () => Promise<{ error: any }>;
   loading: boolean;
+  isLoggedIn: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -21,6 +22,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User>(initialUserState);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Map Supabase user to our User type
   const mapSupabaseUser = (supabaseUser: any): User => {
@@ -52,24 +54,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       if (data.session) {
         const { user: supabaseUser } = data.session;
         setUser(mapSupabaseUser(supabaseUser));
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
       }
 
       setLoading(false);
 
       // Listen for auth changes
-      const { data: authListener } = supabase.auth.onAuthStateChange(
-        (event, session) => {
-          if (session && session.user) {
-            setUser(mapSupabaseUser(session.user));
-          } else {
-            setUser(initialUserState);
-          }
-          setLoading(false);
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === "SIGNED_OUT") {
+          setIsLoggedIn(false);
+        } else if (session) {
+          setUser(mapSupabaseUser(session.user));
+          setIsLoggedIn(true);
         }
-      );
-
+      });
       return () => {
-        authListener.subscription.unsubscribe();
+        subscription.unsubscribe();
       };
     };
 
@@ -98,9 +102,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const loginWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
     });
     return { error };
   };
@@ -108,12 +109,22 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   // Logout
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
+    setIsLoggedIn(false);
     return { error };
   };
 
   return (
     <UserContext.Provider
-      value={{ user, setUser, login, signup, loginWithGoogle, logout, loading }}
+      value={{
+        user,
+        setUser,
+        login,
+        signup,
+        loginWithGoogle,
+        logout,
+        loading,
+        isLoggedIn,
+      }}
     >
       {children}
     </UserContext.Provider>

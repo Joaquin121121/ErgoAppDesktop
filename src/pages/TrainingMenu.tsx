@@ -64,6 +64,7 @@ const TrainingMenu = ({
     "exercise" | "exerciseBlock" | null
   >(null);
   const [displayVolumePopup, setDisplayVolumePopup] = useState(false);
+  const [currentWeek, setCurrentWeek] = useState(0);
 
   const showExercisePopup = (type: "exercise" | "exerciseBlock") => {
     setShowPopup(type);
@@ -135,6 +136,7 @@ const TrainingMenu = ({
         showPopup={showExercisePopup}
         setSessionIndex={setSessionIndex}
         sessionIndex={sessionIndex}
+        currentWeek={currentWeek}
       />
     ),
   };
@@ -265,6 +267,7 @@ const TrainingMenu = ({
         <TrainingVolumePopup
           closePopup={closeVolumePopup}
           sessionIndex={sessionIndex}
+          currentWeek={currentWeek}
         />
       )}
     </>

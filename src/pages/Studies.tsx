@@ -18,6 +18,7 @@ import { check, Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { getVersion } from "@tauri-apps/api/app";
 import { useBlur } from "../contexts/BlurContext";
+import { supabase } from "../supabase";
 
 function Studies({
   isExpanded,
@@ -38,7 +39,7 @@ function Studies({
 
   const { isBlurred, setIsBlurred } = useBlur();
 
-  const { user } = useUser();
+  const { user, logout } = useUser();
   const navigate = useNavigate();
 
   const filterButtonRef = useRef<HTMLButtonElement>(null);

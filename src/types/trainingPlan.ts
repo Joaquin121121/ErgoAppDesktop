@@ -31,8 +31,8 @@ export interface SelectedExercise {
   sessionId: string;
   name: string; // Not to be included in db schema
   exerciseId: string;
-  seriesN: number;
-  reps: string;
+  series: number;
+  repetitions: string;
   effort: number;
   reduceVolume?: VolumeReduction;
   reduceEffort?: EffortReduction;
@@ -55,8 +55,8 @@ export interface TrainingBlock {
   id: string;
   sessionId: string;
   name: string;
-  seriesN: number;
-  reps: string;
+  series: number;
+  repetitions: string;
   effort: number;
   reduceVolume?: VolumeReduction;
   reduceEffort?: EffortReduction;
@@ -139,8 +139,8 @@ export const defaultTrainingBlock: TrainingBlock = {
   type: "trainingBlock",
   sessionId: "",
   name: "",
-  seriesN: 3,
-  reps: "8-12",
+  series: 3,
+  repetitions: "8-12",
   effort: 70,
   reduceVolume: {},
   reduceEffort: {},

@@ -4,7 +4,7 @@ import TonalButton from "../components/TonalButton";
 import { useUser } from "../contexts/UserContext";
 import { Window } from "@tauri-apps/api/window";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-
+import { supabase } from "../supabase";
 function LoginPage() {
   const { login, loginWithGoogle } = useUser();
   const [formState, setFormState] = useState({
@@ -61,6 +61,7 @@ function LoginPage() {
       } else {
         setErrorMessage("Error al iniciar sesión. Por favor intente de nuevo.");
       }
+    } else {
     }
   };
 
@@ -82,6 +83,7 @@ function LoginPage() {
             "Error al iniciar sesión con Google. Por favor intente de nuevo."
           );
         }
+      } else {
       }
     } catch (err) {
       console.error("Google login error:", err);

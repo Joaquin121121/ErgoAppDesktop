@@ -73,15 +73,22 @@ interface RawJumpTime {
 type LoadUnit = "kgs" | "lbs";
 type HeightUnit = "cm" | "ft";
 
-const getAthletes = async (): Promise<Athlete[]> => {
+const getAthletes = async (coachId: string): Promise<Athlete[]> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
 
-    // 1. First fetch all athletes
-    const athletes = await db.select(
-      "SELECT * FROM athlete WHERE deleted_at IS NULL"
-    );
+    // 1. First fetch all athletes with coach_id
+    let query = "SELECT * FROM athlete WHERE deleted_at IS NULL";
+    const queryParams = [];
+    if (coachId) {
+      query += " AND coach_id = ?";
+      queryParams.push(coachId);
+    }
 
+    const athletes = await db.select(query, queryParams);
+    console.log(athletes);
+    console.log(coachId);
+    console.log(athletes.map((athlete) => console.log(athlete.coach_id)));
     // 2. Prepare athletes map with basic info, to be populated with studies later
     const athletesMap = new Map<string, Athlete>();
 
@@ -802,7 +809,7 @@ export const saveAthlete = async (athlete: Athlete): Promise<void> => {
               );
               await db.execute(
                 `INSERT INTO drop_jump_result (height, stiffness, base_result_id) -- Add multiple_drop_jump_result_id if schema supports it
-                   VALUES (?, ?, ?)`, // Add placeholder for multipleDropJumpResultId if needed
+                   VALUES (?, ?, ?, ?)`, // Add placeholder for multipleDropJumpResultId if needed
                 [
                   dropJump.height,
                   dropJump.stiffness,

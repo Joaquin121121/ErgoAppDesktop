@@ -39,8 +39,8 @@ function LoadManagement({
   const defaultProgression = currentSelectedExercise
     ? generateInitialProgression(
         planState.nOfWeeks,
-        currentSelectedExercise.seriesN,
-        currentSelectedExercise.reps,
+        currentSelectedExercise.series,
+        currentSelectedExercise.repetitions,
         currentSelectedExercise.effort
       )
     : [];

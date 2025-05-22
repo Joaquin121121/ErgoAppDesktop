@@ -13,6 +13,7 @@ import { athleteAgeRanges } from "../types/Athletes";
 import { useAthleteComparison } from "../contexts/AthleteComparisonContext";
 import { useBlur } from "../contexts/BlurContext";
 import getAthletes from "../hooks/parseAthletes";
+import { useUser } from "../contexts/UserContext";
 // New interface for filter state
 interface FilterState {
   age: string[];
@@ -44,6 +45,7 @@ function Athletes({
     left: 0,
     top: 0,
   });
+  const { user } = useUser();
   // Updated filter state to handle multiple criteria
   const [selectedFilters, setSelectedFilters] = useState<FilterState>({
     age: [],
@@ -57,11 +59,6 @@ function Athletes({
 
   const navigate = useNavigate();
   const { isBlurred, setIsBlurred } = useBlur();
-
-  const user = {
-    fullName: "Joaquin Berrini",
-    email: "",
-  };
 
   const [loadedAthletes, setLoadedAthletes] = useState<[string, Athlete][]>([]);
   const [filteredAthletes, setFilteredAthletes] = useState<[string, Athlete][]>(
@@ -207,7 +204,7 @@ function Athletes({
   // Effects
   useEffect(() => {
     const loadAthletes = async () => {
-      const athletes = await getAthletes();
+      const athletes = await getAthletes(user.id);
       setLoadedAthletes(athletes.map((athlete) => [athlete.name, athlete]));
     };
     loadAthletes();

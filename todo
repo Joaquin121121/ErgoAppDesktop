@@ -17,6 +17,8 @@ Sacar licencia
 Parsers
 Hacer placeholders de ui de plan para mantener tamaño de display de sesiones consistente
 Boton de deshacer
+Arreglar que no se achica automaticamente la pantalla en logout
+
 
 Si hay tiempo:
 Implementar resumen BOSCO test pre-guardar (despues)

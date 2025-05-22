@@ -6,8 +6,8 @@
 -- Base tables
 
 CREATE TABLE IF NOT EXISTS "athlete" (
-    "id" TEXT PRIMARY KEY,
-    "coach_id" TEXT NOT NULL,
+    "id" UUID PRIMARY KEY,
+    "coach_id" UUID NOT NULL,
     "name" TEXT NOT NULL,
     "birth_date" TEXT,
     "country" TEXT,
@@ -33,76 +33,78 @@ CREATE TABLE IF NOT EXISTS "coach" (
     "last_name" TEXT NOT NULL,
     "info" TEXT,
     "specialty" TEXT,
-    "id" TEXT PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
     "created_at" TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS "base_result" (
-    "id" TEXT PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
     "takeoff_foot" TEXT NOT NULL CHECK (takeoff_foot IN ('right', 'left', 'both')),
     "sensitivity" REAL NOT NULL,
     "created_at" TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "athlete_id" TEXT NOT NULL,
+    "athlete_id" UUID NOT NULL,
     FOREIGN KEY ("athlete_id") REFERENCES "athlete"("id")
 );
 
 CREATE TABLE IF NOT EXISTS "basic_result" (
-    "id" TEXT PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
     "type" TEXT NOT NULL CHECK (type IN ('cmj', 'abalakov', 'squatJump', 'custom')),
     "load" REAL NOT NULL,
     "loadunit" TEXT NOT NULL CHECK (loadunit IN ('kgs', 'lbs')),
-    "base_result_id" TEXT NOT NULL,
-    "bosco_result_id" TEXT,
+    "base_result_id" UUID NOT NULL,
+    "bosco_result_id" UUID,
     FOREIGN KEY ("base_result_id") REFERENCES "base_result"("id"),
     FOREIGN KEY ("bosco_result_id") REFERENCES "bosco_result"("id")
 );
 
 CREATE TABLE IF NOT EXISTS "bosco_result" (
-    "id" TEXT PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
-    "athlete_id" TEXT,
+    "athlete_id" UUID,
     FOREIGN KEY ("athlete_id") REFERENCES "athlete"("id")
 );
 
 CREATE TABLE IF NOT EXISTS "drop_jump_result" (
-    "id" TEXT PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
     "height" TEXT NOT NULL,
     "stiffness" NUMERIC NOT NULL,
-    "base_result_id" TEXT NOT NULL,
-    FOREIGN KEY ("base_result_id") REFERENCES "base_result"("id")
+    "base_result_id" UUID NOT NULL,
+    "multiple_drop_jump_id" UUID,
+    FOREIGN KEY ("base_result_id") REFERENCES "base_result"("id"),
+    FOREIGN KEY ("multiple_drop_jump_id") REFERENCES "multiple_drop_jump_result"("id")
 );
 
 CREATE TABLE IF NOT EXISTS "event" (
-    "id" TEXT PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
     "event_type" TEXT NOT NULL,
     "event_name" TEXT NOT NULL,
     "event_date" TIMESTAMP NOT NULL,
     "duration" INTEGER,
     "last_changed" TIMESTAMP,
-    "coach_id" TEXT NOT NULL,
+    "coach_id" UUID NOT NULL,
     "deleted_at" TIMESTAMP,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "athlete_id" TEXT NOT NULL,
+    "athlete_id" UUID NOT NULL,
     FOREIGN KEY ("coach_id") REFERENCES "coach"("id"),
     FOREIGN KEY ("athlete_id") REFERENCES "athlete"("id")
 );
 
 CREATE TABLE IF NOT EXISTS "jump_time" (
-    "id" TEXT PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "base_result_id" TEXT NOT NULL,
+    "base_result_id" UUID NOT NULL,
     "index" INTEGER NOT NULL,
     "time" REAL NOT NULL,
     "deleted" BOOLEAN NOT NULL,
@@ -115,25 +117,25 @@ CREATE TABLE IF NOT EXISTS "jump_time" (
 );
 
 CREATE TABLE IF NOT EXISTS "multiple_drop_jump_result" (
-    "id" TEXT PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
     "height_unit" TEXT NOT NULL CHECK (height_unit IN ('cm', 'ft')),
     "takeoff_foot" TEXT NOT NULL CHECK (takeoff_foot IN ('right', 'left', 'both')),
     "best_height" TEXT NOT NULL,
-    "athlete_id" TEXT NOT NULL,
+    "athlete_id" UUID NOT NULL,
     FOREIGN KEY ("athlete_id") REFERENCES "athlete"("id")
 );
 
 CREATE TABLE IF NOT EXISTS "multiple_jumps_result" (
-    "id" TEXT PRIMARY KEY,
+    "id" UUID PRIMARY KEY,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
     "criteria" TEXT NOT NULL CHECK (criteria IN ('numberOfJumps', 'stiffness', 'time')),
     "criteria_value" NUMERIC,
-    "base_result_id" TEXT NOT NULL,
+    "base_result_id" UUID NOT NULL,
     FOREIGN KEY ("base_result_id") REFERENCES "base_result"("id")
 );
 

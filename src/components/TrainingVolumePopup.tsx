@@ -6,9 +6,11 @@ import BlockVolumeDisplay from "./BlockVolumeDisplay";
 function TrainingVolumePopup({
   closePopup,
   sessionIndex,
+  currentWeek,
 }: {
   closePopup: () => void;
   sessionIndex: number;
+  currentWeek: number;
 }) {
   const [animation, setAnimation] = useState(navAnimations.popupFadeInTop);
   const { planState } = useNewPlan();
@@ -66,6 +68,7 @@ function TrainingVolumePopup({
                 key={exercise.id}
                 id={exercise.id}
                 sessionIndex={sessionIndex}
+                currentWeek={currentWeek}
               />
             )
         )}

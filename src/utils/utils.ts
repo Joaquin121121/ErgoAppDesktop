@@ -286,25 +286,20 @@ export function getReductionFromRangeEntries(
   return reductionObject;
 }
 
-export const validateReps = (input: string, seriesN: number): boolean => {
-  console.log(
-    "Input:",
-    input,
-    "SeriesN:",
-    seriesN,
-    "SeriesN type:",
-    typeof seriesN
-  );
+export const validateReps = (
+  input: string,
+  seriesN: number | string
+): boolean => {
+  // Convert seriesN to number if it's a string
+  const seriesNNum = Number(seriesN);
 
   // First check if it's a single positive integer
   if (/^[1-9]\d*$/.test(input)) {
-    console.log("Single integer match");
     return true;
   }
 
   // For multiple series, check format
-  if (seriesN <= 1) {
-    console.log("SeriesN <= 1");
+  if (seriesNNum <= 1) {
     return false;
   }
 
@@ -314,47 +309,38 @@ export const validateReps = (input: string, seriesN: number): boolean => {
     : input.includes("/")
     ? "/"
     : null;
-  console.log("Separator:", separator);
   if (!separator) {
-    console.log("No valid separator found");
     return false;
   }
 
   // Split and validate each part
   const parts = input.split(separator);
-  console.log(
-    "Parts:",
-    parts,
-    "Parts length:",
-    parts.length,
-    "Parts length type:",
-    typeof parts.length
-  );
 
-  // Check length first
-  if (Number(parts.length) !== Number(seriesN)) {
-    console.log("Wrong number of parts:", parts.length, "expected:", seriesN);
+  // For hyphen (-) separator, only allow exactly 2 parts
+  if (separator === "-" && parts.length !== 2) {
     return false;
   }
 
-  // Then check each part
+  // For slash (/) separator, must match seriesN
+  if (separator === "/" && parts.length !== seriesNNum) {
+    return false;
+  }
+
+  // Check each part is a valid positive number
   for (const part of parts) {
     const num = parseInt(part);
-    console.log("Checking part:", part, "parsed as:", num);
     if (isNaN(num) || num <= 0) {
-      console.log("Invalid number:", part);
       return false;
     }
   }
 
-  console.log("All validations passed");
   return true;
 };
 
 export const generateInitialProgression = (
   nOfWeeks: number,
   seriesN: number,
-  reps: string,
+  repetitions: string,
   effort: number
 ) => {
   const progression: Progression[] = [];
@@ -364,17 +350,17 @@ export const generateInitialProgression = (
     const currentEffort = Math.min(10, effort + i);
 
     // Handle progressive repetitions
-    let currentReps = reps;
-    if (reps.includes("-") || reps.includes("/")) {
+    let currentReps = repetitions;
+    if (repetitions.includes("-") || repetitions.includes("/")) {
       // Handle range format (e.g., "6-8" or "6/8")
-      const separator = reps.includes("-") ? "-" : "/";
-      const [start, end] = reps.split(separator).map(Number);
+      const separator = repetitions.includes("-") ? "-" : "/";
+      const [start, end] = repetitions.split(separator).map(Number);
       const newStart = start + i * 2;
       const newEnd = end + i * 2;
       currentReps = `${newStart}${separator}${newEnd}`;
     } else {
       // Handle single number format
-      const repNum = parseInt(reps);
+      const repNum = parseInt(repetitions);
       currentReps = (repNum + i * 2).toString();
     }
 
