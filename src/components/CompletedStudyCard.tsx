@@ -9,7 +9,7 @@ type CompletedStudyCardProps = {
   onClick: (event: React.MouseEvent<HTMLDivElement>) => void; // Corrected type
   height?: number;
   width?: number;
-  onDelete: (date: Date | string) => void;
+  onDelete: (id: string) => void;
   cardStyles?: string;
   disabled?: boolean;
   comparing?: boolean;
@@ -49,7 +49,7 @@ function CompletedStudyCard({
           className="flex absolute right-2 top-2 hover:opacity-70 hover:cursor-pointer px-2 pb-4 z-10"
           onClick={(e) => {
             e.stopPropagation();
-            onDelete(study.date);
+            onDelete(study.id);
           }}
         >
           <img src="/delete.png" className="h-8 w-8" alt="" />

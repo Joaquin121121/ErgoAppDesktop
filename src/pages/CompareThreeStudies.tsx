@@ -19,6 +19,7 @@ import OutlinedButton from "../components/OutlinedButton";
 import TonalButton from "../components/TonalButton";
 import BoscoComparisonChart from "../components/BoscoComparisonChart";
 import { useBlur } from "../contexts/BlurContext";
+import { isSameDay } from "date-fns";
 function CompareThreeStudies({
   isExpanded,
   animation,
@@ -35,17 +36,13 @@ function CompareThreeStudies({
   const { isBlurred, setIsBlurred } = useBlur();
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const date = searchParams.get("date");
+  const id = searchParams.get("id");
 
   const { athlete } = useStudyContext();
 
   const navigate = useNavigate();
+  const study = athlete.completedStudies.find((study) => study.id === id);
 
-  const study = athlete.completedStudies.find((study) =>
-    typeof study.date === "string"
-      ? study.date === date
-      : study.date.toISOString() === date
-  );
   const squatJump: SquatJumpResult | null =
     study?.results.type === "bosco" ? study?.results.squatJump : null;
 
@@ -65,7 +62,7 @@ function CompareThreeStudies({
   const onClose = () => {
     customNavigate("back", "compareThreeStudies", "completedStudyInfo");
     setTimeout(() => {
-      navigate("/completedStudyInfo?date=" + date);
+      navigate("/completedStudyInfo?id=" + id);
     }, 300);
   };
 

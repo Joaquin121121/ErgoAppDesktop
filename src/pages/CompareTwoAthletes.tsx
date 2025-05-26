@@ -411,7 +411,7 @@ function CompareTwoAthletes({
                         {/* Bosco test container - using a wrapper with colSpan to create a container */}
                         <tr>
                           <td colSpan={5} className="px-0 py-0">
-                            <div className="border border-offWhite rounded-2xl overflow-hidden mb-4">
+                            <div className="border border-lightRed rounded-2xl overflow-hidden mb-4">
                               <table className="w-full">
                                 {/* Bosco test header row */}
                                 <tr className="bg-gray-50">
@@ -433,7 +433,7 @@ function CompareTwoAthletes({
                                     className={`${
                                       index === boscoTests.length - 1
                                         ? ""
-                                        : "border-b border-offWhite"
+                                        : "border-b border-lightRed"
                                     }`}
                                   >
                                     <td className="text-center text-xl py-2 px-4 w-[20%]">

@@ -9,7 +9,8 @@ import TonalButton from "../components/TonalButton";
 import Filter from "../components/Filter";
 import { useBlur } from "../contexts/BlurContext";
 import { Studies, Study, validComparisons } from "../types/Studies";
-
+import { deleteResult } from "../hooks/parseStudies";
+import { useDatabaseSync } from "../hooks/useDatabaseSync";
 function AthleteStudies({
   isExpanded,
   animation,
@@ -27,7 +28,7 @@ function AthleteStudies({
 
   const navigate = useNavigate();
   const studies = athlete.completedStudies;
-
+  const { syncResult } = useDatabaseSync();
   const [studyToDelete, setStudyToDelete] = useState(null);
   const [comparing, setComparing] = useState(false);
   const [filtering, setFiltering] = useState(false);
@@ -79,22 +80,16 @@ function AthleteStudies({
     setAthlete({
       ...athlete,
       completedStudies: athlete.completedStudies.filter(
-        (study) => study.date !== studyToDelete
+        (study) => study.id !== studyToDelete
       ),
     });
-    setStudyToDelete(null);
+    const resultToDelete = athlete.completedStudies.find(
+      (study) => study.id === studyToDelete
+    );
     try {
-      const result = await saveJson(
-        `${naturalToCamelCase(athlete.name)}.json`,
-        {
-          ...athlete,
-          completedStudies: athlete.completedStudies.filter(
-            (study) => study.date !== studyToDelete
-          ),
-        },
-        "athletes"
-      );
-      console.log(result.message);
+      await deleteResult(resultToDelete.id, resultToDelete.results.type);
+      syncResult(resultToDelete.results.type);
+      setStudyToDelete(null);
     } catch (error) {
       console.log(error);
     }
@@ -105,16 +100,16 @@ function AthleteStudies({
     setFiltering(true);
   };
 
-  const handleStudySelection = (date: string) => {
+  const handleStudySelection = (id: string) => {
     if (comparing) {
       if (Object.values(cardStyles).some((style) => style !== "")) {
-        const dateOfFirstSelected = Object.keys(cardStyles).find(
+        const idOfFirstSelected = Object.keys(cardStyles).find(
           (key) => cardStyles[key] !== ""
         );
-        if (dateOfFirstSelected === date) {
+        if (idOfFirstSelected === id) {
           setCardStyles({
             ...cardStyles,
-            [date]: "",
+            [id]: "",
           });
           setValidStudiesToCompare(
             studies.map((e) => ({ valid: e.results.type !== "bosco" }))
@@ -124,14 +119,11 @@ function AthleteStudies({
         customNavigate("forward", "athleteStudies", "compareTwoStudies");
         setTimeout(() => {
           navigate(
-            "/compareTwoStudies?date1=" + dateOfFirstSelected + "&date2=" + date
+            "/compareTwoStudies?id1=" + idOfFirstSelected + "&id2=" + id
           );
         }, 300);
       }
-      const studyType = studies.find(
-        (e) =>
-          (typeof e.date === "string" ? e.date : e.date.toISOString()) === date
-      ).results.type;
+      const studyType = studies.find((e) => e.id === id).results.type;
       const validComparisonsForStudy = validComparisons[studyType];
       setValidStudiesToCompare(
         studies.map((e) => {
@@ -143,13 +135,13 @@ function AthleteStudies({
 
       setCardStyles({
         ...cardStyles,
-        [date]: "border border-secondary",
+        [id]: "border border-secondary",
       });
       return;
     }
     customNavigate("forward", "athleteStudies", "completedStudyDashboard");
     setTimeout(() => {
-      navigate("/completedStudyDashboard?date=" + date);
+      navigate("/completedStudyDashboard?id=" + id);
     }, 300);
   };
 
@@ -163,9 +155,7 @@ function AthleteStudies({
       studies.reduce(
         (acc, study) => ({
           ...acc,
-          [typeof study.date === "string"
-            ? study.date
-            : study.date.toISOString()]: "",
+          [study.id]: "",
         }),
         {}
       )
@@ -195,9 +185,7 @@ function AthleteStudies({
                     studies.reduce(
                       (acc, study) => ({
                         ...acc,
-                        [typeof study.date === "string"
-                          ? study.date
-                          : study.date.toISOString()]: "",
+                        [study.id]: "",
                       }),
                       {}
                     )
@@ -212,10 +200,11 @@ function AthleteStudies({
           ) : (
             <>
               <TonalButton
-                title="Volver"
-                icon="backWhite"
-                onClick={onClose}
-                inverse
+                icon="compare"
+                title="Comparar"
+                onClick={() => {
+                  setComparing(true);
+                }}
               />
               <OutlinedButton
                 title="Ver Info Atleta"
@@ -236,11 +225,10 @@ function AthleteStudies({
 
               <OutlinedButton icon="filter" title="Filtrar" onClick={filter} />
               <TonalButton
-                icon="compare"
-                title="Comparar"
-                onClick={() => {
-                  setComparing(true);
-                }}
+                title="Volver"
+                icon="backWhite"
+                onClick={onClose}
+                inverse
               />
             </>
           )}
@@ -249,20 +237,16 @@ function AthleteStudies({
         {studies.length ? (
           <div className={`grid grid-cols-3 gap-x-[5%] gap-y-16 w-full px-36 `}>
             {studies.map((study, index) => {
-              const key =
-                typeof study.date === "string"
-                  ? study.date
-                  : study.date.toISOString();
               return (
                 <CompletedStudyCard
                   disabled={comparing && !validStudiesToCompare[index].valid}
                   key={index}
                   study={study}
-                  onDelete={(date) => setStudyToDelete(date)}
+                  onDelete={(id) => setStudyToDelete(id)}
                   onClick={() => {
-                    handleStudySelection(key);
+                    handleStudySelection(study.id);
                   }}
-                  cardStyles={cardStyles[key]}
+                  cardStyles={cardStyles[study.id]}
                   comparing={comparing}
                 />
               );
@@ -283,7 +267,7 @@ function AthleteStudies({
             Está seguro que desea eliminar el test{" "}
             <span className="text-tertiary">
               {
-                studies.find((study) => study.date === studyToDelete)?.studyInfo
+                studies.find((study) => study.id === studyToDelete)?.studyInfo
                   .name
               }
             </span>

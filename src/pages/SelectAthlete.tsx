@@ -14,7 +14,8 @@ import { formattedDisciplines } from "../constants/data";
 import { getStateByCodeAndCountry } from "country-state-city/lib/state";
 import { useSearchParams } from "react-router-dom";
 import _ from "lodash";
-import { saveAthlete } from "../hooks/parseAthletes";
+import getAthletes, { saveAthleteInfo } from "../hooks/parseAthletes";
+import { useUser } from "../contexts/UserContext";
 
 const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   const [searchBarFocus, setSearchBarFocus] = useState(false);
@@ -68,6 +69,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     setSelectedAthletes,
   } = useStudyContext();
   const [originalAthlete, setOriginalAthlete] = useState(athlete);
+  const { user } = useUser();
 
   const countries = Country.getAllCountries();
 
@@ -122,6 +124,17 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     setTimeout(() => {
       navigate(from ? "/athleteMenu" : "/startTest");
     }, 300);
+  };
+
+  const handleDeleteAthlete = (athlete) => {
+    const newSelectedAthletes = selectedAthletes.filter(
+      (a) => a.id !== athlete.id
+    );
+    const newIndex = multipleAthleteIndex - 1;
+    if (newIndex === newSelectedAthletes.length) {
+      setMultipleAthleteIndex(newIndex);
+    }
+    setSelectedAthletes(newSelectedAthletes);
   };
 
   // Add DEL key event listener
@@ -259,15 +272,8 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   };
   const loadAthletes = async () => {
     try {
-      const result = await readDirectoryJsons("athletes");
-      const parsedAthletes = result.files
-        .map((item) => {
-          const transformed = transformToAthlete(item.content);
-          return transformed;
-        })
-        .filter((athlete) => athlete !== null);
-      setLoadedAthletes(parsedAthletes);
-      console.log(parsedAthletes);
+      const athletes = await getAthletes(user.id);
+      setLoadedAthletes(athletes);
     } catch (error) {
       console.log(error);
     }
@@ -333,7 +339,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
 
     try {
       console.log("athlete", athlete);
-      const result = await saveAthlete(athlete);
+      const result = await saveAthleteInfo(athlete, user.id);
       console.log("result", result);
       customNavigate("back", "selectAthlete", from ? "athletes" : "startTest");
       setTimeout(() => {
@@ -1082,6 +1088,26 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
           />
         )}
       </div>
+      {multipleSelection &&
+        !selectedAthleteName &&
+        selectedAthletes.length > 1 && (
+          <div className="bg-white  flex flex-col mt-12 self-end shadow-sm rounded-2xl mr-8 px-8 py-4">
+            <p className="text-2xl  text-secondary mb-2">
+              Atletas Seleccionados
+            </p>
+            {selectedAthletes.map((athlete) => (
+              <div key={athlete.id} className="flex gap-x-2 items-center mt-2 ">
+                <p>- {athlete.name}</p>
+                <img
+                  src="close.png"
+                  alt=""
+                  className="h-5 w-5 hover:opacity-70 hover:cursor-pointer active:opacity-40"
+                  onClick={() => handleDeleteAthlete(athlete)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
     </div>
   );
 };

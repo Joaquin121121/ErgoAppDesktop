@@ -37,14 +37,14 @@ function CompletedStudyDashboard({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const date = params.get("date");
+  const id = params.get("id");
   const { athlete, setAthlete } = useStudyContext();
   const study: CompletedStudy = athlete.completedStudies.find(
-    (e) => (typeof e.date === "string" ? e.date : e.date.toISOString()) === date
+    (e) => e.id === id
   );
 
   // Training solutions data
-  const trainingSolutions = parseTrainingSolutions(new Date(date)) || [];
+  const trainingSolutions = parseTrainingSolutions(new Date(study.date)) || [];
 
   // Format the accordion items
   const accordionItems = trainingSolutions.map((solution) => ({
@@ -92,7 +92,7 @@ function CompletedStudyDashboard({
   const showTest = () => {
     customNavigate("forward", "completedStudyDashboard", "completedStudyInfo");
     setTimeout(() => {
-      navigate("/completedStudyInfo?date=" + date);
+      navigate("/completedStudyInfo?id=" + id);
     }, 300);
   };
 
@@ -204,11 +204,22 @@ function CompletedStudyDashboard({
     >
       <div className="flex w-full justify-around items-center">
         <div className="w-[124px]"></div>
+
         <div className="flex flex-col items-center">
           <p className="text-4xl text-secondary mt-8">{study.studyInfo.name}</p>
           <p className="mt-2 mb-4 text-xl ">
-            Realizado por {athlete.name} el {getFormattedDate(date)} a las{" "}
-            {getFormattedTime(date)}
+            Realizado por {athlete.name} el{" "}
+            {getFormattedDate(
+              typeof study.date === "string"
+                ? study.date
+                : study.date.toISOString()
+            )}{" "}
+            a las{" "}
+            {getFormattedTime(
+              typeof study.date === "string"
+                ? study.date
+                : study.date.toISOString()
+            )}
           </p>
         </div>
         <TonalButton

@@ -87,9 +87,8 @@ function AthleteMenu({
         paddingLeft: isExpanded ? "100px" : "32px",
       }}
     >
-      <div className="my-10 w-full flex justify-around items-center">
+      <div className="my-10 w-4/5 flex justify-around items-center">
         <div className="w-[122px]" />
-
         <p className="text-3xl">
           Menu del Atleta:{" "}
           <span className="text-secondary">{athlete.name}</span>

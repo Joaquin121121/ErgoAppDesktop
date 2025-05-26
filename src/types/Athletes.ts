@@ -173,7 +173,7 @@ export function transformToAthlete(data: unknown): Athlete | null {
 
 export const genders = [
   { label: "male", id: "M" },
-  { label: "female", id: "f" },
+  { label: "female", id: "F" },
   { label: "other", id: "O" },
 ];
 

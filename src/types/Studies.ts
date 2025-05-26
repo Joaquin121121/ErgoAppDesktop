@@ -3,6 +3,15 @@ interface BaseStudyPreview {
   equipment: string[];
 }
 
+export type StudyType =
+  | "cmj"
+  | "squatJump"
+  | "abalakov"
+  | "multipleDropJump"
+  | "multipleJumps"
+  | "custom"
+  | "bosco";
+
 interface BaseStudy {
   name: string;
   description: string;
@@ -177,11 +186,13 @@ export const statsToMeasure = [
 ] as const;
 
 export interface JumpTime {
+  id?: string;
   time: number;
   deleted: boolean;
   floorTime?: number;
   stiffness?: number;
   performance?: number;
+  baseResultId?: string;
 }
 
 export interface StudyData {
@@ -258,6 +269,7 @@ export interface BoscoResult {
 }
 
 export interface CompletedStudy {
+  id?: string;
   studyInfo: BaseStudy;
   date: Date | string;
   results:
@@ -329,7 +341,7 @@ export const studyInfoLookup = {
   },
 } satisfies Record<keyof Studies, BaseStudy>;
 
-const criterion1 = ["takeoffFoot", "load", "avgFlightTime", "avgHeightReached"];
+const criterion1 = ["takeoffFoot", "load", "avgHeightReached"];
 const criterion2 = ["maxAvgHeightReached", "takeoffFoot"];
 
 const criterion3 = [
@@ -340,7 +352,16 @@ const criterion3 = [
   "performanceDrop",
 ];
 
-const criterion4 = ["takeoffFoot", "avgFlightTime", "avgHeightReached"];
+const criterion4 = ["takeoffFoot", "avgHeightReached"];
+
+export const defaultAverageDisplay = ["avgFlightTime", "avgHeightReached"];
+
+export const multipleJumpsAverageDisplay = [
+  "avgFlightTime",
+  "avgHeightReached",
+  "avgPerformance",
+  "avgStiffness",
+];
 
 export const criterionLookup = {
   cmj: criterion1,

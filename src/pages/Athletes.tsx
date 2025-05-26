@@ -6,14 +6,14 @@ import { Athlete, transformToAthlete } from "../types/Athletes";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import AthleteCard from "../components/AthleteCard";
 import { useStudyContext } from "../contexts/StudyContext";
-import { naturalToCamelCase } from "../utils/utils";
 import { useNavigate } from "react-router-dom";
 import AthleteFilter from "../components/AthleteFilter";
 import { athleteAgeRanges } from "../types/Athletes";
 import { useAthleteComparison } from "../contexts/AthleteComparisonContext";
 import { useBlur } from "../contexts/BlurContext";
-import getAthletes from "../hooks/parseAthletes";
+import getAthletes, { deleteAthlete } from "../hooks/parseAthletes";
 import { useUser } from "../contexts/UserContext";
+import { useDatabaseSync } from "../hooks/useDatabaseSync";
 // New interface for filter state
 interface FilterState {
   age: string[];
@@ -41,10 +41,12 @@ function Athletes({
   const [institutions, setInstitutions] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [showFilter, setShowFilter] = useState(false);
+  const [athleteToDeleteId, setAthleteToDeleteId] = useState("");
   const [filterTextPosition, setFilterTextPosition] = useState({
     left: 0,
     top: 0,
   });
+  const { syncSpecificTable } = useDatabaseSync();
   const { user } = useUser();
   // Updated filter state to handle multiple criteria
   const [selectedFilters, setSelectedFilters] = useState<FilterState>({
@@ -168,6 +170,7 @@ function Athletes({
     const athlete = loadedAthletes.find((athlete) => athlete[0] === key);
     if (athlete) {
       setAthlete(athlete[1]);
+      console.log(athlete[1]);
       customNavigate("forward", "athletes", "athleteMenu");
       setTimeout(() => {
         navigate("/athleteMenu");
@@ -177,11 +180,8 @@ function Athletes({
 
   const onDelete = async () => {
     try {
-      const result = await deleteJson(
-        naturalToCamelCase(athleteToDelete) + ".json",
-        "athletes"
-      );
-      console.log(result);
+      await deleteAthlete(athleteToDeleteId);
+      syncSpecificTable("athlete");
       setLoadedAthletes(
         loadedAthletes.filter((e) => e[1].name !== athleteToDelete)
       );
@@ -231,8 +231,27 @@ function Athletes({
   }, [athleteToDelete.length]);
 
   useEffect(() => {
-    console.log(loadedAthletes);
+    setInstitutions(
+      Array.from(
+        new Set(loadedAthletes.map((athlete) => athlete[1].institution))
+      )
+    );
   }, [loadedAthletes]);
+
+  useEffect(() => {
+    const categories = Array.from(
+      new Set(
+        loadedAthletes.map(
+          (athlete) =>
+            selectedFilters.discipline.includes(athlete[1].discipline) &&
+            athlete[1].category
+        )
+      )
+    );
+    if (categories[0]) {
+      setCategories(categories);
+    }
+  }, [selectedFilters.discipline]);
 
   useEffect(() => {
     const updatePosition = () => {
@@ -292,10 +311,12 @@ function Athletes({
           ) : (
             <>
               <TonalButton
-                title="Nuevo Atleta"
-                onClick={createAthlete}
-                containerStyles="mr-16"
-                icon="add"
+                title="Comparar"
+                onClick={() => {
+                  setComparing(true);
+                }}
+                containerStyles="mr-8"
+                icon="compare"
               />
               <div
                 className={`w-1/2 h-16 rounded-2xl bg-white shadow-sm flex items-center mt-12 px-4 mb-12 ${
@@ -343,14 +364,11 @@ function Athletes({
                   ref={filterButtonRef}
                 />
               )}
-
               <TonalButton
-                title="Comparar"
-                onClick={() => {
-                  setComparing(true);
-                }}
+                title="Nuevo Atleta"
+                onClick={createAthlete}
                 containerStyles="ml-8"
-                icon="compare"
+                icon="add"
               />
             </>
           )}
@@ -363,7 +381,10 @@ function Athletes({
               onClick={() => {
                 onClick(key);
               }}
-              onDelete={(name) => setAthleteToDelete(name)}
+              onDelete={(name, id) => {
+                setAthleteToDelete(name);
+                setAthleteToDeleteId(id);
+              }}
               selected={keyToCompare === key}
               comparing={comparing}
             />

@@ -7,7 +7,7 @@ type AthleteCardProps = {
   onClick: (event: React.MouseEvent<HTMLDivElement>) => void;
   height?: number;
   width?: number;
-  onDelete: (study: string) => void;
+  onDelete: (name: string, id: string) => void;
   selected: boolean;
   comparing: boolean;
 };
@@ -37,7 +37,7 @@ function AthleteCard({
           className="flex absolute right-2 top-2 hover:opacity-70 hover:cursor-pointer px-2 pb-4 z-10"
           onClick={(e) => {
             e.stopPropagation();
-            onDelete(athlete.name);
+            onDelete(athlete.name, athlete.id);
           }}
         >
           <img src="/delete.png" className="h-8 w-8" alt="" />

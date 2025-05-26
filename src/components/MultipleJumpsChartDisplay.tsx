@@ -50,10 +50,10 @@ function MultipleJumpsChartDisplay({
 
   const { t } = useTranslation();
 
-  const [data, setData] = useState<any>(timesData);
+  const [data, setData] = useState<any>(heightData);
   const [displayMetric, setDisplayMetric] = useState<
     "height" | "time" | "performance"
-  >("time");
+  >("height");
   const performanceData = performance.map((performance, i) => ({
     index: i + 1,
     performance: Number(performance.toFixed(2)),

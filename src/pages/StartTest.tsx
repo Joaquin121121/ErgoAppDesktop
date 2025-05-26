@@ -422,7 +422,12 @@ function StartTest({
 
         <p
           className="text-4xl mt-16 text-tertiary"
-          style={{ marginBottom: study.type !== "bosco" && "32px" }}
+          style={{
+            marginBottom:
+              study.type !== "bosco" &&
+              study.type !== "multipleJumps" &&
+              "32px",
+          }}
         >
           {study.type === "bosco" ? "Tests a Realizar" : "Datos del Test"}
         </p>
@@ -488,12 +493,12 @@ function StartTest({
                 <div>
                   <div className="flex items-center">
                     <p
-                      className=" mr-8 text-lg w-60"
+                      className=" mr-8 text-lg w-60 text-right"
                       style={{
                         width: study.type === "multipleDropJump" && "261px",
                       }}
                     >
-                      Seleccionar Alturas de Caída
+                      Alturas de Caída
                     </p>
 
                     {dropJumpHeights.map((height) => (

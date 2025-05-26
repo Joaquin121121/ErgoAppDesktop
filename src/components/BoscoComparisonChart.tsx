@@ -42,6 +42,7 @@ function BoscoComparisonChart({
 }: BoscoComparisonChartProps) {
   const [showHeights, setShowHeights] = useState(true);
   const { t } = useTranslation();
+  const barSize = 200;
 
   // Add DEL key event listener
   useEffect(() => {
@@ -128,11 +129,11 @@ function BoscoComparisonChart({
         <p className="text-3xl text-secondary mr-16">
           Promedio de {showHeights ? "Alturas" : "Tiempos de Vuelo"}
         </p>
-        <TonalButton
+        {/*    <TonalButton
           title={`Ver ${showHeights ? "Tiempos" : "Alturas"}`}
           onClick={toggleGraph}
           icon="studies"
-        />
+        /> */}
       </div>
       <div className="w-full" style={{ height: "600px" }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -170,7 +171,7 @@ function BoscoComparisonChart({
             <Bar
               dataKey="value"
               name={showHeights ? "Altura" : "Tiempo de Vuelo"}
-              barSize={100}
+              barSize={barSize}
               isAnimationActive={true}
               animationDuration={500}
               animationEasing="ease"

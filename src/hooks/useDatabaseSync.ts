@@ -2,18 +2,19 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useOnlineStatus } from "./useOnlineStatus";
 import { supabase } from "../supabase";
 import Database from "@tauri-apps/plugin-sql";
-
+import { StudyType } from "../types/Studies";
 // Tables that need to be synchronized
+// Order is important due to foreign key constraints
 const TABLES = [
   { name: "coach", primaryKey: "id" }, // Coach must come before athlete due to foreign key
   { name: "athlete", primaryKey: "id" },
-  { name: "base_result", primaryKey: "id" },
+  { name: "base_result", primaryKey: "id" }, // Base result must come before all tables that reference it
   { name: "bosco_result", primaryKey: "id" },
-  { name: "drop_jump_result", primaryKey: "id" },
-  { name: "basic_result", primaryKey: "id" },
-
   { name: "event", primaryKey: "id" },
   { name: "multiple_drop_jump_result", primaryKey: "id" },
+  // All tables below reference base_result and must come after it
+  { name: "basic_result", primaryKey: "id" },
+  { name: "drop_jump_result", primaryKey: "id" },
   { name: "multiple_jumps_result", primaryKey: "id" },
   { name: "jump_time", primaryKey: "id" },
 ];
@@ -31,7 +32,6 @@ interface SyncStats {
 export function useDatabaseSync() {
   const { isOnline } = useOnlineStatus();
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [syncStats, setSyncStats] = useState<SyncStats>({
     uploaded: 0,
     downloaded: 0,
@@ -47,59 +47,6 @@ export function useDatabaseSync() {
   const hasPerformedInitialSyncRef = useRef(false);
 
   const lastSyncAttemptTimeRef = useRef<number>(0);
-
-  // Get the last sync time from local storage
-  const getLastSyncTime = useCallback(async (): Promise<string> => {
-    try {
-      const db = await Database.load("sqlite:ergolab.db");
-      const result = await db.select(
-        "SELECT value FROM sync_meta WHERE key = 'last_sync'"
-      );
-
-      if (Array.isArray(result) && result.length > 0) {
-        return result[0].value;
-      }
-
-      // If no record exists, create one with a default timestamp
-      const defaultTime = "1970-01-01T00:00:00.000Z";
-      await db.execute(
-        "INSERT OR IGNORE INTO sync_meta (key, value) VALUES ('last_sync', ?)",
-        [defaultTime]
-      );
-      return defaultTime;
-    } catch (error) {
-      console.error("Error getting last sync time:", error);
-      return "1970-01-01T00:00:00.000Z"; // Default to epoch start if error
-    }
-  }, []);
-
-  // Update the last sync time in local storage
-  const setLastSyncTimeInDB = useCallback(async (timestamp: string) => {
-    try {
-      const db = await Database.load("sqlite:ergolab.db");
-      await db.execute(
-        "UPDATE sync_meta SET value = ? WHERE key = 'last_sync'",
-        [timestamp]
-      );
-    } catch (error) {
-      console.error("Error setting last sync time:", error);
-    }
-  }, []);
-
-  // Ensure sync_meta table exists
-  const ensureSyncMetaTable = useCallback(async () => {
-    try {
-      const db = await Database.load("sqlite:ergolab.db");
-      await db.execute(`
-        CREATE TABLE IF NOT EXISTS sync_meta (
-          key TEXT PRIMARY KEY,
-          value TEXT NOT NULL
-        )
-      `);
-    } catch (error) {
-      console.error("Error creating sync_meta table:", error);
-    }
-  }, []);
 
   // Normalize timestamp formats between SQLite and PostgreSQL
   const normalizeTimestamp = (timestamp: string): string => {
@@ -124,51 +71,39 @@ export function useDatabaseSync() {
     timestamp1: string,
     timestamp2: string
   ): boolean => {
-    const time1 = new Date(normalizeTimestamp(timestamp1)).getTime();
-    const time2 = new Date(normalizeTimestamp(timestamp2)).getTime();
+    // Handle cases where timestamps might be null or undefined string representations
+    // normalizeTimestamp already handles !timestamp, so direct pass should be fine.
+
+    const t1Norm = normalizeTimestamp(timestamp1);
+    const t2Norm = normalizeTimestamp(timestamp2);
+
+    const time1 = new Date(t1Norm).getTime();
+    const time2 = new Date(t2Norm).getTime();
+
     return time1 > time2;
   };
 
   // Sync a single table between Supabase and SQLite
   const syncTable = useCallback(
-    async (tableName: string, primaryKey: string, lastSync: string) => {
+    async (tableName: string, primaryKey: string) => {
       try {
-        console.log(`${tableName}: Opening database connection`);
         const db = await Database.load("sqlite:ergolab.db");
         const tableStats = { uploaded: 0, downloaded: 0 };
 
         // Add a timeout for this sync operation to prevent hanging
         const syncPromise = (async () => {
-          // 1. Pull changes from Supabase that occurred after last sync
-          console.log(
-            `${tableName}: Fetching changes from Supabase since ${lastSync}`
-          );
+          // 1. Pull changes from Supabase
           const { data: remoteChanges, error: fetchError } = await supabase
             .from(tableName)
-            .select("*")
-            .gt("last_changed", lastSync);
+            .select("*");
 
           if (fetchError)
             throw new Error(
               `Error fetching from Supabase: ${fetchError.message}`
             );
 
-          console.log(
-            `${tableName}: Found ${remoteChanges?.length || 0} remote changes`
-          );
-
-          // 2. Get local changes that occurred after last sync
-          console.log(`${tableName}: Fetching local changes since ${lastSync}`);
-          const localChanges = await db.select(
-            `SELECT * FROM "${tableName}" WHERE last_changed > ?`,
-            [lastSync]
-          );
-
-          console.log(
-            `${tableName}: Found ${
-              Array.isArray(localChanges) ? localChanges.length : 0
-            } local changes`
-          );
+          // 2. Get all local changes
+          const localChanges = await db.select(`SELECT * FROM "${tableName}"`);
 
           // 3. Apply remote changes to local database
           if (
@@ -176,9 +111,6 @@ export function useDatabaseSync() {
             Array.isArray(remoteChanges) &&
             remoteChanges.length > 0
           ) {
-            console.log(
-              `${tableName}: Applying remote changes to local database`
-            );
             for (const row of remoteChanges) {
               try {
                 // Check if record exists locally
@@ -199,9 +131,6 @@ export function useDatabaseSync() {
                     isTimestampNewer(row.last_changed, localRecord.last_changed)
                   ) {
                     // Remote is newer, update local
-                    console.log(
-                      `${tableName}: Updating local record ${row[primaryKey]} (remote is newer)`
-                    );
                     const columns = Object.keys(row).filter(
                       (k) => k !== primaryKey
                     );
@@ -217,19 +146,11 @@ export function useDatabaseSync() {
                       );
                       tableStats.downloaded++;
                     } catch (updateError) {
-                      console.error(
-                        `Error updating local record ${row[primaryKey]} in table ${tableName}:`,
-                        updateError
-                      );
-                      console.error(`Offending row data (remote):`, row);
                       throw updateError;
                     }
                   }
                 } else {
                   // Record doesn't exist locally, insert it
-                  console.log(
-                    `${tableName}: Inserting new remote record ${row[primaryKey]}`
-                  );
                   const columns = Object.keys(row);
                   const placeholders = columns.map(() => "?").join(", ");
 
@@ -242,11 +163,6 @@ export function useDatabaseSync() {
                     );
                     tableStats.downloaded++;
                   } catch (insertError) {
-                    console.error(
-                      `Error inserting local record ${row[primaryKey]} in table ${tableName}:`,
-                      insertError
-                    );
-                    console.error(`Offending row data (remote):`, row);
                     const errorMessage =
                       insertError instanceof Error
                         ? insertError.message
@@ -254,9 +170,6 @@ export function useDatabaseSync() {
                     if (
                       errorMessage.includes("FOREIGN KEY constraint failed")
                     ) {
-                      console.error(
-                        `${tableName}: Foreign key constraint failed for record ${row[primaryKey]}. This likely means a referenced record doesn't exist yet.`
-                      );
                       throw new Error(
                         `Foreign key constraint failed in ${tableName}. Ensure referenced tables are synced first.`
                       );
@@ -274,12 +187,7 @@ export function useDatabaseSync() {
                   !errorMessage.includes("FOREIGN KEY constraint failed") &&
                   !errorMessage.includes("Foreign key constraint failed")
                 ) {
-                  console.error(
-                    `Unhandled error processing row ${
-                      row ? row[primaryKey] : "unknown"
-                    } for table ${tableName} (remote -> local):`,
-                    rowError
-                  );
+                  throw rowError;
                 }
                 throw rowError;
               }
@@ -288,13 +196,9 @@ export function useDatabaseSync() {
 
           // 4. Apply local changes to Supabase
           if (Array.isArray(localChanges) && localChanges.length > 0) {
-            console.log(`${tableName}: Applying local changes to Supabase`);
             for (const row of localChanges) {
               try {
                 // Check if record exists remotely
-                console.log(
-                  `${tableName}: Checking if record ${row[primaryKey]} exists in Supabase`
-                );
                 const { data: existingRemote, error: remoteCheckError } =
                   await supabase
                     .from(tableName)
@@ -304,15 +208,18 @@ export function useDatabaseSync() {
 
                 if (remoteCheckError && remoteCheckError.code !== "PGRST116") {
                   throw new Error(
-                    `Error checking remote record: ${remoteCheckError.message}`
+                    `Error checking remote record ${
+                      row[primaryKey]
+                    } in ${tableName}: ${remoteCheckError.message} (Code: ${
+                      remoteCheckError.code || "N/A"
+                    }, Details: ${remoteCheckError.details || "N/A"}, Hint: ${
+                      remoteCheckError.hint || "N/A"
+                    })`
                   );
                 }
 
                 if (existingRemote) {
                   // Record exists remotely, get it to compare timestamps
-                  console.log(
-                    `${tableName}: Record ${row[primaryKey]} exists in Supabase, fetching details`
-                  );
                   const { data: remoteRecord, error: getRemoteError } =
                     await supabase
                       .from(tableName)
@@ -334,9 +241,6 @@ export function useDatabaseSync() {
                     )
                   ) {
                     // Local is newer, update remote
-                    console.log(
-                      `${tableName}: Updating Supabase record ${row[primaryKey]} (local is newer)`
-                    );
                     try {
                       const { error: updateError } = await supabase
                         .from(tableName)
@@ -344,60 +248,39 @@ export function useDatabaseSync() {
                         .eq(primaryKey, row[primaryKey]);
 
                       if (updateError) {
-                        console.error(
-                          `Error updating Supabase record ${row[primaryKey]} in table ${tableName}:`,
-                          updateError
-                        );
-                        console.error(`Offending row data (local):`, row);
                         throw new Error(
                           `Error updating remote record: ${updateError.message}`
                         );
                       }
                       tableStats.uploaded++;
                     } catch (supaUpdateError) {
-                      console.error(
-                        `Exception during Supabase update for ${tableName} record ${row[primaryKey]}:`,
-                        supaUpdateError
-                      );
                       throw supaUpdateError;
                     }
                   }
                 } else {
                   // Record doesn't exist remotely, insert it
-                  console.log(
-                    `${tableName}: Inserting new record ${row[primaryKey]} to Supabase`
-                  );
                   try {
                     const { error: insertError } = await supabase
                       .from(tableName)
                       .insert(row);
 
                     if (insertError) {
-                      console.error(
-                        `Error inserting Supabase record ${row[primaryKey]} in table ${tableName}:`,
-                        insertError
-                      );
-                      console.error(`Offending row data (local):`, row);
                       throw new Error(
-                        `Error inserting remote record: ${insertError.message}`
+                        `Error inserting remote record ${
+                          row[primaryKey]
+                        } in ${tableName}: ${insertError.message} (Code: ${
+                          insertError.code || "N/A"
+                        }, Details: ${insertError.details || "N/A"}, Hint: ${
+                          insertError.hint || "N/A"
+                        })`
                       );
                     }
                     tableStats.uploaded++;
                   } catch (supaInsertError) {
-                    console.error(
-                      `Exception during Supabase insert for ${tableName} record ${row[primaryKey]}:`,
-                      supaInsertError
-                    );
                     throw supaInsertError;
                   }
                 }
               } catch (rowProcessingError) {
-                console.error(
-                  `Unhandled error processing row ${
-                    row ? row[primaryKey] : "unknown"
-                  } for table ${tableName} (local -> remote):`,
-                  rowProcessingError
-                );
                 throw rowProcessingError;
               }
             }
@@ -419,7 +302,6 @@ export function useDatabaseSync() {
           downloaded: number;
         };
       } catch (error) {
-        console.error(`Error syncing table ${tableName}:`, error);
         throw error;
       }
     },
@@ -433,7 +315,6 @@ export function useDatabaseSync() {
 
       // Prevent multiple syncs from running at the same time
       if (isSyncInProgressRef.current) {
-        console.log("Sync already in progress, skipping this request");
         return;
       }
 
@@ -449,17 +330,8 @@ export function useDatabaseSync() {
       try {
         // Set flag to indicate sync is in progress
         isSyncInProgressRef.current = true;
-        console.log("Starting database sync...");
         setSyncStatus("syncing");
         setError(null);
-
-        // Ensure sync_meta table exists
-        await ensureSyncMetaTable();
-        console.log("Sync meta table ready");
-
-        // Get last sync time
-        const lastSync = await getLastSyncTime();
-        console.log(`Last sync time: ${lastSync}`);
 
         // Current timestamp for this sync operation
         const now = new Date().toISOString();
@@ -488,35 +360,25 @@ export function useDatabaseSync() {
 
         // First pass - try to sync each table in the order defined in TABLES
         for (const table of TABLES) {
-          console.log(`Starting sync for table: ${table.name}`);
           try {
-            const tableStats = await syncTable(
-              table.name,
-              table.primaryKey,
-              lastSync
-            );
+            const tableStats = await syncTable(table.name, table.primaryKey);
             stats.tables[table.name] = tableStats;
             stats.uploaded += tableStats.uploaded;
             stats.downloaded += tableStats.downloaded;
             syncedTables.add(table.name);
-            console.log(
-              `Completed sync for table ${table.name}: uploaded=${tableStats.uploaded}, downloaded=${tableStats.downloaded}`
-            );
           } catch (tableError) {
             const errorMessage =
               tableError instanceof Error
                 ? tableError.message
                 : String(tableError);
-            console.error(`Error syncing table ${table.name}:`, tableError);
 
             // If it's a foreign key constraint error, add to retry list
             if (
               errorMessage.includes("Foreign key constraint failed") ||
-              errorMessage.includes("FOREIGN KEY constraint failed")
+              errorMessage.includes("FOREIGN KEY constraint failed") ||
+              errorMessage.includes("violates foreign key constraint") ||
+              errorMessage.includes("Code: 23503")
             ) {
-              console.log(
-                `Adding table ${table.name} to retry list due to foreign key constraint error`
-              );
               retryTables.push({
                 name: table.name,
                 primaryKey: table.primaryKey,
@@ -555,15 +417,11 @@ export function useDatabaseSync() {
             }
 
             retryTable.attempts++;
-            console.log(
-              `Retry attempt ${retryTable.attempts} for table: ${retryTable.name}`
-            );
 
             try {
               const tableStats = await syncTable(
                 retryTable.name,
-                retryTable.primaryKey,
-                lastSync
+                retryTable.primaryKey
               );
 
               // Success! Add to stats and mark as synced
@@ -572,24 +430,18 @@ export function useDatabaseSync() {
               stats.downloaded += tableStats.downloaded;
               syncedTables.add(retryTable.name);
               progress = true;
-
-              console.log(
-                `Completed sync for table ${retryTable.name} on retry attempt ${retryTable.attempts}: uploaded=${tableStats.uploaded}, downloaded=${tableStats.downloaded}`
-              );
             } catch (retryError) {
               const errorMessage =
                 retryError instanceof Error
                   ? retryError.message
                   : String(retryError);
-              console.error(
-                `Error on retry ${retryTable.attempts} for table ${retryTable.name}:`,
-                retryError
-              );
 
               // If it's still a foreign key error and not at max attempts, keep it in retry list
               if (
                 (errorMessage.includes("Foreign key constraint failed") ||
-                  errorMessage.includes("FOREIGN KEY constraint failed")) &&
+                  errorMessage.includes("FOREIGN KEY constraint failed") ||
+                  errorMessage.includes("violates foreign key constraint") ||
+                  errorMessage.includes("Code: 23503")) &&
                 retryTable.attempts < MAX_RETRY_ATTEMPTS
               ) {
                 retryTables.push(retryTable);
@@ -603,9 +455,6 @@ export function useDatabaseSync() {
           }
         }
 
-        // Update last sync time after sync
-        await setLastSyncTimeInDB(now);
-        setLastSyncTime(new Date(now));
         setSyncStats(stats);
 
         // Set appropriate status based on whether there were any errors
@@ -620,25 +469,16 @@ export function useDatabaseSync() {
           setSyncStatus("success");
         }
 
-        console.log("Database sync completed:", stats);
-
         // After sync completes
         isSyncInProgressRef.current = false;
         hasPerformedInitialSyncRef.current = true;
       } catch (error) {
-        console.error("Sync error:", error);
         setError(error instanceof Error ? error.message : String(error));
         setSyncStatus("error");
         isSyncInProgressRef.current = false;
       }
     },
-    [
-      isOnline,
-      ensureSyncMetaTable,
-      getLastSyncTime,
-      setLastSyncTimeInDB,
-      syncTable,
-    ]
+    [isOnline, syncTable]
   );
 
   // Function to sync a specific table
@@ -662,8 +502,6 @@ export function useDatabaseSync() {
         setSyncStatus("syncing");
         setError(null);
 
-        await ensureSyncMetaTable();
-        const lastSync = await getLastSyncTime();
         const now = new Date().toISOString();
 
         const table = TABLES.find((t) => t.name === tableName);
@@ -671,11 +509,7 @@ export function useDatabaseSync() {
           throw new Error(`Table ${tableName} not found in sync configuration`);
         }
 
-        const tableStats = await syncTable(
-          table.name,
-          table.primaryKey,
-          lastSync
-        );
+        const tableStats = await syncTable(table.name, table.primaryKey);
 
         // Update sync stats for this table
         setSyncStats((prev) => ({
@@ -688,8 +522,6 @@ export function useDatabaseSync() {
           },
         }));
 
-        await setLastSyncTimeInDB(now);
-        setLastSyncTime(new Date(now));
         setSyncStatus("success");
       } catch (error) {
         console.error(`Error syncing table ${tableName}:`, error);
@@ -699,13 +531,7 @@ export function useDatabaseSync() {
         isSyncInProgressRef.current = false;
       }
     },
-    [
-      isOnline,
-      ensureSyncMetaTable,
-      getLastSyncTime,
-      setLastSyncTimeInDB,
-      syncTable,
-    ]
+    [isOnline, syncTable]
   );
 
   // Function to upload data to local DB and sync
@@ -751,6 +577,48 @@ export function useDatabaseSync() {
     [syncSpecificTable]
   );
 
+  const syncBosco = async () => {
+    await syncSpecificTable("base_result");
+    await syncSpecificTable("bosco_result");
+    await syncSpecificTable("basic_result");
+    await syncSpecificTable("jump_time");
+  };
+
+  const syncDropJump = async () => {
+    await syncSpecificTable("base_result");
+    await syncSpecificTable("drop_jump_result");
+    await syncSpecificTable("multiple_drop_jump_result");
+    await syncSpecificTable("jump_time");
+  };
+
+  const syncMultipleJumps = async () => {
+    await syncSpecificTable("base_result");
+    await syncSpecificTable("multiple_jumps_result");
+    await syncSpecificTable("jump_time");
+  };
+
+  const syncBasic = async () => {
+    await syncSpecificTable("base_result");
+    await syncSpecificTable("basic_result");
+    await syncSpecificTable("jump_time");
+  };
+
+  const syncResult = async (resultType: StudyType) => {
+    console.log("Syncing result", resultType);
+    switch (resultType) {
+      case "bosco":
+        await syncBosco();
+        break;
+      case "multipleDropJump":
+        await syncDropJump();
+        break;
+      case "multipleJumps":
+        await syncMultipleJumps();
+        break;
+      default:
+        await syncBasic();
+    }
+  };
   // Trigger sync when coming back online
   useEffect(() => {
     let mounted = true;
@@ -799,9 +667,9 @@ export function useDatabaseSync() {
     syncSpecificTable,
     uploadAndSyncTable,
     syncStatus,
-    lastSyncTime,
     syncStats,
     error,
     isOnline,
+    syncResult,
   };
 }

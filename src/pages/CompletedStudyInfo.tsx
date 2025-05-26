@@ -30,15 +30,13 @@ function CompletedStudyInfo({
   ) => void;
 }) {
   const [searchParams] = useSearchParams();
-  const date = searchParams.get("date");
+  const id = searchParams.get("id");
   const { athlete, setAthlete } = useStudyContext();
   const navigate = useNavigate();
   const { saveJson } = useJsonFiles();
   const { t } = useTranslation();
 
-  const studyInfo = athlete.completedStudies.find(
-    (e) => (typeof e.date === "string" ? e.date : e.date.toISOString()) === date
-  );
+  const studyInfo = athlete.completedStudies.find((e) => e.id === id);
   const stiffness =
     studyInfo.results.type === "multipleJumps"
       ? studyInfo.results.stiffness
@@ -194,7 +192,7 @@ function CompletedStudyInfo({
                             style={{ opacity: e.deleted && "60%" }}
                           >
                             {stiffness?.[i]
-                              ? `${stiffness[i].toFixed(2)} N/m`
+                              ? `${stiffness[i].toFixed(2)}`
                               : "-"}
                           </td>
                           <td
@@ -262,7 +260,7 @@ function CompletedStudyInfo({
             <>
               <td className="text-secondary w-36 flex items-center justify-center">
                 {data?.avgStiffness && !Number.isNaN(data.avgStiffness)
-                  ? `${data.avgStiffness.toFixed(2)} N/m`
+                  ? `${data.avgStiffness.toFixed(2)}`
                   : "-"}
               </td>
               <td className="text-secondary w-36 flex items-center justify-center">
@@ -366,7 +364,7 @@ function CompletedStudyInfo({
   const returnToMenu = () => {
     customNavigate("back", "completedStudyInfo", "completedStudyDashboard");
     setTimeout(() => {
-      navigate("/completedStudyDashboard?date=" + date);
+      navigate("/completedStudyDashboard?id=" + id);
     }, 300);
   };
 
@@ -432,10 +430,7 @@ function CompletedStudyInfo({
             times: jumpTimes,
           },
         };
-    const filteredStudies = athlete.completedStudies.filter(
-      (e) =>
-        (typeof e.date === "string" ? e.date : e.date.toISOString()) !== date
-    );
+    const filteredStudies = athlete.completedStudies.filter((e) => e.id !== id);
     try {
       const result = await saveJson(
         `${naturalToCamelCase(athlete.name)}.json`,
@@ -487,7 +482,7 @@ function CompletedStudyInfo({
       setNavAnimation(navAnimations.fadeOutLeft);
       customNavigate("forward", "completedStudyInfo", "compareThreeStudies");
       setTimeout(() => {
-        navigate("/compareThreeStudies?date=" + studyInfo.date);
+        navigate("/compareThreeStudies?id=" + studyInfo.id);
       }, 300);
     } else if (studyInfo.results.type === "multipleDropJump") {
       displayDropJumpChart();
@@ -633,7 +628,7 @@ function CompletedStudyInfo({
               icon="back"
               onClick={returnToMenu}
               inverse
-              containerStyles="mt-16 self-center"
+              containerStyles="mt-12 self-center"
             />
           </>
         ) : (
@@ -692,7 +687,7 @@ function CompletedStudyInfo({
               </p>
             </div>
 
-            <div className="w-full mt-16 mb-8 flex justify-around items-center">
+            <div className="w-full mt-12 mb-8 flex justify-around items-center">
               <OutlinedButton
                 title="Volver"
                 icon="back"

@@ -28,8 +28,8 @@ function CompareTwoStudies({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const date1 = searchParams.get("date1");
-  const date2 = searchParams.get("date2");
+  const id1 = searchParams.get("id1");
+  const id2 = searchParams.get("id2");
   const diffAthletes = searchParams.get("diffAthletes") === "true";
   const { athleteToCompare1, athleteToCompare2 } = useAthleteComparison();
   const { isBlurred, setIsBlurred } = useBlur();
@@ -41,27 +41,11 @@ function CompareTwoStudies({
   );
 
   const study1 = diffAthletes
-    ? athleteToCompare1.completedStudies.find((study) =>
-        typeof study.date === "string"
-          ? study.date === date1
-          : study.date.toISOString() === date1
-      )
-    : athlete.completedStudies.find((study) =>
-        typeof study.date === "string"
-          ? study.date === date1
-          : study.date.toISOString() === date1
-      );
+    ? athleteToCompare1.completedStudies.find((study) => study.id === id1)
+    : athlete.completedStudies.find((study) => study.id === id1);
   const study2 = diffAthletes
-    ? athleteToCompare2.completedStudies.find((study) =>
-        typeof study.date === "string"
-          ? study.date === date2
-          : study.date.toISOString() === date2
-      )
-    : athlete.completedStudies.find((study) =>
-        typeof study.date === "string"
-          ? study.date === date2
-          : study.date.toISOString() === date2
-      );
+    ? athleteToCompare2.completedStudies.find((study) => study.id === id2)
+    : athlete.completedStudies.find((study) => study.id === id2);
 
   const onClose = () => {
     customNavigate(

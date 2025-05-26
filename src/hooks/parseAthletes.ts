@@ -1,4 +1,5 @@
 import Database from "@tauri-apps/plugin-sql";
+import { v4 as uuidv4 } from "uuid";
 import { Athlete, transformToAthlete } from "../types/Athletes";
 import {
   CompletedStudy,
@@ -14,9 +15,15 @@ import {
   JumpTime,
   studyInfoLookup,
 } from "../types/Studies";
+import {
+  deleteBoscoResult,
+  deleteMultipleDropJumpResult,
+  deleteBasicResult,
+  deleteMultipleJumpsResult,
+} from "./parseStudies";
 
 interface RawBaseResult {
-  id: number;
+  id: string;
   takeoff_foot: "right" | "left" | "both";
   sensitivity: number;
   created_at: string;
@@ -24,7 +31,7 @@ interface RawBaseResult {
 }
 
 interface RawBasicResult {
-  id: number;
+  id: string;
   type: "cmj" | "abalakov" | "squatJump" | "custom";
   load: number;
   loadunit: LoadUnit;
@@ -33,21 +40,21 @@ interface RawBasicResult {
 }
 
 interface RawDropJumpResult {
-  id: number;
+  id: string;
   height: string;
   stiffness: number;
   base_result_id: number;
 }
 
 interface RawMultipleJumpsResult {
-  id: number;
+  id: string;
   criteria: "numberOfJumps" | "stiffness" | "time";
   criteria_value: number | null;
   base_result_id: number;
 }
 
 interface RawMultipleDropJumpResult {
-  id: number;
+  id: string;
   height_unit: "cm" | "ft";
   takeoff_foot: "right" | "left" | "both";
   best_height: string;
@@ -55,13 +62,13 @@ interface RawMultipleDropJumpResult {
 }
 
 interface RawBoscoResult {
-  id: number;
+  id: string;
   athlete_id: string;
 }
 
 interface RawJumpTime {
-  id: number;
-  base_result_id: number;
+  id: string;
+  base_result_id: string;
   index: number;
   time: number;
   deleted_at: string | null;
@@ -86,9 +93,6 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
     }
 
     const athletes = await db.select(query, queryParams);
-    console.log(athletes);
-    console.log(coachId);
-    console.log(athletes.map((athlete) => console.log(athlete.coach_id)));
     // 2. Prepare athletes map with basic info, to be populated with studies later
     const athletesMap = new Map<string, Athlete>();
 
@@ -123,8 +127,13 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
       WHERE br.deleted_at IS NULL
     `);
 
+    const relevantResults = baseResults.filter((br: RawBaseResult) => {
+      return br.athlete_id === "f48c9a39-4b15-46ba-9660-ce039bb69d6a";
+    });
+    console.log(relevantResults);
+
     // Create a map of base_results
-    const baseResultMap = new Map<number, RawBaseResult>();
+    const baseResultMap = new Map<string, RawBaseResult>();
     baseResults.forEach((br: RawBaseResult) => {
       baseResultMap.set(br.id, br);
     });
@@ -138,7 +147,7 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
     `);
 
     // Organize jump times by base_result_id
-    const jumpTimeMap = new Map<number, RawJumpTime[]>();
+    const jumpTimeMap = new Map<string, RawJumpTime[]>();
     jumpTimes.forEach((jt: RawJumpTime) => {
       if (!jumpTimeMap.has(jt.base_result_id)) {
         jumpTimeMap.set(jt.base_result_id, []);
@@ -151,6 +160,7 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
       SELECT br.* 
       FROM basic_result br
       WHERE br.deleted_at IS NULL
+      AND br.bosco_result_id IS NULL
     `);
 
     // Process basic results and add to athlete completed studies
@@ -171,6 +181,7 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
         floorTime: jt.floor_time ?? undefined,
         stiffness: jt.stiffness ?? undefined,
         performance: jt.performance ?? undefined,
+        baseResultId: baseResult.id,
       }));
 
       // Calculate averages
@@ -235,6 +246,7 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
 
       // Push to athlete's completedStudies
       const completedStudy: CompletedStudy = {
+        id: basicResult.id,
         studyInfo:
           studyInfoLookup[
             basicResult.type === "custom" ? "cmj" : basicResult.type
@@ -270,11 +282,13 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
 
       // Process jump times
       const processedTimes: JumpTime[] = jumpTimesForResult.map((jt) => ({
+        id: jt.id,
         time: jt.time,
         deleted: jt.deleted_at !== null,
         floorTime: jt.floor_time ?? undefined,
         stiffness: jt.stiffness ?? undefined,
         performance: jt.performance ?? undefined,
+        baseResultId: baseResult.id,
       }));
 
       // Calculate averages
@@ -339,6 +353,7 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
 
       // Push to athlete's completedStudies
       const completedStudy: CompletedStudy = {
+        id: mjResult.id,
         studyInfo: studyInfoLookup.multipleJumps,
         date: new Date(baseResult.created_at),
         results: multipleJumpsResult,
@@ -408,15 +423,9 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
 
     // 8. Process multiple_drop_jump_result
     const multipleDropJumpResults = await db.select(`
-      SELECT mdjr.*, 
-             GROUP_CONCAT(djr.height) as heights,
-             GROUP_CONCAT(djr.id) as drop_jump_ids
+      SELECT mdjr.* 
       FROM multiple_drop_jump_result mdjr
-      LEFT JOIN drop_jump_result djr ON djr.base_result_id IN (
-        SELECT br.id FROM base_result br WHERE br.athlete_id = mdjr.athlete_id
-      )
       WHERE mdjr.deleted_at IS NULL
-      GROUP BY mdjr.id
     `);
 
     for (const mdjResult of multipleDropJumpResults) {
@@ -425,24 +434,57 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
       if (!athlete) continue;
 
       // Find associated drop jump results
-      const dropJumpIds = mdjResult.drop_jump_ids
-        ? mdjResult.drop_jump_ids.split(",").map(Number)
-        : [];
+      const dropJumpResults = await db.select(
+        `
+        SELECT djr.* 
+        FROM drop_jump_result djr
+        WHERE djr.multiple_drop_jump_id = ? AND djr.deleted_at IS NULL
+      `,
+        [mdjResult.id]
+      );
 
-      const heights = mdjResult.heights ? mdjResult.heights.split(",") : [];
+      const dropJumps: DropJumpResult[] = [];
 
-      // This is a simplification - in a real scenario we'd need to match each dropJumpResult
-      // with its corresponding base_result and jump_times
-      const dropJumps: DropJumpResult[] = dropJumpIds.map((_, index) => ({
-        type: "dropJump",
-        times: [],
-        avgFlightTime: 0,
-        avgHeightReached: 0,
-        takeoffFoot: mdjResult.takeoff_foot,
-        sensitivity: 100, // Default value, would need to come from base_result
-        height: heights[index] || "0",
-        stiffness: 0, // Would need to come from the actual drop_jump_result
-      }));
+      for (const djResult of dropJumpResults) {
+        const baseResult = baseResultMap.get(djResult.base_result_id);
+        if (!baseResult) continue;
+
+        const jumpTimesForResult = jumpTimeMap.get(baseResult.id) || [];
+
+        // Process jump times
+        const processedTimes: JumpTime[] = jumpTimesForResult.map((jt) => ({
+          id: jt.id,
+          time: jt.time,
+          deleted: jt.deleted_at !== null,
+          floorTime: jt.floor_time ?? undefined,
+          stiffness: jt.stiffness ?? undefined,
+          performance: jt.performance ?? undefined,
+          baseResultId: baseResult.id,
+        }));
+
+        // Calculate averages
+        const validTimes = processedTimes.filter((t) => !t.deleted);
+        const avgFlightTime =
+          validTimes.length > 0
+            ? validTimes.reduce((sum, t) => sum + t.time, 0) / validTimes.length
+            : 0;
+
+        const avgHeightReached =
+          avgFlightTime > 0 ? (9.81 * Math.pow(avgFlightTime, 2) * 100) / 8 : 0;
+
+        const dropJumpResult: DropJumpResult = {
+          type: "dropJump",
+          times: processedTimes,
+          avgFlightTime,
+          avgHeightReached,
+          takeoffFoot: baseResult.takeoff_foot,
+          sensitivity: baseResult.sensitivity,
+          height: djResult.height,
+          stiffness: djResult.stiffness,
+        };
+
+        dropJumps.push(dropJumpResult);
+      }
 
       const multipleDropJumpResult: MultipleDropJumpResult = {
         type: "multipleDropJump",
@@ -458,8 +500,9 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
 
       // Push to athlete's completedStudies
       const completedStudy: CompletedStudy = {
+        id: mdjResult.id,
         studyInfo: studyInfoLookup.multipleDropJump,
-        date: new Date(), // Would need the actual date from somewhere
+        date: new Date(mdjResult.created_at),
         results: multipleDropJumpResult,
       };
 
@@ -502,11 +545,13 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
 
         // Process jump times
         const processedTimes: JumpTime[] = jumpTimesForResult.map((jt) => ({
+          id: jt.id,
           time: jt.time,
           deleted: jt.deleted_at !== null,
           floorTime: jt.floor_time ?? undefined,
           stiffness: jt.stiffness ?? undefined,
           performance: jt.performance ?? undefined,
+          baseResultId: baseResult.id,
         }));
 
         // Calculate averages
@@ -594,6 +639,7 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
 
         // Push to athlete's completedStudies
         const completedStudy: CompletedStudy = {
+          id: boscoResult.id,
           studyInfo: studyInfoLookup.bosco,
           date: new Date(), // Would need the actual created_at from bosco_result
           results: boscoStudyResult,
@@ -602,7 +648,7 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
         athlete.completedStudies.push(completedStudy);
       }
     }
-
+    console.log(athletesMap.values());
     // Convert map to array and return
     return Array.from(athletesMap.values());
   } catch (error) {
@@ -611,316 +657,289 @@ const getAthletes = async (coachId: string): Promise<Athlete[]> => {
   }
 };
 
-// Helper function to insert base_result
-const saveBaseResult = async (
-  db: Database,
-  athleteId: string,
-  result: BaseResult,
-  date: Date
-): Promise<number> => {
-  const insertResult = await db.execute(
-    `INSERT INTO base_result (athlete_id, takeoff_foot, sensitivity, created_at)
-     VALUES (?, ?, ?, ?)`,
-    [
-      athleteId,
-      result.takeoffFoot,
-      result.sensitivity,
-      date.toISOString(), // Use ISO string for datetime
-    ]
-  );
-  return insertResult.lastInsertId;
+// Function to save or update basic athlete information
+export const saveAthleteInfo = async (
+  athlete: Athlete,
+  coachId: string,
+  externalDb?: any
+): Promise<void> => {
+  const completeAthlete = { ...athlete, coach_id: coachId, id: uuidv4() };
+  const dbToUse =
+    externalDb || (await (Database as any).load("sqlite:ergolab.db"));
+  const isManagingTransaction = !externalDb;
+
+  try {
+    if (isManagingTransaction) {
+      await dbToUse.execute("BEGIN TRANSACTION");
+    }
+
+    try {
+      // Check if athlete exists
+      const existingAthlete = await dbToUse.select(
+        "SELECT id FROM athlete WHERE id = ?",
+        [athlete.id]
+      );
+
+      const birthDateFormatted = athlete.birthDate
+        ? athlete.birthDate.toISOString().split("T")[0]
+        : null;
+
+      if (existingAthlete.length > 0) {
+        // Athlete exists, UPDATE
+        await dbToUse.execute(
+          `UPDATE athlete 
+           SET name = ?, birth_date = ?, country = ?, state = ?, gender = ?, 
+               height = ?, height_unit = ?, weight = ?, weight_unit = ?, 
+               discipline = ?, category = ?, institution = ?, comments = ?,
+               last_changed = ?,
+               coach_id = ?
+           WHERE id = ?`,
+          [
+            athlete.name,
+            birthDateFormatted,
+            athlete.country,
+            athlete.state,
+            athlete.gender,
+            athlete.height,
+            athlete.heightUnit,
+            athlete.weight,
+            athlete.weightUnit,
+            athlete.discipline,
+            athlete.category,
+            athlete.institution,
+            athlete.comments,
+            new Date().toISOString(),
+            coachId,
+            athlete.id,
+          ]
+        );
+      } else {
+        console.log("Athlete does not exist, INSERT");
+        // Athlete does not exist, INSERT
+        // created_at and last_changed will be handled by DB defaults/triggers
+        await dbToUse.execute(
+          `INSERT INTO athlete (id, coach_id, name, birth_date, country, state, gender, 
+                               height, height_unit, weight, weight_unit, 
+                               discipline, category, institution, comments)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            completeAthlete.id,
+            coachId,
+            athlete.name,
+            birthDateFormatted,
+            athlete.country,
+            athlete.state,
+            athlete.gender,
+            athlete.height,
+            athlete.heightUnit,
+            athlete.weight,
+            athlete.weightUnit,
+            athlete.discipline,
+            athlete.category,
+            athlete.institution,
+            athlete.comments,
+          ]
+        );
+      }
+
+      if (isManagingTransaction) {
+        await dbToUse.execute("COMMIT");
+      }
+    } catch (innerError) {
+      if (isManagingTransaction) {
+        console.error(
+          "Error during save athlete info, rolling back transaction:",
+          innerError
+        );
+        await dbToUse.execute("ROLLBACK");
+      }
+      throw innerError; // Re-throw error after rollback
+    }
+  } catch (error) {
+    console.error("Failed to save athlete info:", error);
+    throw error; // Re-throw to allow caller to handle
+  }
 };
 
-// Helper function to insert jump_time records
-const saveJumpTimes = async (
-  db: Database,
-  baseResultId: number,
-  times: JumpTime[]
-): Promise<void> => {
-  if (!times || times.length === 0) {
-    return;
+/**
+ * Saves multiple athletes to the database within a single transaction.
+ * @param data An object containing an array of athletes and a coach ID.
+ * @returns Object with overall success status, an array of individual operation results, and any error message if the transaction failed.
+ */
+export const saveAllAthletes = async (data: {
+  athleteInfo: Athlete[];
+  coachId: string;
+}) => {
+  if (!data || !data.athleteInfo || !data.coachId) {
+    return {
+      success: false,
+      error: "Invalid input: athleteInfo array and coachId are required.",
+      results: [],
+    };
   }
 
-  // Prepare placeholders and values for bulk insert
-  const placeholders = times
-    .map((_, index) => "(?, ?, ?, ?, ?, ?, ?)")
-    .join(", ");
-  const values: unknown[] = []; // Use unknown[] instead of SqlValue[]
-  times.forEach((time, index) => {
-    values.push(
-      baseResultId,
-      index,
-      time.time,
-      time.deleted ? new Date().toISOString() : null, // Set deleted_at if deleted
-      time.floorTime ?? null,
-      time.stiffness ?? null,
-      time.performance ?? null
-    );
-  });
+  if (data.athleteInfo.length === 0) {
+    return { success: true, results: [] }; // No operations to perform
+  }
 
-  await db.execute(
-    `INSERT INTO jump_time (base_result_id, "index", time, deleted_at, floor_time, stiffness, performance)
-     VALUES ${placeholders}`,
-    values
-  );
+  const db = await (Database as any).load("sqlite:ergolab.db");
+  try {
+    await db.execute("BEGIN TRANSACTION");
+
+    const operationResults = [];
+    for (let i = 0; i < data.athleteInfo.length; i++) {
+      const athlete = data.athleteInfo[i];
+
+      // Log which athlete is being processed
+      console.log(
+        `Processing athlete ${i + 1}/${data.athleteInfo.length}: ${
+          athlete.name
+        }`
+      );
+
+      try {
+        await saveAthleteInfo(athlete, data.coachId, db); // Pass the db instance
+        operationResults.push({ success: true, athleteId: athlete.id });
+      } catch (error) {
+        console.error(
+          `Failed to save athlete ${i} (${athlete.name}). Error: ${error}. Rolling back.`
+        );
+        await db.execute("ROLLBACK");
+        return {
+          success: false,
+          error: `Failed to save athlete ${i} (${athlete.name}): ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+          results: operationResults,
+        };
+      }
+    }
+
+    await db.execute("COMMIT");
+    console.log("Successfully saved all athletes. Transaction committed.");
+    return { success: true, results: operationResults };
+  } catch (error) {
+    console.error(
+      "Critical error during multiple athletes save, attempting rollback:",
+      error
+    );
+    try {
+      await db.execute("ROLLBACK");
+      console.log("Rollback successful after critical error.");
+    } catch (rollbackError) {
+      console.error("Failed to rollback after critical error:", rollbackError);
+    }
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unknown critical error occurred during multiple athletes save.",
+      results: [],
+    };
+  }
 };
 
-// Function to save athlete data and studies
-export const saveAthlete = async (athlete: Athlete): Promise<void> => {
+// Function to soft delete an athlete by ID
+export const deleteAthlete = async (athleteId: string): Promise<void> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
-
+    console.log(athleteId);
     // Use transaction for atomicity
     await db.execute("BEGIN TRANSACTION");
 
     try {
-      // 1. Insert or Update Athlete info
-      // Assuming athlete.id might be pre-existing or generated elsewhere.
-      // If the ID is always generated by the DB on insert, adjust logic.
-      // For simplicity, we'll use INSERT OR REPLACE based on ID.
-      await db.execute(
-        `INSERT OR REPLACE INTO athlete (id, name, birth_date, country, state, gender, height, height_unit, weight, weight_unit, discipline, category, institution, comments)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          athlete.id, // Make sure athlete.id is provided
-          athlete.name,
-          athlete.birthDate?.toISOString().split("T")[0], // Format as YYYY-MM-DD
-          athlete.country,
-          athlete.state,
-          athlete.gender,
-          athlete.height,
-          athlete.heightUnit,
-          athlete.weight,
-          athlete.weightUnit,
-          athlete.discipline,
-          athlete.category,
-          athlete.institution,
-          athlete.comments,
-        ]
+      // 1. Get all bosco_result IDs for this athlete
+      const boscoResults = await db.select(
+        "SELECT id FROM bosco_result WHERE athlete_id = ? AND deleted_at IS NULL",
+        [athleteId]
       );
 
-      // 2. Delete existing studies for this athlete to avoid duplicates
-      // This is a simple strategy. More complex update logic could be implemented.
-      const existingBaseResults = await db.select(
-        "SELECT id FROM base_result WHERE athlete_id = ?",
-        [athlete.id]
-      );
-      if (existingBaseResults.length > 0) {
-        const baseResultIds = existingBaseResults.map((r: any) => r.id); // Add :any type assertion or infer type
-        const placeholders = baseResultIds.map(() => "?").join(",");
-        // Cascade deletes should handle related tables if set up, otherwise delete manually
-        await db.execute(
-          `DELETE FROM jump_time WHERE base_result_id IN (${placeholders})`,
-          baseResultIds
-        );
-        await db.execute(
-          `DELETE FROM basic_result WHERE base_result_id IN (${placeholders})`,
-          baseResultIds
-        );
-        await db.execute(
-          `DELETE FROM drop_jump_result WHERE base_result_id IN (${placeholders})`,
-          baseResultIds
-        );
-        await db.execute(
-          `DELETE FROM multiple_jumps_result WHERE base_result_id IN (${placeholders})`,
-          baseResultIds
-        );
-        // Need to handle deletion related to bosco and multiple_drop_jump separately if they don't cascade from base_result
-        await db.execute(`DELETE FROM bosco_result WHERE athlete_id = ?`, [
-          athlete.id,
-        ]);
-        await db.execute(
-          `DELETE FROM multiple_drop_jump_result WHERE athlete_id = ?`,
-          [athlete.id]
-        );
-        await db.execute(
-          `DELETE FROM base_result WHERE id IN (${placeholders})`,
-          baseResultIds
-        );
-      }
-
-      // 3. Iterate and insert completed studies
-      for (const completedStudy of athlete.completedStudies) {
-        const studyResult = completedStudy.results;
-        const studyDate = completedStudy.date;
-
-        switch (studyResult.type) {
-          case "cmj":
-          case "squatJump":
-          case "abalakov":
-          case "custom": {
-            const baseResultId = await saveBaseResult(
-              db,
-              athlete.id,
-              studyResult,
-              new Date(studyDate)
-            );
-            await db.execute(
-              `INSERT INTO basic_result (type, load, loadunit, base_result_id)
-               VALUES (?, ?, ?, ?)`,
-              [
-                studyResult.type,
-                studyResult.load,
-                studyResult.loadUnit,
-                baseResultId,
-              ]
-            );
-            await saveJumpTimes(db, baseResultId, studyResult.times);
-            break;
-          }
-          case "multipleJumps": {
-            const baseResultId = await saveBaseResult(
-              db,
-              athlete.id,
-              studyResult,
-              new Date(studyDate)
-            );
-            await db.execute(
-              `INSERT INTO multiple_jumps_result (criteria, criteria_value, base_result_id)
-               VALUES (?, ?, ?)`,
-              [studyResult.criteria, studyResult.criteriaValue, baseResultId]
-            );
-            await saveJumpTimes(db, baseResultId, studyResult.times);
-            break;
-          }
-          case "multipleDropJump": {
-            // Insert the parent record
-            const mdjrInsertResult = await db.execute(
-              `INSERT INTO multiple_drop_jump_result (athlete_id, height_unit, takeoff_foot, best_height, created_at)
-                 VALUES (?, ?, ?, ?, ?)`,
-              [
-                athlete.id,
-                studyResult.heightUnit,
-                studyResult.takeoffFoot,
-                studyResult.bestHeight,
-                new Date(studyDate).toISOString(),
-              ]
-            );
-            const multipleDropJumpResultId = mdjrInsertResult.lastInsertId; // Needed if drop_jump_result needs to link back
-
-            // Insert each individual drop jump within the multiple drop jump
-            for (const dropJump of studyResult.dropJumps) {
-              // Each drop jump needs its own base result and jump times
-              const baseResultId = await saveBaseResult(
-                db,
-                athlete.id,
-                dropJump,
-                new Date(studyDate)
-              );
-              await db.execute(
-                `INSERT INTO drop_jump_result (height, stiffness, base_result_id) -- Add multiple_drop_jump_result_id if schema supports it
-                   VALUES (?, ?, ?, ?)`, // Add placeholder for multipleDropJumpResultId if needed
-                [
-                  dropJump.height,
-                  dropJump.stiffness,
-                  baseResultId,
-                  multipleDropJumpResultId,
-                ]
-              );
-              await saveJumpTimes(db, baseResultId, dropJump.times);
-            }
-            break;
-          }
-          case "bosco": {
-            // Insert parent bosco_result
-            const boscoInsertResult = await db.execute(
-              `INSERT INTO bosco_result (athlete_id, created_at) VALUES (?, ?)`,
-              [athlete.id, new Date(studyDate).toISOString()]
-            );
-            const boscoResultId = boscoInsertResult.lastInsertId;
-
-            // Insert CMJ component if present
-            if (studyResult.cmj && studyResult.cmj.times.length > 0) {
-              const baseResultId = await saveBaseResult(
-                db,
-                athlete.id,
-                studyResult.cmj,
-                new Date(studyDate)
-              );
-              await db.execute(
-                `INSERT INTO basic_result (type, load, loadunit, base_result_id, bosco_result_id)
-                     VALUES (?, ?, ?, ?, ?)`,
-                [
-                  "cmj",
-                  studyResult.cmj.load,
-                  studyResult.cmj.loadUnit,
-                  baseResultId,
-                  boscoResultId,
-                ]
-              );
-              await saveJumpTimes(db, baseResultId, studyResult.cmj.times);
-            }
-            // Insert SquatJump component if present
-            if (
-              studyResult.squatJump &&
-              studyResult.squatJump.times.length > 0
-            ) {
-              const baseResultId = await saveBaseResult(
-                db,
-                athlete.id,
-                studyResult.squatJump,
-                new Date(studyDate)
-              );
-              await db.execute(
-                `INSERT INTO basic_result (type, load, loadunit, base_result_id, bosco_result_id)
-                     VALUES (?, ?, ?, ?, ?)`,
-                [
-                  "squatJump",
-                  studyResult.squatJump.load,
-                  studyResult.squatJump.loadUnit,
-                  baseResultId,
-                  boscoResultId,
-                ]
-              );
-              await saveJumpTimes(
-                db,
-                baseResultId,
-                studyResult.squatJump.times
-              );
-            }
-            // Insert Abalakov component if present
-            if (studyResult.abalakov && studyResult.abalakov.times.length > 0) {
-              const baseResultId = await saveBaseResult(
-                db,
-                athlete.id,
-                studyResult.abalakov,
-                new Date(studyDate)
-              );
-              await db.execute(
-                `INSERT INTO basic_result (type, load, loadunit, base_result_id, bosco_result_id)
-                     VALUES (?, ?, ?, ?, ?)`,
-                [
-                  "abalakov",
-                  studyResult.abalakov.load,
-                  studyResult.abalakov.loadUnit,
-                  baseResultId,
-                  boscoResultId,
-                ]
-              );
-              await saveJumpTimes(db, baseResultId, studyResult.abalakov.times);
-            }
-            break;
-          }
-          default:
-            // Handle unknown study type or throw error
-            console.warn(
-              "Unknown study type encountered:",
-              (studyResult as any).type
-            );
+      // Delete all bosco results
+      for (const boscoResult of boscoResults) {
+        const result = await deleteBoscoResult(boscoResult.id, db);
+        if (!result.success) {
+          throw new Error(`Failed to delete bosco result: ${result.error}`);
         }
       }
+
+      // 2. Get all multiple_drop_jump_result IDs for this athlete
+      const multipleDropJumpResults = await db.select(
+        "SELECT id FROM multiple_drop_jump_result WHERE athlete_id = ? AND deleted_at IS NULL",
+        [athleteId]
+      );
+
+      // Delete all multiple drop jump results
+      for (const multipleDropJumpResult of multipleDropJumpResults) {
+        const result = await deleteMultipleDropJumpResult(
+          multipleDropJumpResult.id,
+          db
+        );
+        if (!result.success) {
+          throw new Error(
+            `Failed to delete multiple drop jump result: ${result.error}`
+          );
+        }
+      }
+
+      // 3. Get all basic_result IDs for this athlete (excluding those that are part of bosco results)
+      const basicResults = await db.select(
+        `SELECT br.id FROM basic_result br 
+         JOIN base_result base ON br.base_result_id = base.id 
+         WHERE base.athlete_id = ? AND br.deleted_at IS NULL AND br.bosco_result_id IS NULL`,
+        [athleteId]
+      );
+
+      // Delete all basic results
+      for (const basicResult of basicResults) {
+        const result = await deleteBasicResult(basicResult.id, db);
+        if (!result.success) {
+          throw new Error(`Failed to delete basic result: ${result.error}`);
+        }
+      }
+
+      // 4. Get all multiple_jumps_result IDs for this athlete
+      const multipleJumpsResults = await db.select(
+        `SELECT mjr.id FROM multiple_jumps_result mjr 
+         JOIN base_result base ON mjr.base_result_id = base.id 
+         WHERE base.athlete_id = ? AND mjr.deleted_at IS NULL`,
+        [athleteId]
+      );
+
+      // Delete all multiple jumps results
+      for (const multipleJumpsResult of multipleJumpsResults) {
+        const result = await deleteMultipleJumpsResult(
+          multipleJumpsResult.id,
+          db
+        );
+        if (!result.success) {
+          throw new Error(
+            `Failed to delete multiple jumps result: ${result.error}`
+          );
+        }
+      }
+
+      // 5. Finally, soft delete the athlete
+      const now = new Date().toISOString();
+      await db.execute(
+        "UPDATE athlete SET deleted_at = ?, last_changed = ? WHERE id = ?",
+        [now, now, athleteId]
+      );
 
       // Commit transaction
       await db.execute("COMMIT");
     } catch (innerError) {
       // Rollback transaction on error
-      console.error("Error during save, rolling back transaction:", innerError);
+      console.error(
+        "Error during delete athlete, rolling back transaction:",
+        innerError
+      );
       await db.execute("ROLLBACK");
       throw innerError; // Re-throw error after rollback
     }
   } catch (error) {
-    console.error("Failed to save athlete:", error);
-    // Optionally, handle specific errors or re-throw
+    console.error("Failed to delete athlete:", error);
+    throw error; // Re-throw to allow caller to handle
   }
 };
 

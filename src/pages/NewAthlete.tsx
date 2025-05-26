@@ -16,6 +16,9 @@ import navAnimation from "../styles/animations.module.css";
 import OutlinedButton from "../components/OutlinedButton";
 import { useBlur } from "../contexts/BlurContext";
 import { useNewEvent } from "../contexts/NewEventContext";
+import { saveAllAthletes, saveAthleteInfo } from "../hooks/parseAthletes";
+import { useUser } from "../contexts/UserContext";
+import { useDatabaseSync } from "../hooks/useDatabaseSync";
 function NewAthlete({
   isExpanded,
   animation,
@@ -34,6 +37,8 @@ function NewAthlete({
   const [searchParams] = useSearchParams();
   const from = searchParams.get("from");
 
+  const { syncSpecificTable } = useDatabaseSync();
+
   const navigate = useNavigate();
   const { isBlurred, setIsBlurred } = useBlur();
 
@@ -43,7 +48,7 @@ function NewAthlete({
 
   const [loadedAthletes, setLoadedAthletes] = useState<Athlete[]>([]);
 
-  const [errors, setErrors] = useState<Record<keyof Athlete, string>>({
+  const [errors, setErrors] = useState({
     name: "",
     birthDate: "",
     country: "",
@@ -77,9 +82,7 @@ function NewAthlete({
   const [athletesToSave, setAthletesToSave] = useState<Athlete[]>([athlete]);
   const [currentAthleteIndex, setCurrentAthleteIndex] = useState(0);
   const [fieldsAnimation, setFieldsAnimation] = useState("");
-  const [initialQueries, setInitialQueries] = useState<
-    Record<keyof Athlete, string>
-  >({
+  const [initialQueries, setInitialQueries] = useState({
     country: "",
     state: "",
     gender: "",
@@ -115,6 +118,8 @@ function NewAthlete({
   const [stateReset, setStateReset] = useState(false);
   const [genderReset, setGenderReset] = useState(false);
   const [disciplineReset, setDisciplineReset] = useState(false);
+
+  const { user } = useUser();
 
   const onClose = () => {
     resetAthlete();
@@ -495,12 +500,8 @@ function NewAthlete({
     }
 
     try {
-      const result = await saveJson(
-        `${naturalToCamelCase(athlete.name)}.json`,
-        athlete,
-        "athletes"
-      );
-      console.log(result.message);
+      await saveAthleteInfo(athlete, user.id);
+      syncSpecificTable("athlete");
       updateAthleteName(athlete.name);
 
       customNavigate("back", "newAthlete", from ? from : "startTest");
@@ -522,14 +523,10 @@ function NewAthlete({
       index === currentAthleteIndex ? athleteToSave : athlete
     );
     try {
-      for (const athlete of localAthletesToSave) {
-        const result = await saveJson(
-          `${naturalToCamelCase(athlete.name)}.json`,
-          athlete,
-          "athletes"
-        );
-        console.log(result.message);
-      }
+      await saveAllAthletes({
+        athleteInfo: localAthletesToSave,
+        coachId: user.id,
+      });
       setSelectedAthletes([...localAthletesToSave]);
       resetAthlete();
       customNavigate("back", "newAthlete", from ? "athletes" : "startTest");

@@ -188,7 +188,7 @@ const TrainingMenu = ({
         }}
       >
         <div
-          className={`my-10 w-full flex justify-around items-center${
+          className={`my-10 w-4/5 flex justify-around items-center${
             isBlurred && "blur-md pointer-events-none"
           }`}
         >
