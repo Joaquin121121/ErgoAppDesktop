@@ -6,16 +6,22 @@ Seleccion multiple
     Boton 'Seleccionar por criterio', que muestre el filtro de atletas y seleccione todos los atletas que cumplan con la condicion
     Boton 'Reiniciar seleccion' en la lista de atletas
 Maximo de tamaño para tablas/habilitar overflow (checkear si no esta resuelto ya)
-RLS
+CMJ SJ Abalakov un solo salto
+Saltos multiples arreglar limite
+Graficos para todas y menos abruptos
+Arreglar parpadeo de estado, que sea consistente con la sensibilidad
+Pip
+Implementar eventos
 Implementar modelos de planes
 Implementar biblioteca
 Implementar pantalla rendimiento
+RLS
 Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
 Sacar licencia
 Mover build a GH actions, tratar de tener build para macOS y Linux
 
 Si hay tiempo:
-
+Analizar e implementar mejoras en la creacion de tests
 Considerar cuando hay muchas instituciones que pasa en el filtro de atleta, y buscar casos similares
 Notificaciones de eventos
 Hacer placeholders de ui de plan para mantener tamaño de display de sesiones consistente

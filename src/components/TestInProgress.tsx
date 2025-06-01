@@ -77,8 +77,14 @@ function TestInProgress({
   const [ignoreJump, setIgnoreJump] = useState(false);
   const { serialData, error, startSerialListener, logs, isConnected } =
     useSerialMonitor();
-  const { study, setStudy, athlete, setAthlete, selectedAthletes } =
-    useStudyContext();
+  const {
+    study,
+    setStudy,
+    athlete,
+    setAthlete,
+    selectedAthletes,
+    setSelectedAthletes,
+  } = useStudyContext();
   const { isBlurred, setIsBlurred } = useBlur();
   const { saveJson, readJson } = useJsonFiles();
   const { t } = useTranslation();
@@ -297,6 +303,20 @@ function TestInProgress({
     </table>
   );
 
+  const skipAthlete = () => {
+    const athleteId = selectedAthletes[selectedAthletePointer].id;
+    const newSelectedAthletes = selectedAthletes.filter(
+      (athlete) => athlete.id !== athleteId
+    );
+    if (selectedAthletePointer === newSelectedAthletes.length) {
+      saveAllTests(false);
+      return;
+    }
+    const newPointer = Math.max(selectedAthletePointer - 1, 0);
+    setSelectedAthletePointer(newPointer);
+    setSelectedAthletes(newSelectedAthletes);
+  };
+
   const previousAthlete = () => {
     saveTest();
     const relevantTest = multipleAthletesTests[selectedAthletePointer - 1].test;
@@ -394,7 +414,7 @@ function TestInProgress({
           : null
       );
       setSelectedAthletePointer(selectedAthletePointer + 1);
-
+      setStatus("pendingEvaluation");
       return;
     }
     const relevantTest = multipleAthletesTests[selectedAthletePointer + 1].test;
@@ -875,8 +895,10 @@ function TestInProgress({
     }
   };
 
-  const saveAllTests = async () => {
-    const updatedMultipleAthletesTests = await saveTest();
+  const saveAllTests = async (saveCurrentTest = true) => {
+    const updatedMultipleAthletesTests = saveCurrentTest
+      ? await saveTest()
+      : multipleAthletesTests;
     const resultsToBeSaved = {
       studies: updatedMultipleAthletesTests.map((e) => e.test),
       ids: selectedAthletes.map((e) => e.id),
@@ -1076,7 +1098,7 @@ function TestInProgress({
   };
 
   const simulateTest = () => {
-    +setSimulating(true);
+    setSimulating(true);
     setSimulationComplete(false);
     setStatus("Súbase a la alfombra");
     setTimeout(() => {
@@ -1126,6 +1148,21 @@ function TestInProgress({
       setSimulationComplete(false);
     }
   }, [simulationComplete, flightTimes, floorTimes]);
+
+  useEffect(() => {
+    simulateTest();
+  }, []);
+
+  useEffect(() => {
+    // Set pendingEvaluation status on initial load if multiple athletes and no test for current athlete
+    if (
+      selectedAthletes.length > 0 &&
+      !multipleAthletesTests[selectedAthletePointer] &&
+      status === "Súbase a la alfombra"
+    ) {
+      setStatus("pendingEvaluation");
+    }
+  }, [selectedAthletes, selectedAthletePointer, multipleAthletesTests]);
 
   useEffect(() => {
     const initializeDevice = async () => {
@@ -1278,262 +1315,263 @@ function TestInProgress({
     }
   }, [flightTimes, floorTimes]);
 
-  return (
-    <>
-      <div
-        className={`bg-white shadow-lg rounded-2xl transition-all duration-300 ease-linear fixed right-8 flex flex-col items-center px-16 py-8 top-[2%] ${
-          (displayErrorPopup || showTable || showChart) &&
-          "blur-md pointer-events-none"
-        }
-          `}
-        style={{
-          width: study.type === "multipleJumps" ? "1400px" : "50%",
-          left: "50%",
-          transform: "translateX(-50%)",
-        }}
-      >
-        <div
-          className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
-          onClick={onClose}
+  const renderStatusContent = () => {
+    // Special case for pendingEvaluation
+    if (status === "pendingEvaluation") {
+      return (
+        <p
+          className="text-2xl mt-8 text-tertiary"
+          style={{ alignSelf: "center" }}
         >
-          <img src="/close.png" className="h-6 w-6" alt="" />
+          Atleta a Evaluar:{" "}
+          <span className="text-secondary font-medium">
+            {selectedAthletes[selectedAthletePointer].name}
+          </span>
+        </p>
+      );
+    }
+
+    // Special case for multipleJumps in progress
+    if (
+      status !== "Finalizado" &&
+      status !== "Súbase a la alfombra" &&
+      study.type === "multipleJumps"
+    ) {
+      return (
+        <div className="w-full flex mt-8 items-center justify-around">
+          <p className="text-2xl text-tertiary" style={{ alignSelf: "center" }}>
+            Estado:{" "}
+            <span className="text-secondary font-medium">
+              {displayError
+                ? status
+                : status.includes("Error")
+                ? "Conectando..."
+                : status}
+            </span>
+          </p>
         </div>
-        <p className="self-center text-4xl text-secondary">{t(study.type)}</p>
+      );
+    }
 
-        {selectedAthletes.length > 0 && (
-          <p className="text-2xl self-center my-4">
-            {selectedAthletes[selectedAthletePointer].name}{" "}
-            <span className="text-darkGray">
-              {selectedAthletePointer + 1}/{selectedAthletes.length}
-            </span>
-          </p>
-        )}
-        {study.type === "bosco" && (
-          <p className="self-center text-2xl mt-8 text-tertiary">
-            Test {pointer + 1}:{" "}
-            <span className="text-secondary font-medium">
-              {t(tests[pointer])}
-            </span>
-          </p>
-        )}
-        {study.type === "multipleDropJump" && (
-          <p className="self-center text-2xl mt-4 text-tertiary">
-            Altura de Caída:{" "}
-            <span className="text-secondary font-medium">
-              {study.dropJumpHeights[pointer]} cm
-            </span>
-          </p>
-        )}
+    // Default status display
+    return (
+      <p
+        className="text-2xl mt-8 text-tertiary"
+        style={{ alignSelf: "center" }}
+      >
+        Estado:{" "}
+        <span className="text-secondary font-medium">
+          {displayError
+            ? status
+            : status.includes("Error")
+            ? "Conectando..."
+            : status}
+        </span>
+      </p>
+    );
+  };
 
-        <div className="w-full  flex flex-col self-center">
-          {status !== "Finalizado" &&
-          status !== "Súbase a la alfombra" &&
-          study.type === "multipleJumps" ? (
-            <div className="w-full flex mt-8 items-center justify-around">
-              <p
-                className=" text-2xl text-tertiary"
-                style={{
-                  alignSelf: "center",
-                }}
-              >
-                Estado:{" "}
-                <span className="text-secondary font-medium">
-                  {displayError
-                    ? status
-                    : status.includes("Error")
-                    ? "Conectando..."
-                    : status}
-                </span>
-              </p>
-            </div>
-          ) : (
-            <p
-              className=" text-2xl mt-8 text-tertiary"
-              style={{
-                alignSelf: "center",
+  const renderErrorContent = () => {
+    if (!status.includes("Error") || !displayError) return null;
+
+    return (
+      <div className="mt-4 flex flex-col self-center">
+        <p className="text-lg text-gray-600">Por favor:</p>
+        <ul className="list-disc ml-6 mt-2 text-gray-600">
+          <li>Verifique que la alfombra esté bien conectada</li>
+          <li>Asegúrese de que el cable USB está bien conectado</li>
+          <li>Intente reconectar la alfombra</li>
+        </ul>
+        <OutlinedButton
+          title="Reintentar conexión"
+          icon="again"
+          onClick={() => {
+            setStatus("Conectando dispositivo...");
+            startSerialListener(9600);
+          }}
+          containerStyles="mt-8 self-center"
+        />
+      </div>
+    );
+  };
+
+  const renderMultipleJumpsCriteria = () => {
+    if (
+      study.type !== "multipleJumps" ||
+      status === "Finalizado" ||
+      status.includes("Error")
+    ) {
+      return null;
+    }
+
+    if (study.criteria === "time") {
+      return (
+        <p className="self-center mt-16 text-2xl text-tertiary ml-48">
+          <span className="text-secondary font-medium">00:{criteriaValue}</span>{" "}
+          segundos
+        </p>
+      );
+    }
+
+    if (study.criteria === "numberOfJumps") {
+      return (
+        <p className="mt-12 text-2xl text-tertiary self-center">
+          N° de saltos:{" "}
+          <span className="text-secondary font-medium">
+            {criteriaValue} - {study.criteriaValue}
+          </span>
+        </p>
+      );
+    }
+
+    return null;
+  };
+
+  const renderMultipleJumpsChart = () => {
+    if (
+      study.type !== "multipleJumps" ||
+      status === "Finalizado" ||
+      chartData.length === 0
+    ) {
+      return null;
+    }
+
+    return (
+      <div className="w-full" style={{ height: "500px" }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart
+            data={chartData}
+            margin={{ top: 20, right: 60, bottom: 60, left: 20 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="index"
+              label={{
+                value: "N° de Salto",
+                position: "bottom",
+                offset: 0,
               }}
-            >
-              Estado:{" "}
-              <span className="text-secondary font-medium">
-                {displayError
-                  ? status
-                  : status.includes("Error")
-                  ? "Conectando..."
-                  : status}
-              </span>
-            </p>
-          )}
-
-          {status.includes("Error") && displayError && (
-            <div className="mt-4 flex flex-col self-center">
-              <p className="text-lg text-gray-600">Por favor:</p>
-              <ul className="list-disc ml-6 mt-2 text-gray-600">
-                <li>Verifique que la alfombra esté bien conectada</li>
-                <li>Asegúrese de que el cable USB está bien conectado</li>
-                <li>Intente reconectar la alfombra</li>
-              </ul>
-              <OutlinedButton
-                title="Reintentar conexión"
-                icon="again"
-                onClick={() => {
-                  setStatus("Conectando dispositivo...");
-                  startSerialListener(9600);
-                }}
-                containerStyles="mt-8 self-center"
+            />
+            <YAxis
+              yAxisId="left"
+              label={{
+                value:
+                  displayMetric === "time"
+                    ? "Tiempo (s)"
+                    : displayMetric === "height"
+                    ? "Altura (cm)"
+                    : "Rendimiento (%)",
+                angle: -90,
+                position: "insideLeft",
+              }}
+            />
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              label={{
+                value: "Índice Q",
+                angle: 90,
+                position: "insideRight",
+              }}
+            />
+            <Tooltip
+              contentStyle={{
+                borderRadius: "16px",
+                boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+              }}
+            />
+            <Legend
+              wrapperStyle={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-around",
+                width: "100%",
+                paddingTop: "30px",
+                marginTop: "20px",
+              }}
+              verticalAlign="bottom"
+              iconType="circle"
+              layout="horizontal"
+              align="center"
+            />
+            {displayMetric === "time" ? (
+              <>
+                <Bar
+                  yAxisId="left"
+                  dataKey="flightTime"
+                  fill="#e81d23"
+                  name="Tiempo de Vuelo"
+                  barSize={20}
+                  animationDuration={500}
+                  animationEasing="ease"
+                />
+                <Bar
+                  yAxisId="left"
+                  dataKey="floorTime"
+                  fill="#FFC1C1"
+                  name="Tiempo de Piso"
+                  barSize={20}
+                  animationDuration={500}
+                  animationEasing="ease"
+                />
+              </>
+            ) : displayMetric === "height" ? (
+              <Bar
+                yAxisId="left"
+                dataKey="height"
+                fill="#e81d23"
+                name="Altura"
+                barSize={20}
+                animationDuration={500}
+                animationEasing="ease"
               />
-            </div>
-          )}
-          {study.type === "multipleJumps" &&
-            study.criteria === "time" &&
-            status !== "Finalizado" &&
-            !status.includes("Error") && (
-              <p className="self-center mt-16 text-2xl text-tertiary ml-48">
-                <span className="text-secondary font-medium">
-                  00:{criteriaValue}
-                </span>{" "}
-                segundos
-              </p>
+            ) : (
+              <Bar
+                yAxisId="left"
+                dataKey="performance"
+                fill="#e81d23"
+                name="Rendimiento"
+                barSize={20}
+                animationDuration={500}
+                animationEasing="ease"
+              />
             )}
-          {study.type === "multipleJumps" &&
-            status !== "Finalizado" &&
-            study.criteria === "numberOfJumps" &&
-            !status.includes("Error") && (
-              <p className="mt-12 text-2xl text-tertiary self-center">
-                N° de saltos:{" "}
-                <span className="text-secondary font-medium">
-                  {criteriaValue} - {study.criteriaValue}
-                </span>{" "}
-              </p>
-            )}
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="qIndex"
+              stroke="#ff7300"
+              name="Índice Q"
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
 
-          {study.type === "multipleJumps" &&
-            status !== "Finalizado" &&
-            chartData.length > 0 && (
-              <div className="w-full" style={{ height: "500px" }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart
-                    data={chartData}
-                    margin={{ top: 20, right: 60, bottom: 60, left: 20 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="index"
-                      label={{
-                        value: "N° de Salto",
-                        position: "bottom",
-                        offset: 0,
-                      }}
-                    />
-                    <YAxis
-                      yAxisId="left"
-                      label={{
-                        value:
-                          displayMetric === "time"
-                            ? "Tiempo (s)"
-                            : displayMetric === "height"
-                            ? "Altura (cm)"
-                            : "Rendimiento (%)",
-                        angle: -90,
-                        position: "insideLeft",
-                      }}
-                    />
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      label={{
-                        value: "Índice Q",
-                        angle: 90,
-                        position: "insideRight",
-                      }}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: "16px",
-                        boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-                      }}
-                    />
-                    <Legend
-                      wrapperStyle={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-around",
-                        width: "100%",
-                        paddingTop: "30px",
-                        marginTop: "20px",
-                      }}
-                      verticalAlign="bottom"
-                      iconType="circle"
-                      layout="horizontal"
-                      align="center"
-                    />
-                    {displayMetric === "time" ? (
-                      <>
-                        <Bar
-                          yAxisId="left"
-                          dataKey="flightTime"
-                          fill="#e81d23"
-                          name="Tiempo de Vuelo"
-                          barSize={20}
-                          animationDuration={500}
-                          animationEasing="ease"
-                        />
-                        <Bar
-                          yAxisId="left"
-                          dataKey="floorTime"
-                          fill="#FFC1C1"
-                          name="Tiempo de Piso"
-                          barSize={20}
-                          animationDuration={500}
-                          animationEasing="ease"
-                        />
-                      </>
-                    ) : displayMetric === "height" ? (
-                      <Bar
-                        yAxisId="left"
-                        dataKey="height"
-                        fill="#e81d23"
-                        name="Altura"
-                        barSize={20}
-                        animationDuration={500}
-                        animationEasing="ease"
-                      />
-                    ) : (
-                      <Bar
-                        yAxisId="left"
-                        dataKey="performance"
-                        fill="#e81d23"
-                        name="Rendimiento"
-                        barSize={20}
-                        animationDuration={500}
-                        animationEasing="ease"
-                      />
-                    )}
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="qIndex"
-                      stroke="#ff7300"
-                      name="Índice Q"
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          {status === "Finalizado" && <div className="mt-4">{tableJSX}</div>}
-        </div>
+  const renderActionButtons = () => {
+    switch (status) {
+      case "Súbase a la alfombra":
+        return null;
 
-        {status !== "Finalizado" && status !== "Súbase a la alfombra" && (
-          <TonalButton
-            containerStyles={`self-center mt-${
-              study.type === "multipleJumps" ? "4" : "16"
-            }`}
-            title="Finalizar Test"
-            icon="closeWhite"
-            onClick={finishTest}
-          />
-        )}
+      case "pendingEvaluation":
+        return (
+          <div className="flex items-center justify-center gap-x-4 w-full my-8">
+            <OutlinedButton
+              title="Omitir Atleta"
+              onClick={skipAthlete}
+              icon="skip"
+            />
+            <TonalButton
+              title="Realizar Test"
+              onClick={() => setStatus("Súbase a la alfombra")}
+              icon="next"
+            />
+          </div>
+        );
 
-        {status === "Finalizado" && (
+      case "Finalizado":
+        return (
           <>
             {study.type === "multipleJumps" && (
               <>
@@ -1549,7 +1587,6 @@ function TestInProgress({
                     onClick={displayChart}
                   />
                 </div>
-
                 <p className="self-center text-xl mt-12 text-tertiary">
                   Caída de Rendimiento por Fatiga:{" "}
                   <span className="text-secondary font-medium">
@@ -1564,7 +1601,6 @@ function TestInProgress({
                 icon="again"
                 onClick={redoTest}
               />
-
               {study.type === "multipleDropJump" &&
                 multipleDropJumpResults?.dropJumps?.length > 1 && (
                   <TonalButton
@@ -1624,41 +1660,40 @@ function TestInProgress({
                 />
               </div>
             )}
-
             {selectedAthletes.length > 0 && (
-              <>
-                <div className="flex items-center justify-around w-full my-8">
-                  <OutlinedButton
-                    title="Atleta Anterior"
-                    icon="back"
-                    onClick={previousAthlete}
-                    inverse
-                    disabled={!(selectedAthletePointer > 0)}
-                  />
-                  <TonalButton
-                    title={
-                      selectedAthletePointer === selectedAthletes.length - 1
-                        ? "Guardar Tests"
-                        : "Atleta Siguiente"
-                    }
-                    icon={
-                      selectedAthletePointer === selectedAthletes.length - 1
-                        ? "save"
-                        : "next"
-                    }
-                    onClick={
-                      selectedAthletePointer === selectedAthletes.length - 1
-                        ? saveAllTests
-                        : nextAthlete
-                    }
-                    disabled={!allTestsCompleted()}
-                  />
-                </div>
-              </>
+              <div className="flex items-center justify-around w-full my-8">
+                <OutlinedButton
+                  title="Atleta Anterior"
+                  icon="back"
+                  onClick={previousAthlete}
+                  inverse
+                  disabled={!(selectedAthletePointer > 0)}
+                />
+                <TonalButton
+                  title={
+                    selectedAthletePointer === selectedAthletes.length - 1
+                      ? "Guardar Tests"
+                      : "Atleta Siguiente"
+                  }
+                  icon={
+                    selectedAthletePointer === selectedAthletes.length - 1
+                      ? "save"
+                      : "next"
+                  }
+                  onClick={
+                    selectedAthletePointer === selectedAthletes.length - 1
+                      ? saveAllTests
+                      : nextAthlete
+                  }
+                  disabled={!allTestsCompleted()}
+                />
+              </div>
             )}
           </>
-        )}
-        {status === "Error" && (
+        );
+
+      case "Error":
+        return (
           <>
             <p className="text-2xl text-tertiary self-center mt-8 ml-48">
               Ha ocurrido un error, por favor reinicie el test
@@ -1670,7 +1705,89 @@ function TestInProgress({
               containerStyles="self-center mt-20 mb-8"
             />
           </>
+        );
+
+      default:
+        if (!status.includes("Error")) {
+          return (
+            <TonalButton
+              containerStyles={`self-center mt-${
+                study.type === "multipleJumps" ? "4" : "16"
+              }`}
+              title="Finalizar Test"
+              icon="closeWhite"
+              onClick={finishTest}
+            />
+          );
+        }
+        return null;
+    }
+  };
+
+  const renderMainContent = () => {
+    return (
+      <div className="w-full flex flex-col self-center">
+        {renderStatusContent()}
+        {renderErrorContent()}
+        {renderMultipleJumpsCriteria()}
+        {renderMultipleJumpsChart()}
+        {status === "Finalizado" && !status.includes("Error") && (
+          <div className="mt-4">{tableJSX}</div>
         )}
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <div
+        className={`bg-white shadow-lg rounded-2xl transition-all duration-300 ease-linear fixed right-8 flex flex-col items-center px-16 py-8 top-[2%] ${
+          (displayErrorPopup || showTable || showChart) &&
+          "blur-md pointer-events-none"
+        }
+          `}
+        style={{
+          width: study.type === "multipleJumps" ? "1400px" : "50%",
+          left: "50%",
+          transform: "translateX(-50%)",
+        }}
+      >
+        <div
+          className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
+          onClick={onClose}
+        >
+          <img src="/close.png" className="h-6 w-6" alt="" />
+        </div>
+        <p className="self-center text-4xl text-secondary">{t(study.type)}</p>
+
+        {selectedAthletes.length > 0 && (
+          <p className="text-2xl self-center my-4">
+            {selectedAthletes[selectedAthletePointer].name}{" "}
+            <span className="text-darkGray">
+              {selectedAthletePointer + 1}/{selectedAthletes.length}
+            </span>
+          </p>
+        )}
+        {study.type === "bosco" && (
+          <p className="self-center text-2xl mt-8 text-tertiary">
+            Test {pointer + 1}:{" "}
+            <span className="text-secondary font-medium">
+              {t(tests[pointer])}
+            </span>
+          </p>
+        )}
+        {study.type === "multipleDropJump" && (
+          <p className="self-center text-2xl mt-4 text-tertiary">
+            Altura de Caída:{" "}
+            <span className="text-secondary font-medium">
+              {study.dropJumpHeights[pointer]} cm
+            </span>
+          </p>
+        )}
+
+        {renderMainContent()}
+
+        {renderActionButtons()}
       </div>
       {displayErrorPopup && (
         <ErrorDisplay
