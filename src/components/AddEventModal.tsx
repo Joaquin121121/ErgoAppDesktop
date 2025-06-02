@@ -15,6 +15,7 @@ import { useNewEvent } from "../contexts/NewEventContext";
 import styles from "../styles/animations.module.css";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
+import getAthletes from "../hooks/parseAthletes";
 // Define the specific event types
 type EventType = "competition" | "trainingSession" | "testSession";
 
@@ -29,13 +30,14 @@ function AddEventModal({
     nextPage: string
   ) => void;
 }) {
-  const { selectedDate, addEvent, isOnline } = useCalendar();
+  const { selectedDate, addEvent, coachId } = useCalendar();
   const { user } = useUser();
   const {
     formState,
     updateEventName,
     updateEventType,
     updateAthleteName,
+    updateAthleteId,
     updateStartTime,
     updateDuration,
     setEventNameError,
@@ -109,30 +111,28 @@ function AddEventModal({
     athlete.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Load athletes from json files
+  // Load athletes from database
   const loadAthletes = async () => {
     try {
-      const result = await readDirectoryJsons("athletes");
-      const parsedAthletes = result.files
-        .map((item) => {
-          const transformed = transformToAthlete(item.content);
-          return transformed;
-        })
-        .filter((athlete) => athlete !== null) as Athlete[];
-      setLoadedAthletes(parsedAthletes);
+      // Load athletes from database for the current coach
+      const athletesFromDb = await getAthletes(coachId);
+      setLoadedAthletes(athletesFromDb);
     } catch (error) {
-      console.log(error);
+      console.error("Error loading athletes:", error);
+      setLoadedAthletes([]);
     }
   };
 
   const handleAthleteSelect = (athlete: Athlete) => {
     updateAthleteName(athlete.name);
+    updateAthleteId(athlete.id);
     setSearchTerm(athlete.name);
     setShowDropdown(false);
   };
 
   const resetAthlete = () => {
     updateAthleteName("");
+    updateAthleteId("");
     setSearchTerm("");
     if (searchInputRef.current) {
       searchInputRef.current.focus();
@@ -190,34 +190,34 @@ function AddEventModal({
     let hasError = false;
 
     // Validate Event Name
-    if (!formState.eventName.value.trim()) {
+    if (!formState.eventName?.value.trim()) {
       setEventNameError("Event name cannot be empty.");
       hasError = true;
     }
 
     // Validate Event Type
-    if (!formState.eventType.value) {
+    if (!formState.eventType?.value) {
       setEventTypeError("Por favor, selecciona un tipo de evento.");
       hasError = true;
     }
 
     // Validate Athlete
-    if (!formState.selectedAthleteName.value) {
+    if (!formState.selectedAthleteId?.value) {
       setAthleteNameError("Please select an athlete.");
       hasError = true;
     }
 
     // Validate Start Time
-    if (!formState.startTime.value) {
+    if (!formState.startTime?.value) {
       setStartTimeError("Please select a start time.");
       hasError = true;
-    } else if (!validateHHMM(formState.startTime.value)) {
+    } else if (!validateHHMM(formState.startTime?.value)) {
       setStartTimeError("Invalid format");
       hasError = true;
     }
 
     // Validate Duration
-    const durationNum = parseFloat(formState.duration.value);
+    const durationNum = parseFloat(formState.duration?.value || "0");
     if (durationNum < 0) {
       setDurationError("Duration must be a positive number.");
       hasError = true;
@@ -227,29 +227,36 @@ function AddEventModal({
       return; // Stop execution if there are errors
     }
 
+    // Double-check that we have a valid athlete ID
+    if (!formState.selectedAthleteId?.value) {
+      console.error("No athlete selected");
+      setAthleteNameError("Please select an athlete before adding the event.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Use the timezone-independent approach to create the event date
       const eventDateString = createTimezoneIndependentDate(
         selectedDate,
-        formState.startTime.value
+        formState.startTime?.value || ""
       );
 
       // Check if event type is valid
-      if (!formState.eventType.value as unknown) {
+      if (!formState.eventType?.value as unknown) {
         throw new Error("Invalid event type");
       }
 
       // Create the event object
       const newEvent = {
-        event_name: formState.eventName.value,
-        event_type: formState.eventType.value as EventType,
+        event_name: formState.eventName?.value || "",
+        event_type: formState.eventType?.value as EventType,
         event_date: eventDateString,
-        duration: parseFloat(formState.duration.value),
-        coach_id: user.id,
+        duration: parseFloat(formState.duration?.value || "0"),
+        coach_id: coachId,
         last_changed: new Date(),
-        athlete_id: "1",
+        athlete_id: formState.selectedAthleteId?.value,
       };
 
       // Use the context's addEvent function instead of direct Supabase call
@@ -260,6 +267,21 @@ function AddEventModal({
       localOnClose();
     } catch (error) {
       console.error("Error adding event:", error);
+
+      // Check if it's a foreign key constraint error
+      if (error instanceof Error) {
+        if (
+          error.message.includes("FOREIGN KEY constraint failed") ||
+          error.message.includes("787")
+        ) {
+          // Show a user-friendly error message
+          alert(
+            "No se pudo agregar el evento. Por favor, verifica que el atleta seleccionado existe en el sistema."
+          );
+        } else {
+          alert("Error al agregar el evento. Por favor, intenta de nuevo.");
+        }
+      }
     } finally {
       setLoading(false);
     }
@@ -315,10 +337,10 @@ function AddEventModal({
             inputStyles.input
           } bg-offWhite rounded-2xl shadow-sm pl-2 w-80 h-10 text-tertiary ${
             validationAttempted &&
-            formState.eventName.error &&
+            formState.eventName?.error &&
             inputStyles.focused
           } `}
-          value={formState.eventName.value}
+          value={formState.eventName?.value || ""}
           onChange={(e) => updateEventName(e.target.value)}
         />
 
@@ -329,13 +351,13 @@ function AddEventModal({
               key={type.name}
               onClick={() => selectEventType(type.value)}
               className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                formState.eventType.value === type.value &&
+                formState.eventType?.value === type.value &&
                 "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
               }`}
             >
               <img
                 src={
-                  formState.eventType.value === type.value
+                  formState.eventType?.value === type.value
                     ? type.selectedIcon
                     : type.defaultIcon
                 }
@@ -346,14 +368,14 @@ function AddEventModal({
             </button>
           ))}
         </div>
-        {formState.eventType.error.length > 0 && (
+        {formState.eventType?.error?.length > 0 && (
           <p className="text-red-500 text-sm mt-2">
             {formState.eventType.error}
           </p>
         )}
         <p className="mt-8 text-lg">Atleta</p>
 
-        {!formState.selectedAthleteName.value ? (
+        {!formState.selectedAthleteId?.value ? (
           <div className="flex gap-x-8 items-center">
             <div className="relative w-80">
               <div
@@ -362,7 +384,7 @@ function AddEventModal({
                 } h-10 rounded-2xl bg-offWhite shadow-sm flex items-center px-4 ${
                   (searchBarFocus ||
                     (validationAttempted &&
-                      formState.selectedAthleteName.error.length > 0)) &&
+                      formState.selectedAthleteName?.error?.length > 0)) &&
                   inputStyles.focused
                 }`}
               >
@@ -451,16 +473,16 @@ function AddEventModal({
             onClick={resetAthlete}
           >
             <span className="text-secondary font-medium">
-              {formState.selectedAthleteName.value}
+              {formState.selectedAthleteName?.value || ""}
             </span>
             <img src="/close.png" className="h-5 w-5 ml-2" alt="Remove" />
           </div>
         )}
         <p className=" text-lg mt-8">Hora de Inicio</p>
         <HourPicker
-          value={formState.startTime.value}
+          value={formState.startTime?.value || ""}
           onChange={handleTimeChange}
-          error={validationAttempted ? formState.startTime.error : ""}
+          error={validationAttempted ? formState.startTime?.error || "" : ""}
         />
         <p className="text-lg mt-8">Duracion</p>
         <div className="flex items-center">
@@ -470,10 +492,10 @@ function AddEventModal({
               inputStyles.input
             } bg-offWhite rounded-2xl shadow-sm pl-2 h-10 text-tertiary w-40 ${
               validationAttempted &&
-              formState.duration.error &&
+              formState.duration?.error &&
               inputStyles.focused
             }`}
-            value={formState.duration.value}
+            value={formState.duration?.value || ""}
             onChange={handleDurationChange}
           />
           <p className="ml-2">minutos</p>

@@ -21,6 +21,7 @@ import {
   deleteBasicResult,
   deleteMultipleJumpsResult,
 } from "./parseStudies";
+import { deleteEventsForAthlete } from "./parseEvents";
 
 interface RawBaseResult {
   id: string;
@@ -919,7 +920,18 @@ export const deleteAthlete = async (athleteId: string): Promise<void> => {
         }
       }
 
-      // 5. Finally, soft delete the athlete
+      // 5. Delete all events for this athlete
+      const eventsResult = await deleteEventsForAthlete(athleteId, db);
+      if (!eventsResult.success) {
+        throw new Error(
+          `Failed to delete athlete events: ${eventsResult.error}`
+        );
+      }
+      console.log(
+        `Deleted ${eventsResult.deletedCount} events for athlete ${athleteId}`
+      );
+
+      // 6. Finally, soft delete the athlete
       const now = new Date().toISOString();
       await db.execute(
         "UPDATE athlete SET deleted_at = ?, last_changed = ? WHERE id = ?",
@@ -928,6 +940,9 @@ export const deleteAthlete = async (athleteId: string): Promise<void> => {
 
       // Commit transaction
       await db.execute("COMMIT");
+      console.log(
+        `Successfully deleted athlete ${athleteId} and all related data`
+      );
     } catch (innerError) {
       // Rollback transaction on error
       console.error(

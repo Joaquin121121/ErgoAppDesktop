@@ -1,7 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
 import type { Study } from "../types/Studies";
-import { useJsonFiles } from "../hooks/useJsonFiles";
-import { naturalToCamelCase } from "../utils/utils";
 
 type StudyCardProps = {
   study: Study;

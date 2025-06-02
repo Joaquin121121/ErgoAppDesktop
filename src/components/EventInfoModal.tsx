@@ -20,6 +20,8 @@ import { useNewEvent } from "../contexts/NewEventContext";
 import styles from "../styles/animations.module.css";
 import { supabase } from "../supabase";
 import { useNavigate } from "react-router-dom";
+import { saveEvent, deleteEvent as deleteEventDb } from "../hooks/parseEvents";
+import getAthletes from "../hooks/parseAthletes";
 
 type EventType = "competition" | "trainingSession" | "testSession";
 
@@ -34,7 +36,6 @@ const checkNetworkConnection = async (): Promise<boolean> => {
       .maybeSingle();
     return !error;
   } catch (e) {
-    console.error("Network check failed:", e);
     return false;
   }
 };
@@ -52,8 +53,7 @@ function EventInfoModal({
 }) {
   const { t } = useTranslation();
   const { readDirectoryJsons } = useJsonFiles();
-  const { eventInfo, setEventInfo, updateEvent, deleteEvent, isOnline } =
-    useCalendar();
+  const { eventInfo, setEventInfo, updateEvent, deleteEvent } = useCalendar();
   const {
     formState,
     editMode,
@@ -61,6 +61,7 @@ function EventInfoModal({
     updateEventName,
     updateEventType,
     updateAthleteName,
+    updateAthleteId,
     updateStartTime,
     updateDuration,
     setEventNameError,
@@ -83,6 +84,13 @@ function EventInfoModal({
     new Date(eventInfo.event_date)
   );
 
+  // Get athlete name from loaded athletes
+  const [loadedAthletes, setLoadedAthletes] = useState<Athlete[]>([]);
+  const athleteForEvent = loadedAthletes.find(
+    (a) => a.id === eventInfo.athlete_id
+  );
+  const athleteNameDisplay = athleteForEvent?.name || "Unknown Athlete";
+
   // Initialize the event information in local state for display purposes
   const [eventDisplay, setEventDisplay] = useState({
     ...eventInfo,
@@ -95,6 +103,8 @@ function EventInfoModal({
       saveDraft(eventInfo.id);
     }
   }, [formState, editMode, eventInfo.id, saveDraft]);
+
+  useEffect(() => {}, [eventInfo]);
 
   const eventTypes = [
     {
@@ -126,7 +136,7 @@ function EventInfoModal({
     {
       key: "athlete_name",
       icon: "athletesRed",
-      value: eventDisplay.athlete_name,
+      value: athleteNameDisplay,
     },
     {
       key: "event_date",
@@ -157,7 +167,6 @@ function EventInfoModal({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const [loadedAthletes, setLoadedAthletes] = useState<Athlete[]>([]);
 
   const handleTimeChange = (time: string) => {
     updateStartTime(time);
@@ -169,6 +178,7 @@ function EventInfoModal({
 
   const handleAthleteSelect = (athlete: Athlete) => {
     updateAthleteName(athlete.name);
+    updateAthleteId(athlete.id);
     setSearchTerm(athlete.name);
     setShowDropdown(false);
   };
@@ -181,8 +191,10 @@ function EventInfoModal({
       navigate("/newAthlete?from=dashboard");
     }, 200);
   };
+
   const resetAthlete = () => {
     updateAthleteName("");
+    updateAthleteId("");
     setSearchTerm("");
     if (searchInputRef.current) {
       searchInputRef.current.focus();
@@ -250,28 +262,40 @@ function EventInfoModal({
   };
 
   const handleDelete = async () => {
+    // Validate eventInfo exists
+    if (!eventInfo || !eventInfo.id) {
+      alert("Error: No se pudo identificar el evento a eliminar.");
+      return;
+    }
+
     setLoading(true);
     try {
       // Check network connection in real-time before proceeding
       const isCurrentlyOnline = await checkNetworkConnection();
       if (!isCurrentlyOnline) {
-        console.log("Network is offline, storing delete operation for later");
+        // If offline, we might still proceed with context update,
+        // and rely on offline capabilities if implemented, or inform user.
+        // Potentially show a specific offline message to the user here
       }
 
-      // Use the context's deleteEvent function which handles offline mode
-      // Ensure ID is a number
-      const eventId =
-        typeof eventInfo.id === "string"
-          ? parseInt(eventInfo.id as string, 10)
-          : (eventInfo.id as number);
+      const eventId = eventInfo.id; // eventId is a string (UUID)
 
+      // Call the deleteEvent function from CalendarContext
+      // This function handles the database operation (via parseEvents) and state update.
       await deleteEvent(eventId);
 
       // Clear any draft when deleting
       clearDraft();
-      localOnClose();
+      localOnClose(); // Closes modal and resets states
     } catch (error) {
-      console.error("Unexpected error deleting event:", error);
+      // This catch block will handle errors from deleteEvent (context) or checkNetworkConnection
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Ocurrió un error desconocido.";
+      alert(
+        `Error al eliminar el evento: ${errorMessage}. Por favor, verifica tu conexión o intenta de nuevo.`
+      );
     } finally {
       setLoading(false);
     }
@@ -297,7 +321,7 @@ function EventInfoModal({
     }
 
     // Validate Athlete
-    if (!formState.selectedAthleteName.value) {
+    if (!formState.selectedAthleteId.value) {
       setAthleteNameError("Please select an athlete.");
       hasError = true;
     }
@@ -328,7 +352,6 @@ function EventInfoModal({
       // Check network connection in real-time before proceeding
       const isCurrentlyOnline = await checkNetworkConnection();
       if (!isCurrentlyOnline) {
-        console.log("Network is offline, storing update operation for later");
       }
 
       // Use the timezone-independent approach to create the event date
@@ -341,7 +364,7 @@ function EventInfoModal({
       const updatedEvent = {
         event_name: formState.eventName.value,
         event_type: formState.eventType.value as EventType,
-        athlete_name: formState.selectedAthleteName.value,
+        athlete_id: formState.selectedAthleteId.value,
         event_date: eventDateString,
         duration: parseFloat(formState.duration.value),
         coach_id: eventInfo.coach_id,
@@ -349,59 +372,60 @@ function EventInfoModal({
         id: eventInfo.id,
       };
 
-      // Use the context's updateEvent function which handles offline mode
-      await updateEvent(updatedEvent);
+      // Use the new database function
+      const result = await saveEvent(updatedEvent);
 
-      // Update the display event with the new values
-      setEventDisplay({
-        ...updatedEvent,
-        time: formState.startTime.value,
-      });
+      if (result.success) {
+        // Also update the calendar context
+        await updateEvent(updatedEvent);
 
-      // Clear draft after successful save
-      clearDraft();
+        // Update the display event with the new values
+        setEventDisplay({
+          ...updatedEvent,
+          time: formState.startTime.value,
+        });
 
-      // Reset validation and edit mode
-      setValidationAttempted(false);
-      setEditMode(false);
-      resetEvent();
-      localOnClose();
+        // Clear draft after successful save
+        clearDraft();
+
+        // Reset validation and edit mode
+        setValidationAttempted(false);
+        setEditMode(false);
+        resetEvent();
+        localOnClose();
+      } else {
+      }
     } catch (error) {
-      console.error("Unexpected error updating event:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Load athletes on component mount
+  // Load athletes from database
   const loadAthletes = async () => {
     try {
-      const result = await readDirectoryJsons("athletes");
-      const parsedAthletes = result.files
-        .map((item) => {
-          const transformed = transformToAthlete(item.content);
-          return transformed;
-        })
-        .filter((athlete) => athlete !== null) as Athlete[];
-      setLoadedAthletes(parsedAthletes);
+      // Load athletes from database for the current coach
+      const athletesFromDb = await getAthletes(eventInfo.coach_id);
+      setLoadedAthletes(athletesFromDb);
     } catch (error) {
-      console.log(error);
+      setLoadedAthletes([]);
     }
   };
 
   // Initialize form state when entering edit mode
   useEffect(() => {
-    if (editMode) {
+    if (editMode && athleteForEvent) {
       initializeEventEdit({
-        id: eventInfo.id,
+        id: eventInfo.id || "",
         event_name: eventDisplay.event_name,
         event_type: eventDisplay.event_type,
-        athlete_name: eventDisplay.athlete_name,
+        athlete_name: athleteForEvent.name,
+        athlete_id: eventInfo.athlete_id,
         time: eventDisplay.time,
         duration: eventDisplay.duration,
       });
     }
-  }, [editMode]);
+  }, [editMode, athleteForEvent]);
 
   // Ensure selected item is visible in the dropdown
   useEffect(() => {

@@ -22,6 +22,8 @@ interface AthleteFilterProps {
   resetFilters: () => void;
   institutions: string[];
   categories: string[];
+  selectGroup?: boolean;
+  onApply?: () => void;
 }
 
 function AthleteFilter({
@@ -31,6 +33,8 @@ function AthleteFilter({
   resetFilters,
   institutions,
   categories,
+  selectGroup = false,
+  onApply,
 }: AthleteFilterProps) {
   const { t } = useTranslation();
   const [processedDisciplines, setProcessedDisciplines] =
@@ -174,7 +178,7 @@ function AthleteFilter({
 
   return (
     <div
-      className="bg-white shadow-sm z-50 rounded-2xl p-8 mx-auto fixed top-[5%] right-[12%] flex flex-col"
+      className={`bg-white shadow-sm z-50 rounded-2xl p-8 mx-auto fixed top-[5%] flex flex-col`}
       style={{ minWidth: "75%" }}
     >
       <div
@@ -184,7 +188,7 @@ function AthleteFilter({
         <img src="/close.png" className="h-6 w-6" alt="Close" />
       </div>
       <p className="mb-8 text-3xl text-secondary self-center">
-        Filtrar Atletas
+        {selectGroup ? "Seleccionar Grupo" : "Filtrar Atletas"}
       </p>
       {renderFilterSection("gender", genders)}
       {renderFilterSection("age", athleteAgeRanges)}
@@ -200,10 +204,9 @@ function AthleteFilter({
           icon="reset"
           onClick={() => {
             resetFilters();
-            onClose();
           }}
         />
-        <TonalButton title="Aplicar Filtros" icon="check" onClick={onClose} />
+        <TonalButton title="Aplicar Filtros" icon="check" onClick={onApply} />
       </div>
     </div>
   );

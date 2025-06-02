@@ -1,26 +1,20 @@
 MVP
-Seleccion multiple
-    Boton de omitir atleta 
-    Boton 'Siguiente' al lado de la barra de busqueda
-    Boton 'Ver info' para mostrar info si es seleccionada
-    Boton 'Seleccionar por criterio', que muestre el filtro de atletas y seleccione todos los atletas que cumplan con la condicion
-    Boton 'Reiniciar seleccion' en la lista de atletas
+Boton 'Seleccionar por criterio', que muestre el filtro de atletas y seleccione todos los atletas que cumplan con la condicion
+Boton 'Reiniciar seleccion' en la lista de atletas
 Maximo de tamaño para tablas/habilitar overflow (checkear si no esta resuelto ya)
 CMJ SJ Abalakov un solo salto
 Saltos multiples arreglar limite
-Graficos para todas y menos abruptos
-Arreglar parpadeo de estado, que sea consistente con la sensibilidad
-Pip
-Implementar eventos
 Implementar modelos de planes
 Implementar biblioteca
 Implementar pantalla rendimiento
+Boton de ver papers
 RLS
 Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
 Sacar licencia
 Mover build a GH actions, tratar de tener build para macOS y Linux
 
 Si hay tiempo:
+Iconos SVG
 Analizar e implementar mejoras en la creacion de tests
 Considerar cuando hay muchas instituciones que pasa en el filtro de atleta, y buscar casos similares
 Notificaciones de eventos
@@ -38,3 +32,4 @@ Personalizar menu de instalacion
 Ordenar tests por ultimo uso
 Decidir que se auto añada vs que se sobreescriba un atleta al ser seleccionado con otro ya seleccionado en seleccion multiple
 Animacion de preview de plan en primera pantalla de crear plan que vaya variando de acuerdo a semanas, sesiones
+Fijar posicion de boton volver

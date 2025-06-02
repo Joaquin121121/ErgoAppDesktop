@@ -21,6 +21,10 @@ interface EventFormState {
     value: string;
     error: string;
   };
+  selectedAthleteId: {
+    value: string;
+    error: string;
+  };
   startTime: {
     value: string;
     error: string;
@@ -45,11 +49,13 @@ interface NewEventContextType {
   updateEventName: (value: string) => void;
   updateEventType: (value: EventType) => void;
   updateAthleteName: (value: string) => void;
+  updateAthleteId: (value: string) => void;
   updateStartTime: (value: string) => void;
   updateDuration: (value: string) => void;
   setEventNameError: (error: string) => void;
   setEventTypeError: (error: string) => void;
   setAthleteNameError: (error: string) => void;
+  setAthleteIdError: (error: string) => void;
   setStartTimeError: (error: string) => void;
   setDurationError: (error: string) => void;
   setEditMode: (mode: boolean) => void;
@@ -63,6 +69,7 @@ interface NewEventContextType {
     event_name: string;
     event_type: string;
     athlete_name: string;
+    athlete_id: string;
     time: string;
     duration?: number;
   }) => void;
@@ -78,6 +85,10 @@ const initialFormState: EventFormState = {
     error: "",
   },
   selectedAthleteName: {
+    value: "",
+    error: "",
+  },
+  selectedAthleteId: {
     value: "",
     error: "",
   },
@@ -141,6 +152,13 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateAthleteId = (value: string) => {
+    setFormState((prevState) => ({
+      ...prevState,
+      selectedAthleteId: { value, error: "" },
+    }));
+  };
+
   const updateStartTime = (value: string) => {
     setFormState((prevState) => ({
       ...prevState,
@@ -173,6 +191,13 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
     setFormState((prevState) => ({
       ...prevState,
       selectedAthleteName: { ...prevState.selectedAthleteName, error },
+    }));
+  };
+
+  const setAthleteIdError = (error: string) => {
+    setFormState((prevState) => ({
+      ...prevState,
+      selectedAthleteId: { ...prevState.selectedAthleteId, error },
     }));
   };
 
@@ -214,6 +239,7 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
     event_name: string;
     event_type: string;
     athlete_name: string;
+    athlete_id: string;
     time: string;
     duration?: number;
   }) => {
@@ -227,6 +253,7 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
       updateEventName(eventData.event_name);
       updateEventType(eventData.event_type as EventType);
       updateAthleteName(eventData.athlete_name);
+      updateAthleteId(eventData.athlete_id);
       updateStartTime(eventData.time);
       updateDuration(eventData.duration?.toString() || "0");
       setSearchTerm(eventData.athlete_name);
@@ -244,11 +271,13 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
         updateEventName,
         updateEventType,
         updateAthleteName,
+        updateAthleteId,
         updateStartTime,
         updateDuration,
         setEventNameError,
         setEventTypeError,
         setAthleteNameError,
+        setAthleteIdError,
         setStartTimeError,
         setDurationError,
         setEditMode,
