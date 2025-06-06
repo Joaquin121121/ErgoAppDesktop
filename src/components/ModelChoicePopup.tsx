@@ -6,15 +6,17 @@ import { useNewPlan } from "../contexts/NewPlanContext";
 function ModelChoicePopup({
   closePopup,
   externalClose,
+  isModel = false,
 }: {
   closePopup: () => void;
   externalClose: boolean;
+  isModel?: boolean;
 }) {
   const [animation, setAnimation] = useState(navAnimations.popupFadeInTop);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchBarFocus, setSearchBarFocus] = useState(false);
 
-  const { updateModelId } = useNewPlan();
+  const { linkTrainingPlanToModel, planState } = useNewPlan();
 
   const data = [
     {
@@ -112,9 +114,16 @@ function ModelChoicePopup({
               className={`w-3/4 border border-gray rounded-2xl flex hover:cursor-pointer hover:bg-offWhite active:opacity-40 transition-all duration-200 ${
                 index > 0 ? "mt-2" : ""
               }`}
-              onClick={() => {
-                updateModelId(model.id.toString());
-                onClose();
+              onClick={async () => {
+                try {
+                  await linkTrainingPlanToModel(
+                    planState.id,
+                    model.id.toString()
+                  );
+                  onClose();
+                } catch (error) {
+                  console.error("Error linking plan to model:", error);
+                }
               }}
             >
               <div className="w-2/5 flex items-center justify-center">

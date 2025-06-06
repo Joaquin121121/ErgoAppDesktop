@@ -40,6 +40,7 @@ export interface SelectedExercise {
   progression: Progression[];
   comments: string;
   blockId?: string;
+  last_changed?: string;
 }
 
 export interface VolumeReduction {
@@ -66,6 +67,7 @@ export interface TrainingBlock {
   progression: Progression[];
   comments: string;
   restTime: number;
+  last_changed?: string;
 }
 
 export interface Session {
@@ -74,15 +76,23 @@ export interface Session {
   name: string;
   days: DayName[];
   exercises: (SelectedExercise | TrainingBlock)[];
+  last_changed?: string;
 }
 
 export interface PlanState {
   id: string;
   nOfWeeks: number;
-  modelId: string;
   sessions: Session[];
   nOfSessions: number;
+  last_changed?: string;
 }
+
+export interface TrainingModel extends PlanState {
+  name: string;
+  description: string;
+  trainingPlanId?: string; // Reference to the underlying training plan ID
+}
+
 export interface RangeEntry {
   range: number[];
   percentageDrop: number;
@@ -91,34 +101,44 @@ export interface RangeEntry {
 export interface NewPlanContextType {
   planState: PlanState;
   setPlanState: React.Dispatch<React.SetStateAction<PlanState>>;
-  updateWeeks: (weeks: number) => void;
-  toggleUseAsModel: () => void;
-  updateModelId: (id: string) => void;
-  addSession: (session: Omit<Session, "id" | "planId">) => void;
+  updateWeeks: (weeks: number, isModel?: boolean) => void;
+  linkTrainingPlanToModel: (planId: string, modelId: string) => Promise<void>;
+  unlinkTrainingPlanFromModel: (
+    planId: string,
+    modelId: string
+  ) => Promise<void>;
+  addSession: (
+    session: Omit<Session, "id" | "planId">,
+    isModel?: boolean
+  ) => Promise<PlanState | TrainingModel>;
   updateSession: (
     index: number,
-    session: Omit<Session, "id" | "planId">
-  ) => void;
-  removeSession: (index: number) => void;
+    session: Omit<Session, "id" | "planId">,
+    isModel?: boolean
+  ) => Promise<PlanState | TrainingModel>;
+  removeSession: (index: number, isModel?: boolean) => void;
   addTrainingBlock: (
     sessionIndex: number,
     exerciseData: Exercise[],
     selectedExercise: SelectedExercise, //contains the default data for the block
-    blockModel: "sequential" | "series"
+    blockModel: "sequential" | "series",
+    isModel?: boolean
   ) => void;
 
   updateTrainingBlock: (
     sessionIndex: number,
     exerciseId: string,
-    block: TrainingBlock
+    block: TrainingBlock,
+    isModel?: boolean
   ) => void;
   removeExercise: (
     sessionIndex: number,
     exerciseId: string,
-    blockId?: string
+    blockId?: string,
+    isModel?: boolean
   ) => void;
   resetPlan: () => void;
-  updateNOfSessions: (n: number) => void;
+  updateNOfSessions: (n: number, isModel?: boolean) => void;
   currentExerciseBlock: TrainingBlock | null;
   setCurrentExerciseBlock: React.Dispatch<
     React.SetStateAction<TrainingBlock | null>
@@ -129,8 +149,44 @@ export interface NewPlanContextType {
   >;
   saveSelectedExercise: (
     sessionIndex: number,
-    currentSelectedExercise: SelectedExercise
+    currentSelectedExercise: SelectedExercise,
+    isModel?: boolean
   ) => void;
+  model: TrainingModel;
+  setModel: React.Dispatch<React.SetStateAction<TrainingModel>>;
+  resetModelState: () => void;
+  updateExerciseProperty: (
+    sessionIndex: number,
+    exerciseId: string,
+    property: keyof SelectedExercise,
+    value: any,
+    blockId?: string,
+    isModel?: boolean
+  ) => void;
+  updateExerciseProgression: (
+    sessionIndex: number,
+    exerciseId: string,
+    weekIndex: number,
+    field: keyof Progression,
+    value: string | number,
+    blockId?: string,
+    isModel?: boolean
+  ) => void;
+  // Manual save functions
+  saveNewTrainingPlan: (updatedPlan?: PlanState) => Promise<void>;
+  saveNewTrainingModel: (updatedModel?: TrainingModel) => Promise<void>;
+  // New boolean flags to track if model/plan are new
+  isNewModel: boolean;
+  isNewTrainingPlan: boolean;
+  setIsNewModel: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsNewTrainingPlan: React.Dispatch<React.SetStateAction<boolean>>;
+  // Expose sync functionality
+  syncStats: any;
+  isProcessing: boolean;
+  forceSyncAll: () => void;
+  // Model metadata update functions
+  updateModelName: (name: string) => Promise<void>;
+  updateModelDescription: (description: string) => Promise<void>;
 }
 
 // Default values
@@ -163,7 +219,6 @@ export const defaultSession: Session = {
 export const defaultPlanState: PlanState = {
   id: "",
   nOfWeeks: 4,
-  modelId: "",
   sessions: [],
   nOfSessions: 0,
 };

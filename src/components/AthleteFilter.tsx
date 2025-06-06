@@ -178,7 +178,7 @@ function AthleteFilter({
 
   return (
     <div
-      className={`bg-white shadow-sm z-50 rounded-2xl p-8 mx-auto fixed top-[5%] flex flex-col`}
+      className={`bg-white shadow-sm z-50 rounded-2xl p-8 mx-auto fixed top-[5%] left-1/2 -translate-x-1/2 flex flex-col`}
       style={{ minWidth: "75%" }}
     >
       <div

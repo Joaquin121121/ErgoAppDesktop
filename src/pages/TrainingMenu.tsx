@@ -4,15 +4,14 @@ import React, { useEffect, useState } from "react";
 import { parseAllTrainingSolutions } from "../hooks/trainingSolutionsParser";
 import { useNavigate } from "react-router-dom";
 import TonalButton from "../components/TonalButton";
-import TrainingPlanCreator from "../components/TrainingPlanCreator";
 import TrainingSolutionsPanel from "../components/TrainingSolutionsPanel";
-import ModelChoicePopup from "../components/ModelChoicePopup";
-import SessionInfoStage from "../components/SessionInfoStage";
-import navAnimations from "../styles/animations.module.css";
-import SessionOverviewStage from "../components/SessionOverviewStage";
-import NewExercisePopup from "../components/NewExercisePopup";
 import OutlinedButton from "../components/OutlinedButton";
 import TrainingVolumePopup from "../components/TrainingVolumePopup";
+import TrainingPlanCRUD from "../components/TrainingPlanCRUD";
+import SeamlessLoopPlayer from "../components/SeamlessLoopPlayer";
+import ModelChoicePopup from "../components/ModelChoicePopup";
+import NewExercisePopup from "../components/NewExercisePopup";
+
 const TrainingMenu = ({
   isExpanded,
   animation,
@@ -58,7 +57,6 @@ const TrainingMenu = ({
   const [creatingPlan, setCreatingPlan] = useState(false);
   const [collapseAccordion, setCollapseAccordion] = useState(false);
   const [displayPopup, setDisplayPopup] = useState(false);
-  const [currentStage, setCurrentStage] = useState("initialStage");
   const [sessionIndex, setSessionIndex] = useState(0);
   const [showPopup, setShowPopup] = useState<
     "exercise" | "exerciseBlock" | null
@@ -94,62 +92,7 @@ const TrainingMenu = ({
   };
 
   const handleToggleCreatingPlan = () => {
-    setStagesAnimations(initialAnimations);
-    setCurrentStage("initialStage");
     setCreatingPlan(!creatingPlan);
-  };
-
-  const initialAnimations = {
-    initialStage: navAnimations.fadeInRight,
-    sessionInfoStage: navAnimations.fadeInRight,
-    sessionOverviewStage: navAnimations.fadeInRight,
-  };
-
-  const [stagesAnimations, setStagesAnimations] = useState(initialAnimations);
-
-  const creationStages = {
-    initialStage: (
-      <TrainingPlanCreator
-        isCreatingPlan={creatingPlan}
-        onNext={() => {
-          goToStage("initialStage", "sessionInfoStage");
-        }}
-        displayPopup={() => {
-          setIsBlurred(true);
-          setDisplayPopup(true);
-        }}
-        animation={stagesAnimations.initialStage}
-        handleToggleCreatingPlan={handleToggleCreatingPlan}
-      />
-    ),
-    sessionInfoStage: (
-      <SessionInfoStage
-        animation={stagesAnimations.sessionInfoStage}
-        onNext={() => {
-          goToStage("sessionInfoStage", "sessionOverviewStage");
-        }}
-      />
-    ),
-    sessionOverviewStage: (
-      <SessionOverviewStage
-        animation={stagesAnimations.sessionOverviewStage}
-        showPopup={showExercisePopup}
-        setSessionIndex={setSessionIndex}
-        sessionIndex={sessionIndex}
-        currentWeek={currentWeek}
-      />
-    ),
-  };
-
-  const goToStage = (prevStage: string, nextStage: string) => {
-    setStagesAnimations({
-      ...stagesAnimations,
-      [prevStage]: navAnimations.fadeOutLeft,
-      [nextStage]: navAnimations.fadeInRight,
-    });
-    setTimeout(() => {
-      setCurrentStage(nextStage);
-    }, 200);
   };
 
   useEffect(() => {
@@ -214,6 +157,50 @@ const TrainingMenu = ({
           className={`self-end w-[90%] flex justify-between items-start transition-all duration-300 ease-in-out pr-8 
             mb-4`}
         >
+          <div
+            className={`bg-white rounded-2xl overflow-hidden relative shadow-sm transition-[width,opacity] duration-500 ease-in-out -ml-8 mr-16 ${
+              isBlurred && "blur-md pointer-events-none"
+            }`}
+            style={{ width: creatingPlan ? "70%" : "40%" }}
+          >
+            {creatingPlan ? (
+              <TrainingPlanCRUD
+                sessionIndex={sessionIndex}
+                setSessionIndex={setSessionIndex}
+                currentWeek={currentWeek}
+                setDisplayPopup={setDisplayPopup}
+                showExercisePopup={showExercisePopup}
+                onToggleCreatingPlan={handleToggleCreatingPlan}
+                isNew
+              />
+            ) : (
+              <div className="flex flex-col items-center">
+                <div className="flex items-center justify-center gap-x-8 mt-8">
+                  <p className="text-secondary text-2xl">
+                    Plan de Entrenamiento
+                  </p>
+                  <img src="/trainingRed.png" alt="" className="h-8 w-8" />
+                </div>
+                <SeamlessLoopPlayer
+                  src="/studying.mov"
+                  height={400}
+                  width={400}
+                  loop
+                  timeBetweenReplays={3}
+                />
+                <p className="text-xl mt-16 mb-8">
+                  No hay ningun plan cargado...
+                </p>
+                <TonalButton
+                  title="Crear Plan"
+                  icon="add"
+                  containerStyles="self-center mb-8"
+                  onClick={handleToggleCreatingPlan}
+                />
+              </div>
+            )}
+          </div>
+
           {showPopup && (
             <NewExercisePopup
               onClose={closeExercisePopup}
@@ -221,23 +208,6 @@ const TrainingMenu = ({
               sessionIndex={sessionIndex}
             />
           )}
-
-          <div
-            className={`bg-white rounded-2xl overflow-hidden relative shadow-sm  transition-[width,opacity] duration-500 ease-in-out -ml-8 mr-16 ${
-              isBlurred && "blur-md pointer-events-none"
-            }`}
-            style={{ width: creatingPlan ? "70%" : "40%" }}
-          >
-            {creatingPlan && (
-              <div
-                className="absolute hover:opacity-70 z-50 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
-                onClick={handleToggleCreatingPlan}
-              >
-                <img src="/close.png" className="h-6 w-6" alt="" />
-              </div>
-            )}
-            {creationStages[currentStage]}
-          </div>
 
           <TrainingSolutionsPanel
             isCreatingPlan={creatingPlan}

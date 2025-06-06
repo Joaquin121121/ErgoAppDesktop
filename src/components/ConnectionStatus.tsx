@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import styles from "../styles/updatePopupStyles.module.css";
 import { useCalendar } from "../contexts/CalendarContext";
 import { useDatabaseSync } from "../hooks/useDatabaseSync";
+import { useRecordSync } from "../hooks/useRecordSync";
 
 interface ConnectionStatusProps {
   showUpdate: boolean;
@@ -12,12 +13,16 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
     isOnline,
     syncStatus,
     error: syncError,
+    loading,
     syncAllTables,
+    resetSyncMetadata,
+    startInitialSync,
   } = useDatabaseSync();
   const [visible, setVisible] = useState(false);
   const [animation, setAnimation] = useState(styles.fadeInRight);
   const prevOnlineStatusRef = useRef(isOnline);
   const [timerId, setTimerId] = useState<NodeJS.Timeout | null>(null);
+  const { clearQueue } = useRecordSync();
 
   // Constants
   const AUTO_HIDE_DELAY = 5000; // 5 seconds auto-hide delay
@@ -29,7 +34,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
     // Attempt to sync databases on app startup
     const initialSync = async () => {
       try {
-        await syncAllTables(true);
+        await startInitialSync();
       } catch (error) {
         console.error("Error during initial database sync:", error);
       }
@@ -45,23 +50,48 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
     }
   }, [syncError]);
 
-  // Show notification and ensure it auto-hides
+  // Show notification and conditionally set auto-hide based on loading state
   const showNotification = () => {
+    // Clear any existing timer
+    if (timerId) {
+      clearTimeout(timerId);
+      setTimerId(null);
+    }
+
     // Show the notification
     setAnimation(styles.fadeInRight);
     setVisible(true);
 
-    // Always auto-hide after delay, regardless of sync status
-    setTimerId(
-      setTimeout(() => {
-        setAnimation(styles.fadeOutRight);
-
+    // Only set auto-hide timer if not loading
+    if (!loading) {
+      setTimerId(
         setTimeout(() => {
-          setVisible(false);
-        }, 300); // Animation duration
-      }, AUTO_HIDE_DELAY)
-    );
+          setAnimation(styles.fadeOutRight);
+
+          setTimeout(() => {
+            setVisible(false);
+          }, 300); // Animation duration
+        }, AUTO_HIDE_DELAY)
+      );
+    }
   };
+
+  // Handle loading state changes - hide notification when loading stops
+  useEffect(() => {
+    if (!loading && visible && !timerId) {
+      // Loading stopped and notification is visible but no timer is set
+      // Set auto-hide timer
+      setTimerId(
+        setTimeout(() => {
+          setAnimation(styles.fadeOutRight);
+
+          setTimeout(() => {
+            setVisible(false);
+          }, 300); // Animation duration
+        }, AUTO_HIDE_DELAY)
+      );
+    }
+  }, [loading, visible, timerId]);
 
   // Handle status changes
   useEffect(() => {

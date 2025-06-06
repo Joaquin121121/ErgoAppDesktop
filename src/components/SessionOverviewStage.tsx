@@ -11,14 +11,17 @@ function SessionOverviewStage({
   sessionIndex,
   setSessionIndex,
   currentWeek,
+  isModel = false,
 }: {
   animation: string;
   showPopup: (type: "exercise" | "exerciseBlock") => void;
   sessionIndex: number;
   setSessionIndex: (index: number) => void;
   currentWeek: number;
+  isModel?: boolean;
 }) {
-  const { planState, removeExercise } = useNewPlan();
+  const { planState, model, removeExercise } = useNewPlan();
+  const currentPlan = isModel ? model : planState;
   const [localAnimation, setLocalAnimation] = useState(animation);
 
   const addExercise = () => {
@@ -29,8 +32,10 @@ function SessionOverviewStage({
     showPopup("exerciseBlock");
   };
   useEffect(() => {
-    console.log(planState.sessions[sessionIndex].exercises);
-  }, [planState.sessions[sessionIndex].exercises]);
+    console.log(currentPlan.sessions[sessionIndex]?.exercises);
+    console.log(currentPlan.sessions[sessionIndex]);
+    console.log("currentPlan", currentPlan);
+  }, [currentPlan.sessions[sessionIndex]?.exercises]);
 
   return (
     <div className={`flex flex-col items-center ${localAnimation}`}>
@@ -38,7 +43,7 @@ function SessionOverviewStage({
         Semana {currentWeek + 1}
       </p>
       <p className="text-secondary text-3xl mt-8 self-center">
-        {planState.sessions[sessionIndex].name}
+        {currentPlan.sessions[sessionIndex]?.name}
       </p>
       <div className="w-[90%] mx-auto grid grid-cols-8 gap-x-4 mt-10 ">
         <p className="text-darkGray text-xl text-center col-span-2">
@@ -51,7 +56,7 @@ function SessionOverviewStage({
         <div className="h-7 w-7"></div>
         <div className="h-10 w-10"></div>
       </div>
-      {planState.sessions[sessionIndex].exercises.map((exercise, index) => {
+      {currentPlan.sessions[sessionIndex]?.exercises?.map((exercise, index) => {
         if (exercise.type === "selectedExercise") {
           return (
             <ExerciseAccordionItem
@@ -59,6 +64,7 @@ function SessionOverviewStage({
               id={exercise.id}
               currentWeek={currentWeek}
               sessionIndex={sessionIndex}
+              isModel={isModel}
             />
           );
         }
@@ -72,6 +78,7 @@ function SessionOverviewStage({
               id={exercise.id}
               currentWeek={currentWeek}
               sessionIndex={sessionIndex}
+              isModel={isModel}
             />
           );
         }
@@ -90,12 +97,13 @@ function SessionOverviewStage({
         containerStyles="mt-4 mb-8 self-center"
       ></TonalButton>
       <div className="self-start flex border-t border-r border-secondary rounded-tr-2xl overflow-hidden mt-12">
-        {planState.sessions.map((session, index) => {
+        {currentPlan.sessions.map((session, index) => {
           return (
             <button
-              key={session.id}
+              key={session?.id}
               className={` py-2 px-4  ${
-                index !== planState.sessions.length - 1 && "border-r-secondary"
+                index !== currentPlan.sessions.length - 1 &&
+                "border-r-secondary"
               } hover:opacity-70 hover:cursor-pointer active:opacity-40 focus:outline-none rounded-none`}
               style={{
                 backgroundColor: sessionIndex === index && "#FFC1C1",
@@ -103,7 +111,7 @@ function SessionOverviewStage({
               }}
               onClick={() => setSessionIndex(index)}
             >
-              {session.name}
+              {session?.name}
             </button>
           );
         })}

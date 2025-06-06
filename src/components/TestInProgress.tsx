@@ -2040,7 +2040,7 @@ function TestInProgress({
             )}
           </div>
           <div
-            className={`flex flex-col ml-8 py-2 ${
+            className={`flex flex-col ml-8 py-2 overflow-y-scroll ${
               skippedAthletes.length > 0 ? "border-r border-gray" : ""
             }`}
             style={{ maxHeight: "300px" }}

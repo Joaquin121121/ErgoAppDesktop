@@ -12,18 +12,27 @@ function ExerciseData({
   selectedExercises,
   onContinue,
   sessionIndex,
+  isModel = false,
 }: {
   animation: string;
   selectedExercises: Exercise[];
   onContinue: () => void;
   sessionIndex: number;
+  isModel?: boolean;
 }) {
-  const { setCurrentSelectedExercise, currentSelectedExercise, planState } =
-    useNewPlan();
+  const {
+    setCurrentSelectedExercise,
+    currentSelectedExercise,
+    planState,
+    model,
+  } = useNewPlan();
   const [showInfoAnimation, setShowInfoAnimation] = useState(
     navAnimations.popupFadeInTop
   );
-  const nOfTrainingBlocks = planState.sessions[sessionIndex].exercises.filter(
+
+  const currentPlan = isModel ? model : planState;
+
+  const nOfTrainingBlocks = currentPlan.sessions[sessionIndex].exercises.filter(
     (exercise) => exercise.type === "trainingBlock"
   ).length;
   const exerciseName =

@@ -34,8 +34,8 @@ function SelectExercises({
   }, [searchTerm, exercises]);
 
   return (
-    <div className={` flex flex-col items-center ${animation}`}>
-      <p className="text-secondary text-2xl mt-8">
+    <div className={` flex flex-col items-center py-8 ${animation}`}>
+      <p className="text-secondary text-2xl">
         Añadir {type === "exercise" ? "Ejercicio" : "Bloque de Ejercicios"}
       </p>
       <p className="text-darkGray text-lg mt-4 mb-8">
@@ -67,7 +67,7 @@ function SelectExercises({
         )}
       </div>
       <div className="flex gap-x-8">
-        <div className="grid grid-cols-2 py-4 gap-x-[5%] gap-y-52 w-[40vw] mt-4 px-12 overflow-y-scroll max-h-[600px] flex-grow items-start">
+        <div className="grid grid-cols-2 py-4 gap-x-[5%] gap-y-64 w-[40vw] mt-4 px-12 overflow-y-scroll max-h-[600px] flex-grow items-start">
           {filteredExercises.map((exercise) => (
             <ExerciseCard
               key={exercise.id}

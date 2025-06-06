@@ -13,6 +13,7 @@ interface TrainingPlanCreatorProps {
   displayPopup: () => void;
   animation: string;
   handleToggleCreatingPlan: () => void;
+  isModel?: boolean;
 }
 
 const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
@@ -21,21 +22,53 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
   displayPopup,
   animation,
   handleToggleCreatingPlan,
+  isModel = false,
 }) => {
   const [formState, setFormState] = useState({
     nOfWeeks: { value: "", error: "" },
     modelName: { value: "", error: "" },
+    modelDescription: { value: "", error: "" },
 
     nOfSessions: { value: "", error: "" },
   });
   const [validationAttempted, setValidationAttempted] = useState(false);
   const [useAsModel, setUseAsModel] = useState(false);
 
-  const { planState, updateModelId, updateNOfSessions, updateWeeks } =
-    useNewPlan();
+  const {
+    planState,
+    model,
+    updateNOfSessions,
+    updateWeeks,
+    updateModelDescription,
+    updateModelName,
+  } = useNewPlan();
+
+  const currentPlan = isModel ? model : planState;
 
   const localOnNext = () => {
     setValidationAttempted(true);
+    if (isModel) {
+      if (formState.modelName.value === "") {
+        setFormState({
+          ...formState,
+          modelName: {
+            value: "",
+            error: "El nombre del modelo no puede estar vacío",
+          },
+        });
+        return;
+      }
+      if (formState.modelDescription.value === "") {
+        setFormState({
+          ...formState,
+          modelDescription: {
+            value: "",
+            error: "La descripcion del modelo no puede estar vacía",
+          },
+        });
+        return;
+      }
+    }
     if (
       parseInt(formState.nOfWeeks.value) === 0 ||
       formState.nOfWeeks.value === ""
@@ -69,9 +102,12 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
       });
       return;
     }
-    updateNOfSessions(parseInt(formState.nOfSessions.value));
-    updateWeeks(parseInt(formState.nOfWeeks.value));
-    updateModelId(formState.modelName.value);
+    updateNOfSessions(parseInt(formState.nOfSessions.value), isModel);
+    updateWeeks(parseInt(formState.nOfWeeks.value), isModel);
+    if (isModel) {
+      updateModelDescription(formState.modelDescription.value);
+      updateModelName(formState.modelName.value);
+    }
     onNext();
   };
 
@@ -79,14 +115,39 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
     <div className={`flex flex-col items-center ${animation}`}>
       {isCreatingPlan ? (
         <>
-          <div className="flex my-10 items-center justify-center gap-x-4 ">
-            <p className="text-2xl text-secondary">
-              Nuevo Plan de Entrenamiento
-            </p>
-            <img src="/trainingRed.png" className="h-8 w-8" alt="" />
-          </div>
-          <div className="flex flex-col pl-20 w-full">
-            <p className=" text-lg mb-2">Duracion</p>
+          {!isModel && (
+            <div className="flex mt-10 items-center justify-center gap-x-4 ">
+              <p className="text-2xl text-secondary">
+                Nuevo Plan de Entrenamiento
+              </p>
+              <img src="/trainingRed.png" className="h-8 w-8" alt="" />
+            </div>
+          )}
+
+          <div className="flex flex-col mt-10 pl-20 w-full">
+            {isModel && (
+              <>
+                <p className=" text-lg mb-2">Nombre del Modelo</p>
+                <input
+                  type="text"
+                  className={`${
+                    inputStyles.input
+                  } bg-offWhite rounded-2xl shadow-sm pl-2 w-80 h-10 text-tertiary ${
+                    validationAttempted &&
+                    formState.modelName.error &&
+                    inputStyles.focused
+                  } `}
+                  value={formState.modelName.value}
+                  onChange={(e) => {
+                    setFormState({
+                      ...formState,
+                      modelName: { value: e.target.value, error: "" },
+                    });
+                  }}
+                />
+              </>
+            )}
+            <p className=" text-lg mt-8 mb-2">Duracion</p>
             <div className="flex gap-x-4 items-center">
               <input
                 type="number"
@@ -109,24 +170,8 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
               />
               <p className="text-lg text-darkGray">semanas</p>
             </div>
-            {planState.modelId.length > 0 ? (
-              <div className="flex gap-x-8 mt-8 items-center">
-                <p className="text-lg">
-                  Usando modelo{" "}
-                  <span className="text-secondary">{planState.modelId}</span>{" "}
-                  como base
-                </p>
-                <p
-                  className="text-secondary hover:opacity-70 active:opacity-40 transition-all duration-200 cursor-pointer"
-                  onClick={() => {
-                    updateModelId("");
-                    displayPopup();
-                  }}
-                >
-                  Cambiar modelo
-                </p>
-              </div>
-            ) : (
+
+            {!isModel && (
               <>
                 <p className="mt-8 text-lg">Usar como modelo?</p>
                 <div className="flex gap-x-8 mt-2">
@@ -151,6 +196,14 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
                     No
                   </button>
                 </div>
+                <p
+                  className="mt-4 text-secondary hover:opacity-70 active:opacity-40 transition-all duration-200 cursor-pointer"
+                  onClick={() => {
+                    displayPopup();
+                  }}
+                >
+                  Seleccionar modelo base
+                </p>
               </>
             )}
 
@@ -198,7 +251,22 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
               />
               <p className="text-lg text-darkGray">sesiones</p>
             </div>
-            {!useAsModel && (
+            {isModel && (
+              <>
+                <p className=" text-lg mt-8 mb-2">Descripcion del Modelo</p>
+                <textarea
+                  className={`${inputStyles.input} bg-offWhite rounded-2xl shadow-sm pl-2 w-3/4 h-20 text-tertiary pt-2`}
+                  value={formState.modelDescription.value}
+                  onChange={(e) => {
+                    setFormState({
+                      ...formState,
+                      modelDescription: { value: e.target.value, error: "" },
+                    });
+                  }}
+                />
+              </>
+            )}
+            {!useAsModel && !isModel && (
               <OutlinedButton
                 title="Usar Modelo Preexistente"
                 onClick={displayPopup}
@@ -208,9 +276,9 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
             )}
             <div className="flex justify-center items-center gap-x-8">
               <TonalButton
-                title="Crear Plan"
+                title={"Crear " + (isModel ? "Modelo" : "Plan")}
                 icon="add"
-                containerStyles="self-center mt-4 mb-8"
+                containerStyles="self-center mt-8 mb-8"
                 onClick={localOnNext}
               />
             </div>

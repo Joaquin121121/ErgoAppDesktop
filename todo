@@ -1,11 +1,13 @@
 MVP
-Boton 'Seleccionar por criterio', que muestre el filtro de atletas y seleccione todos los atletas que cumplan con la condicion
-Boton 'Reiniciar seleccion' en la lista de atletas
+Con Alfombra
 Maximo de tamaño para tablas/habilitar overflow (checkear si no esta resuelto ya)
 CMJ SJ Abalakov un solo salto
 Saltos multiples arreglar limite
 Implementar modelos de planes
-Implementar biblioteca
+Implementar trainingCRUD en TrainingModel (usar condicionalmente planState o model en base a un boolean)
+Diseñar e implementar bdd postgresql de modelos, planes, sesiones, bloques de ejercicios, etc
+Clonar todos los cambios en parsedMigrations (acordarse de funciones de auto-actualizacion de last changed)
+Implementar biblioteca (pendiente de armar estructura y contenido de BDD)
 Implementar pantalla rendimiento
 Boton de ver papers
 RLS
@@ -14,6 +16,8 @@ Sacar licencia
 Mover build a GH actions, tratar de tener build para macOS y Linux
 
 Si hay tiempo:
+Suavizar animacion inicial (expansion) de creacion de plan
+En seleccion multiple, seccionar en dos cartas una con datos de test y otra con atletas seleccionados
 Iconos SVG
 Analizar e implementar mejoras en la creacion de tests
 Considerar cuando hay muchas instituciones que pasa en el filtro de atleta, y buscar casos similares
@@ -33,3 +37,4 @@ Ordenar tests por ultimo uso
 Decidir que se auto añada vs que se sobreescriba un atleta al ser seleccionado con otro ya seleccionado en seleccion multiple
 Animacion de preview de plan en primera pantalla de crear plan que vaya variando de acuerdo a semanas, sesiones
 Fijar posicion de boton volver
+Considerar boton 'Reiniciar seleccion' en la lista de atletas

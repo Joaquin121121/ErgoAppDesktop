@@ -19,11 +19,21 @@ const dayNames = [
 function SessionInfoStage({
   animation,
   onNext,
+  isModel = false,
 }: {
   animation: string;
   onNext: () => void;
+  isModel?: boolean;
 }) {
-  const { planState, addSession, updateSession } = useNewPlan();
+  const {
+    planState,
+    model,
+    addSession,
+    updateSession,
+    saveNewTrainingModel,
+    saveNewTrainingPlan,
+  } = useNewPlan();
+  const currentPlan = isModel ? model : planState;
   const [localAnimation, setLocalAnimation] = useState(animation);
   const [sessionN, setSessionN] = useState(0);
 
@@ -32,6 +42,7 @@ function SessionInfoStage({
     days: { value: [], error: "" },
   });
   const [validationAttempted, setValidationAttempted] = useState(false);
+  const { isNewModel, isNewTrainingPlan } = useNewPlan();
 
   const handleDayClick = (dayValue: string) => {
     setFormState((prevState) => {
@@ -53,15 +64,16 @@ function SessionInfoStage({
       exercises: [],
     };
 
-    if (planState.sessions[sessionN]) {
-      updateSession(sessionN, newSession);
+    if (currentPlan.sessions[sessionN]) {
+      console.log("Updating session");
+      updateSession(sessionN, newSession, isModel);
     } else {
-      addSession(newSession);
+      addSession(newSession, isModel);
     }
     setLocalAnimation(navAnimations.fadeOutRight);
     setTimeout(() => {
       const newSessionN = sessionN - 1;
-      const relevantSession = planState.sessions[newSessionN];
+      const relevantSession = currentPlan.sessions[newSessionN];
 
       setFormState({
         name: { value: relevantSession.name, error: "" },
@@ -72,7 +84,7 @@ function SessionInfoStage({
     }, 200);
   };
 
-  const nextSession = () => {
+  const nextSession = async () => {
     setValidationAttempted(true);
     if (formState.name.value.length === 0) {
       setFormState((prevState) => ({
@@ -94,20 +106,30 @@ function SessionInfoStage({
       exercises: [],
     };
 
-    if (planState.sessions[sessionN]) {
-      updateSession(sessionN, newSession);
+    let updatedPlan;
+    if (currentPlan.sessions[sessionN]) {
+      console.log("Updating session");
+      updatedPlan = await updateSession(sessionN, newSession, isModel);
     } else {
-      addSession(newSession);
+      console.log("Adding session");
+      updatedPlan = await addSession(newSession, isModel);
     }
-    if (sessionN === planState.nOfSessions - 1) {
+
+    if (sessionN === currentPlan.nOfSessions - 1) {
       setLocalAnimation(navAnimations.fadeOutLeft);
+      if (isNewModel) {
+        await saveNewTrainingModel(updatedPlan);
+      }
+      if (isNewTrainingPlan) {
+        await saveNewTrainingPlan(updatedPlan);
+      }
       onNext();
       return;
     }
-    if (planState.sessions[sessionN + 1]) {
+    if (currentPlan.sessions[sessionN + 1]) {
       setFormState({
-        name: { value: planState.sessions[sessionN + 1].name, error: "" },
-        days: { value: planState.sessions[sessionN + 1].days, error: "" },
+        name: { value: currentPlan.sessions[sessionN + 1].name, error: "" },
+        days: { value: currentPlan.sessions[sessionN + 1].days, error: "" },
       });
     } else {
       setFormState({
@@ -164,14 +186,14 @@ function SessionInfoStage({
                   : "bg-offWhite"
               }
               ${
-                planState.sessions
+                currentPlan.sessions
                   .filter((_, i) => i !== sessionN)
                   .some((e) => e.days.includes(day.value)) &&
                 "opacity-40 cursor-not-allowed"
               }
               `}
               onClick={() => handleDayClick(day.value)}
-              disabled={planState.sessions
+              disabled={currentPlan.sessions
                 .filter((_, i) => i !== sessionN)
                 .some((e) => e.days.includes(day.value))}
             >
@@ -191,10 +213,10 @@ function SessionInfoStage({
               onClick={previousSession}
             />
           )}
-          {sessionN < planState.nOfSessions && (
+          {sessionN < currentPlan.nOfSessions && (
             <TonalButton
               title={
-                sessionN === planState.nOfSessions - 1
+                sessionN === currentPlan.nOfSessions - 1
                   ? "Guardar Sesiones"
                   : "Siguiente Sesión"
               }

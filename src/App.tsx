@@ -35,6 +35,9 @@ import AuthGate, { Page } from "./components/AuthGate";
 import { useDatabaseSync } from "./hooks/useDatabaseSync";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { PhysicalSize } from "@tauri-apps/api/window";
+import ContentLibrary from "./pages/ContentLibrary";
+import TrainingModelLibrary from "./pages/TrainingModelLibrary";
+import TrainingModel from "./pages/TrainingModel";
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
@@ -311,6 +314,33 @@ const RouteContentWrapper = (props: any) => {
             {...otherProps}
           />
         );
+      case "contentLibrary":
+        return (
+          <ContentLibrary
+            isExpanded={isExpanded}
+            animation={animation}
+            customNavigate={customNavigate}
+            {...otherProps}
+          />
+        );
+      case "trainingModelLibrary":
+        return (
+          <TrainingModelLibrary
+            isExpanded={isExpanded}
+            animation={animation}
+            customNavigate={customNavigate}
+            {...otherProps}
+          />
+        );
+      case "trainingModel":
+        return (
+          <TrainingModel
+            isExpanded={isExpanded}
+            animation={animation}
+            customNavigate={customNavigate}
+            {...otherProps}
+          />
+        );
       default:
         return (
           <NotFound
@@ -365,6 +395,19 @@ const RouteContentWrapper = (props: any) => {
       />
       <Route path="/trainingMenu" element={getPageComponent("trainingMenu")} />
       <Route path="/dashboard" element={getPageComponent("dashboard")} />
+      <Route
+        path="/contentLibrary"
+        element={getPageComponent("contentLibrary")}
+      />
+      <Route
+        path="/trainingModelLibrary"
+        element={getPageComponent("trainingModelLibrary")}
+      />
+      <Route
+        path="/trainingModel"
+        element={getPageComponent("trainingModel")}
+      />
+
       <Route path="*" element={getPageComponent("notFound")} />
     </Routes>
   );

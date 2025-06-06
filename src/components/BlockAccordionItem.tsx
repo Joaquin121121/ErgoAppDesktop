@@ -8,15 +8,19 @@ function BlockAccordionItem({
   id,
   currentWeek,
   sessionIndex,
+  isModel = false,
 }: {
   id: string;
   currentWeek: number;
   sessionIndex: number;
+  isModel?: boolean;
 }) {
   const { t } = useTranslation();
-  const { planState, currentSelectedExercise } = useNewPlan();
+  const { planState, model, currentSelectedExercise } = useNewPlan();
 
-  const trainingBlock = planState.sessions[sessionIndex].exercises.find(
+  const currentPlan = isModel ? model : planState;
+
+  const trainingBlock = currentPlan.sessions[sessionIndex].exercises.find(
     (e) => e.id === id
   ) as TrainingBlock;
 
@@ -47,6 +51,7 @@ function BlockAccordionItem({
             blockId={id}
             last={index === trainingBlock.selectedExercises.length - 1}
             sessionIndex={sessionIndex}
+            isModel={isModel}
           />
         ))}
       </div>

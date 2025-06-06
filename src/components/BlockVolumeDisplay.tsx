@@ -1,5 +1,9 @@
 import { useNewPlan } from "../contexts/NewPlanContext";
-import { Progression, TrainingBlock } from "../types/trainingPlan";
+import {
+  Progression,
+  TrainingBlock,
+  TrainingModel,
+} from "../types/trainingPlan";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import inputStyles from "../styles/inputStyles.module.css";
@@ -14,18 +18,23 @@ function BlockVolumeDisplay({
   sessionIndex,
   id,
   currentWeek,
+  isModel = false,
 }: {
   sessionIndex: number;
   id: string;
   currentWeek: number;
+  isModel?: boolean;
 }) {
   const { t } = useTranslation();
-  const { planState, setPlanState } = useNewPlan();
+  const { planState, model, setPlanState, setModel } = useNewPlan();
+
+  const currentPlan = isModel ? model : planState;
+  const setCurrentPlan = isModel ? setModel : setPlanState;
 
   const [displayProgression, setDisplayProgression] =
     useState<DisplayProgressionCollection>({});
 
-  const trainingBlock = planState.sessions[sessionIndex].exercises.find(
+  const trainingBlock = currentPlan.sessions[sessionIndex].exercises.find(
     (e) => e.id === id
   ) as TrainingBlock;
 
@@ -89,12 +98,21 @@ function BlockVolumeDisplay({
     newTrainingBlock.selectedExercises.find(
       (e) => e.id === exerciseId
     ).repetitions = newProgression[currentWeek].repetitions;
-    const newPlanState = { ...planState };
+    const newPlanState = { ...currentPlan };
 
     newPlanState.sessions[sessionIndex].exercises = newPlanState.sessions[
       sessionIndex
     ].exercises.map((e) => (e.id === exerciseId ? newTrainingBlock : e));
-    setPlanState(newPlanState);
+
+    if (isModel) {
+      setCurrentPlan({
+        ...newPlanState,
+        name: (currentPlan as TrainingModel).name,
+        description: (currentPlan as TrainingModel).description,
+      } as TrainingModel);
+    } else {
+      setCurrentPlan(newPlanState);
+    }
     setDisplayProgression(
       initializeDisplayProgressionCollection(newTrainingBlock)
     );

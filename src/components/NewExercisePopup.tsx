@@ -13,14 +13,17 @@ import LoadManagement from "./LoadManagement";
 import { RangeEntry } from "../utils/fatigueHandling";
 import { useNewPlan } from "../contexts/NewPlanContext";
 import TrainingBlockData from "./TrainingBlockData";
+import { getExercises } from "../hooks/parseTrainingData";
 function NewExercisePopup({
   onClose,
   type = "exercise",
   sessionIndex,
+  isModel = false,
 }: {
   onClose: () => void;
   type: string;
   sessionIndex: number;
+  isModel?: boolean;
 }) {
   const [animation, setAnimation] = useState(navAnimations.popupFadeInTop);
   const [currentSection, setCurrentSection] =
@@ -34,33 +37,7 @@ function NewExercisePopup({
     addTrainingBlock,
   } = useNewPlan();
 
-  const exercises = [
-    {
-      id: "e1b9d5a0-2c3d-4e5f-6g7h-8i9j0k1l2m3n",
-      name: "Press de Banca",
-      videoRef: null,
-    },
-    {
-      id: "a2b3c4d5-6e7f-8g9h-0i1j-2k3l4m5n6o7",
-      name: "Sentadillas",
-      videoRef: null,
-    },
-    {
-      id: "p8q9r0s1-2t3u-4v5w-6x7y-8z9a0b1c2d3",
-      name: "Peso Muerto",
-      videoRef: null,
-    },
-    {
-      id: "d4e5f6g7-8h9i-0j1k-2l3m-4n5o6p7q8r9",
-      name: "Dominadas",
-      videoRef: null,
-    },
-    {
-      id: "s0t1u2v3-4w5x-6y7z-8a9b-0c1d2e3f4g5",
-      name: "Fondos",
-      videoRef: null,
-    },
-  ];
+  const [exercises, setExercises] = useState<Exercise[]>([]);
 
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
 
@@ -128,7 +105,7 @@ function NewExercisePopup({
     }
     newSelectedExercise.progression = progression;
     if (type === "exercise") {
-      saveSelectedExercise(sessionIndex, newSelectedExercise);
+      saveSelectedExercise(sessionIndex, newSelectedExercise, isModel);
       setAnimation(navAnimations.popupFadeOutTop);
       setTimeout(() => {
         onClose();
@@ -138,7 +115,8 @@ function NewExercisePopup({
         sessionIndex,
         selectedExercises,
         newSelectedExercise,
-        blockModel
+        blockModel,
+        isModel
       );
       setAnimation(navAnimations.popupFadeOutTop);
       setTimeout(() => {
@@ -168,6 +146,7 @@ function NewExercisePopup({
           goTo("exerciseData", "loadManagement");
         }}
         sessionIndex={sessionIndex}
+        isModel={isModel}
       />
     ),
     loadManagement: (
@@ -175,6 +154,7 @@ function NewExercisePopup({
         animation={animations.loadManagement}
         selectedExercises={selectedExercises}
         onSave={onSave}
+        isModel={isModel}
       />
     ),
     // trainingBlockData: (
@@ -184,6 +164,14 @@ function NewExercisePopup({
     //   />
     // ),
   };
+
+  useEffect(() => {
+    const loadExercises = async () => {
+      const exercises = await getExercises();
+      setExercises(exercises);
+    };
+    loadExercises();
+  }, []);
 
   return (
     <div

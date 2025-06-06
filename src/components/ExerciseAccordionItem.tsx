@@ -14,6 +14,7 @@ interface ExerciseAccordionItemProps {
   currentWeek: number;
   blockId?: string;
   last?: boolean;
+  isModel?: boolean;
 }
 
 const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
@@ -22,16 +23,25 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
   currentWeek,
   blockId,
   last = false,
+  isModel = false,
 }) => {
-  const { planState, setPlanState, removeExercise } = useNewPlan();
+  const {
+    planState,
+    model,
+    removeExercise,
+    updateExerciseProperty,
+    updateExerciseProgression,
+  } = useNewPlan();
+
+  const currentPlan = isModel ? model : planState;
 
   const { name, series, repetitions, effort, restTime, progression } = blockId
     ? (
-        planState.sessions[sessionIndex].exercises.find(
+        currentPlan.sessions[sessionIndex].exercises.find(
           (e) => e.id === blockId
         ) as TrainingBlock
       ).selectedExercises.find((e) => e.id === id)
-    : planState.sessions[sessionIndex].exercises.find((e) => e.id === id);
+    : currentPlan.sessions[sessionIndex].exercises.find((e) => e.id === id);
 
   const [isExpanded, setIsExpanded] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -96,7 +106,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     setDisplayProgression(newProgression);
   };
 
-  const onInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+  const onInputBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     if (e.target.name !== "restTime") return;
 
     const value = e.target.value;
@@ -107,45 +117,25 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
       return;
     }
 
-    setPlanState((prev) => {
-      const updatedSessions = [...prev.sessions];
-      if (blockId) {
-        const block = updatedSessions[sessionIndex].exercises.find(
-          (e) => e.id === blockId
-        ) as TrainingBlock;
-        if (!block) return prev;
-        const exercise = block.selectedExercises.find(
-          (e) => e.id === id
-        ) as SelectedExercise;
-        if (!exercise) return prev;
-        exercise["restTime"] = intValue;
-        block.selectedExercises = block.selectedExercises.map((e) =>
-          e.id === id ? exercise : e
-        );
-        updatedSessions[sessionIndex].exercises = updatedSessions[
-          sessionIndex
-        ].exercises.map((e) => (e.id === blockId ? block : e));
-      } else {
-        const exercise = updatedSessions[sessionIndex].exercises.find(
-          (e) => e.id === id
-        );
-        if (!exercise) return prev;
-        exercise["restTime"] = intValue;
-        updatedSessions[sessionIndex].exercises = updatedSessions[
-          sessionIndex
-        ].exercises.map((e) => (e.id === id ? exercise : e));
-      }
-      return { ...prev, sessions: updatedSessions };
-    });
+    // Use the new context function instead of direct state manipulation
+    await updateExerciseProperty(
+      sessionIndex,
+      id,
+      "restTime",
+      intValue,
+      blockId,
+      isModel
+    );
   };
 
-  const onProgressionBlur = (
+  const onProgressionBlur = async (
     index: number,
     field: keyof Progression,
     value: string
   ) => {
     const newProgression: Progression[] = [...displayProgression];
     const intValue = typeof value === "number" ? value : parseInt(value);
+
     if (field === "effort") {
       if (intValue > 10) {
         setDisplayProgression(formatProgression(progression));
@@ -166,44 +156,19 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     } else {
       newProgression[index][field] = intValue;
     }
-    setPlanState((prev) => {
-      const updatedSessions = [...prev.sessions];
-      if (blockId) {
-        const block = updatedSessions[sessionIndex].exercises.find(
-          (e) => e.id === blockId
-        ) as TrainingBlock;
-        if (!block) return prev;
-        const exercise = block.selectedExercises.find(
-          (e) => e.id === id
-        ) as SelectedExercise;
-        if (!exercise) return prev;
-        if (field === "repetitions") {
-          exercise.progression[index][field] = newProgression[index][field];
-        } else {
-          exercise.progression[index][field] = newProgression[index][field];
-        }
-        block.selectedExercises = block.selectedExercises.map((e) =>
-          e.id === id ? exercise : e
-        );
-        updatedSessions[sessionIndex].exercises = updatedSessions[
-          sessionIndex
-        ].exercises.map((e) => (e.id === blockId ? block : e));
-      } else {
-        const exercise = updatedSessions[sessionIndex].exercises.find(
-          (e) => e.id === id
-        );
-        if (!exercise) return prev;
-        if (field === "repetitions") {
-          exercise.progression[index][field] = newProgression[index][field];
-        } else {
-          exercise.progression[index][field] = newProgression[index][field];
-        }
-        updatedSessions[sessionIndex].exercises = updatedSessions[
-          sessionIndex
-        ].exercises.map((e) => (e.id === id ? exercise : e));
-      }
-      return { ...prev, sessions: updatedSessions };
-    });
+
+    // Use the new context function instead of direct state manipulation
+    const finalValue = field === "repetitions" ? value : intValue;
+    await updateExerciseProgression(
+      sessionIndex,
+      id,
+      index,
+      field,
+      finalValue,
+      blockId,
+      isModel
+    );
+
     setDisplayProgression(newProgression);
   };
 
@@ -218,12 +183,12 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
   useEffect(() => {
     console.log(
       "Session:",
-      planState.sessions[sessionIndex].exercises.find(
+      currentPlan.sessions[sessionIndex].exercises.find(
         (e) => e.id === blockId
       ) as TrainingBlock
     );
   }, [
-    planState.sessions[sessionIndex].exercises.find(
+    currentPlan.sessions[sessionIndex].exercises.find(
       (e) => e.id === blockId
     ) as TrainingBlock,
   ]);
@@ -284,7 +249,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           className="flex flex-grow justify-center items-center"
           onClick={(e) => {
             e.stopPropagation();
-            removeExercise(sessionIndex, id, blockId);
+            removeExercise(sessionIndex, id, blockId, isModel);
           }}
         >
           <img

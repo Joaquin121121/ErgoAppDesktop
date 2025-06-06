@@ -720,7 +720,7 @@ function StartTest({
           className={`bg-white shadow-lg rounded-2xl fixed w-1/2 left-1/2 -translate-x-1/2 top-8 flex flex-col items-center px-16 py-8 ${popupAnimation}`}
         >
           <div
-            className="absolute top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
+            className="absolute top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center hover:opacity-70 cursor-pointer transition-opacity duration-200 ease-linear active:opacity-40"
             onClick={hideInfo}
           >
             <img src="/close.png" className="h-6 w-6" alt="" />

@@ -444,6 +444,10 @@ function Athletes({
           resetFilters={resetFilters}
           institutions={institutions}
           categories={categories}
+          onApply={() => {
+            setShowFilter(false);
+            setIsBlurred(false);
+          }}
         />
       )}
     </>

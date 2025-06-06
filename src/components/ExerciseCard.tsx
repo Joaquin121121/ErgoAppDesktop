@@ -16,7 +16,11 @@ function ExerciseCard({
       style={{ borderColor: selected && "#e81d23" }}
     >
       <div className="h-40 w-full bg-orange-400"></div>
-      <p className=" text-xl self-center mt-8 mb-4">{exercise.name}</p>
+      <p className=" text-xl self-center mt-8 mb-4 truncate">
+        {exercise.name.length > 20
+          ? exercise.name.slice(0, 20) + "..."
+          : exercise.name}
+      </p>
     </div>
   );
 }

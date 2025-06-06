@@ -92,7 +92,9 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     { name: "Otro", isoCode: "O" },
   ];
 
-  const [filteredAthletes, setFilteredAthletes] = useState([]);
+  const [athletesFilteredBySelection, setAthletesFilteredBySelection] =
+    useState([]);
+  const [athletesFilteredBySearch, setAthletesFilteredBySearch] = useState([]);
 
   const handleAthleteSelect = (selectedAthlete) => {
     /*     if (
@@ -121,15 +123,22 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     );
     if (multipleSelection) {
       setSelectedAthletes([...selectedAthletes, selectedAthlete]);
-      setFilteredAthletes([
-        ...filteredAthletes.filter((a) => a.id !== selectedAthlete.id),
+      setAthletesFilteredBySelection([
+        ...athletesFilteredBySelection.filter(
+          (a) => a.id !== selectedAthlete.id
+        ),
       ]);
+      setMultipleAthleteIndex(selectedAthletes.length);
       return;
     }
   };
 
-  const toggleAthleteFilter = () => {
-    setShowAthleteFilter(!showAthleteFilter);
+  const showFilter = () => {
+    setSearchTerm("");
+    setSelectedAthleteName("");
+    resetAthlete();
+
+    setShowAthleteFilter(true);
   };
 
   const onClose = () => {
@@ -174,7 +183,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       setSearchTerm(newCurrentAthlete?.name || "");
     }
     setSelectedAthletes(newSelectedAthletes);
-    setFilteredAthletes([...filteredAthletes, athlete]);
+    setAthletesFilteredBySelection([...athletesFilteredBySelection, athlete]);
   };
 
   // Add DEL key event listener
@@ -209,6 +218,9 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     setMultipleSelection(!multipleSelection);
     setSelectedAthletes(selectedAthleteName.length > 0 ? [athlete] : []);
     setMultipleAthleteIndex(0);
+    if (multipleSelection) {
+      setAthletesFilteredBySelection(loadedAthletes);
+    }
   };
 
   const handleAthletePointer = (e, athlete) => {
@@ -314,7 +326,8 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     try {
       const athletes = await getAthletes(user.id);
       setLoadedAthletes(athletes);
-      setFilteredAthletes(athletes);
+      setAthletesFilteredBySelection(athletes);
+      setAthletesFilteredBySearch(athletes);
     } catch (error) {
       console.log(error);
     }
@@ -363,7 +376,9 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     }
     console.log("multipleSelection", multipleSelection);
     if (multipleSelection) {
-      setFilteredAthletes(filteredAthletes.filter((a) => a.id !== athlete.id));
+      setAthletesFilteredBySelection(
+        athletesFilteredBySelection.filter((a) => a.id !== athlete.id)
+      );
 
       if (multipleAthleteIndex === selectedAthletes.length - 1) {
         setSelectedAthleteName("");
@@ -381,7 +396,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       setSelectedAthleteName(nextAthlete.name);
       setSearchTerm(nextAthlete.name);
       setMultipleAthleteIndex(multipleAthleteIndex + 1);
-      console.log("filteredAthletes", filteredAthletes);
+      console.log("athletesFilteredBySelection", athletesFilteredBySelection);
       return;
     }
 
@@ -424,7 +439,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     ) {
       setSelectedFilters(initialFilters);
 
-      setFilteredAthletes(loadedAthletes);
+      setAthletesFilteredBySelection(loadedAthletes);
       setSelectedAthleteName("");
       setOriginalAthlete(null);
       resetAthlete();
@@ -441,36 +456,43 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
         validateFilter(selectedFilters.gender, athlete.gender) &&
         validateFilter(selectedFilters.age, athlete.age)
     );
+    if (newSelectedAthletes.length === 0) {
+      setSelectedAthleteName("");
+      setSearchTerm("");
+      setSelectedAthletes([]);
+      setMultipleAthleteIndex(0);
+      setShowAthleteFilter(false);
+      console.log("newSelectedAthletes", newSelectedAthletes);
+      return;
+    }
 
-    setMultipleAthleteIndex(newSelectedAthletes.length - 1);
+    setMultipleAthleteIndex(0);
     setSelectedAthletes(newSelectedAthletes);
-    console.log("triggered");
-    setFilteredAthletes(
+    setAthletesFilteredBySelection(
       loadedAthletes.filter(
         (athlete) => !newSelectedAthletes.some((a) => a.id === athlete.id)
       )
     );
-    setSelectedAthleteName(
-      newSelectedAthletes[newSelectedAthletes.length - 1].name
-    );
+    setSelectedAthleteName(newSelectedAthletes[0].name);
 
-    setOriginalAthlete(newSelectedAthletes[newSelectedAthletes.length - 1]);
-    setAthlete(newSelectedAthletes[newSelectedAthletes.length - 1]);
+    setOriginalAthlete(newSelectedAthletes[0]);
+    setAthlete(newSelectedAthletes[0]);
 
     setShowAthleteFilter(false);
   };
 
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const dropdownRef = useRef(null);
+  const athleteItemsRef = useRef([]);
 
   const handleKeyDown = (e) => {
-    if (!showDropdown || !filteredAthletes.length) return;
+    if (!showDropdown || !athletesFilteredBySearch.length) return;
 
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
         setSelectedIndex((prev) =>
-          prev < filteredAthletes.length - 1 ? prev + 1 : prev
+          prev < athletesFilteredBySearch.length - 1 ? prev + 1 : prev
         );
         break;
 
@@ -482,7 +504,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
       case "Enter":
         e.preventDefault();
         if (selectedIndex >= 0) {
-          handleAthleteSelect(filteredAthletes[selectedIndex]);
+          handleAthleteSelect(athletesFilteredBySearch[selectedIndex]);
         }
         break;
 
@@ -517,23 +539,22 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   }, []);
 
   useEffect(() => {
-    console.log("athlete filters", filteredAthletes);
-  }, [filteredAthletes]);
+    console.log("athletesFilteredBySelection", athletesFilteredBySelection);
+  }, [athletesFilteredBySelection]);
   // Reset selected index when search term changes or dropdown visibility changes
   useEffect(() => {
     setSelectedIndex(-1);
   }, [searchTerm, showDropdown]);
 
   useEffect(() => {
-    if (filteredAthletes.length === 0) return;
-    setFilteredAthletes(
+    setAthletesFilteredBySearch(
       searchTerm.trim() === ""
-        ? filteredAthletes
-        : filteredAthletes.filter((athlete) =>
+        ? athletesFilteredBySelection
+        : athletesFilteredBySelection.filter((athlete) =>
             athlete.name.toLowerCase().includes(searchTerm.toLowerCase())
           )
     );
-  }, [searchTerm, filteredAthletes]);
+  }, [searchTerm, athletesFilteredBySelection]);
 
   useEffect(() => {
     setInstitutions(
@@ -652,6 +673,20 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     }
   }, [athlete]);
 
+  // Add useEffect to scroll selected athlete into view
+  useEffect(() => {
+    if (
+      multipleSelection &&
+      selectedAthletes.length > 0 &&
+      athleteItemsRef.current[multipleAthleteIndex]
+    ) {
+      athleteItemsRef.current[multipleAthleteIndex].scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }
+  }, [multipleAthleteIndex, selectedAthletes.length, multipleSelection]);
+
   return (
     <div
       className="flex-1 relative flex flex-col items-center transition-all duration-300 ease-in-out"
@@ -695,7 +730,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
             <OutlinedButton
               title="Seleccionar Grupo"
               icon="group"
-              onClick={toggleAthleteFilter}
+              onClick={showFilter}
             />
             <div className="relative w-2/5 self-center">
               <div
@@ -713,13 +748,16 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                     setShowDropdown(true);
                   }}
                   onKeyDown={(e) => {
-                    if (!showDropdown || !filteredAthletes.length) return;
+                    if (!showDropdown || !athletesFilteredBySearch.length)
+                      return;
 
                     switch (e.key) {
                       case "ArrowDown":
                         e.preventDefault();
                         setSelectedIndex((prev) =>
-                          prev < filteredAthletes.length - 1 ? prev + 1 : prev
+                          prev < athletesFilteredBySearch.length - 1
+                            ? prev + 1
+                            : prev
                         );
                         break;
                       case "Escape":
@@ -737,7 +775,9 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                       case "Enter":
                         e.preventDefault();
                         if (selectedIndex >= 0) {
-                          handleAthleteSelect(filteredAthletes[selectedIndex]);
+                          handleAthleteSelect(
+                            athletesFilteredBySearch[selectedIndex]
+                          );
                         }
                         break;
 
@@ -771,8 +811,8 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                   tabIndex={-1}
                   onKeyDown={handleKeyDown}
                 >
-                  {filteredAthletes.length > 0 ? (
-                    filteredAthletes.map((athlete, index) => (
+                  {athletesFilteredBySearch.length > 0 ? (
+                    athletesFilteredBySearch.map((athlete, index) => (
                       <div
                         key={index}
                         role="option"
@@ -1172,7 +1212,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
                   containerStyles="self-center"
                   onClick={selectedAthleteName ? onSave : onClose}
                   inverse={!selectedAthleteName}
-                  disabled={filteredAthletes.length === 0}
+                  disabled={multipleAthleteIndex === loadedAthletes.length - 1}
                 />
               </div>
             )}
@@ -1203,15 +1243,29 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
               Atletas Seleccionados
             </p>
             <div
-              className="flex flex-col overflow-y-scroll"
+              className="flex flex-col overflow-y-scroll px-4"
               style={{ maxHeight: "250px" }}
             >
-              {selectedAthletes.map((athlete) => (
+              {selectedAthletes.map((athlete, index) => (
                 <div
                   key={athlete.id}
+                  ref={(el) => (athleteItemsRef.current[index] = el)}
                   className="flex gap-x-2 items-center mt-2 "
                 >
-                  <p>- {athlete.name}</p>
+                  <p
+                    className={`hover:cursor-pointer hover:opacity-70 active:opacity-40 hover:text-secondary transition-all duration-200 w-60 truncate ${
+                      index === multipleAthleteIndex && "text-secondary"
+                    }`}
+                    onClick={() => {
+                      setAthlete(athlete);
+                      setOriginalAthlete(athlete);
+                      setSelectedAthleteName(athlete.name);
+                      setSearchTerm(athlete.name);
+                      setMultipleAthleteIndex(index);
+                    }}
+                  >
+                    - {athlete.name}
+                  </p>
                   <img
                     src="close.png"
                     alt=""

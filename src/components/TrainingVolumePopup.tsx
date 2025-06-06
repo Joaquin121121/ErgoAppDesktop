@@ -7,13 +7,17 @@ function TrainingVolumePopup({
   closePopup,
   sessionIndex,
   currentWeek,
+  isModel = false,
 }: {
   closePopup: () => void;
   sessionIndex: number;
   currentWeek: number;
+  isModel?: boolean;
 }) {
   const [animation, setAnimation] = useState(navAnimations.popupFadeInTop);
-  const { planState } = useNewPlan();
+  const { planState, model } = useNewPlan();
+
+  const currentPlan = isModel ? model : planState;
 
   const localClose = () => {
     setAnimation(navAnimations.popupFadeOutTop);
@@ -38,13 +42,13 @@ function TrainingVolumePopup({
         <div
           className="flex"
           style={{
-            width: `calc(274px + ${planState.nOfWeeks * 224}px)`,
+            width: `calc(274px + ${currentPlan.nOfWeeks * 224}px)`,
           }}
         >
           <div className="w-[274px] flex items-center justify-center text-darkGray text-lg flex-shrink-0">
             Ejercicio
           </div>
-          {Array.from({ length: planState.nOfWeeks }, (_, index) => (
+          {Array.from({ length: currentPlan.nOfWeeks }, (_, index) => (
             <div
               key={index}
               className="w-[224px]  flex flex-col items-center flex-shrink-0"
@@ -61,7 +65,7 @@ function TrainingVolumePopup({
             </div>
           ))}
         </div>
-        {planState.sessions[sessionIndex].exercises.map(
+        {currentPlan.sessions[sessionIndex].exercises.map(
           (exercise) =>
             exercise.type === "trainingBlock" && (
               <BlockVolumeDisplay
@@ -69,6 +73,7 @@ function TrainingVolumePopup({
                 id={exercise.id}
                 sessionIndex={sessionIndex}
                 currentWeek={currentWeek}
+                isModel={isModel}
               />
             )
         )}

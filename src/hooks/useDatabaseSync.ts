@@ -17,6 +17,18 @@ const TABLES = [
   { name: "drop_jump_result", primaryKey: "id" },
   { name: "multiple_jumps_result", primaryKey: "id" },
   { name: "jump_time", primaryKey: "id" },
+  // Training data tables - order matters for foreign keys
+  { name: "exercises", primaryKey: "id" }, // Exercises must come before selected_exercises
+  { name: "training_plans", primaryKey: "id" }, // Training plans must come before sessions and models
+  { name: "training_models", primaryKey: "id" }, // Models reference training_plans
+  { name: "training_plan_models", primaryKey: "training_plan_id" }, // Junction table - using training_plan_id as primary for sync (composite key handled specially)
+  { name: "sessions", primaryKey: "id" }, // Sessions reference training_plans
+  { name: "session_days", primaryKey: "id" }, // Session days reference sessions
+  { name: "training_blocks", primaryKey: "id" }, // Training blocks reference sessions
+  { name: "selected_exercises", primaryKey: "id" }, // Selected exercises reference sessions, exercises, and training_blocks
+  { name: "progressions", primaryKey: "id" }, // Progressions reference selected_exercises or training_blocks
+  { name: "volume_reductions", primaryKey: "id" }, // Volume reductions reference selected_exercises or training_blocks
+  { name: "effort_reductions", primaryKey: "id" }, // Effort reductions reference selected_exercises or training_blocks
 ];
 
 type SyncStatus = "idle" | "syncing" | "success" | "error";
@@ -27,6 +39,11 @@ interface SyncStats {
   conflicts: number;
   tables: Record<string, { uploaded: number; downloaded: number }>;
   errors: { table: string; error: string }[];
+}
+
+// Sync metadata interface
+interface SyncMetadata {
+  [tableName: string]: string; // ISO timestamp of last sync
 }
 
 export function useDatabaseSync() {
@@ -40,6 +57,8 @@ export function useDatabaseSync() {
     errors: [],
   });
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [isDataLoading, setIsDataLoading] = useState<boolean>(false); // Add flag to prevent sync during data loading
 
   // Add a ref to track if sync is in progress to prevent concurrent syncs
   const isSyncInProgressRef = useRef(false);
@@ -47,6 +66,113 @@ export function useDatabaseSync() {
   const hasPerformedInitialSyncRef = useRef(false);
 
   const lastSyncAttemptTimeRef = useRef<number>(0);
+
+  // Sync metadata management
+  const SYNC_METADATA_KEY = "ergolab_sync_metadata";
+
+  const getSyncMetadata = (): SyncMetadata => {
+    try {
+      const stored = localStorage.getItem(SYNC_METADATA_KEY);
+      return stored ? JSON.parse(stored) : {};
+    } catch (error) {
+      console.warn("Failed to load sync metadata from localStorage:", error);
+      return {};
+    }
+  };
+
+  const setSyncMetadata = (metadata: SyncMetadata): void => {
+    try {
+      localStorage.setItem(SYNC_METADATA_KEY, JSON.stringify(metadata));
+    } catch (error) {
+      console.error("Failed to save sync metadata to localStorage:", error);
+    }
+  };
+
+  const updateTableSyncMetadata = (
+    tableName: string,
+    timestamp: string
+  ): void => {
+    const metadata = getSyncMetadata();
+    metadata[tableName] = timestamp;
+    setSyncMetadata(metadata);
+    console.log(`📝 Updated sync metadata for ${tableName}: ${timestamp}`);
+  };
+
+  // Get the latest timestamp from a dataset
+  const getLatestTimestamp = (data: any[]): string | null => {
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    return data.reduce((latest, row) => {
+      if (!row.last_changed) return latest;
+
+      const rowTimestamp = normalizeTimestamp(row.last_changed);
+      if (!latest) return rowTimestamp;
+
+      return isTimestampNewer(rowTimestamp, latest) ? rowTimestamp : latest;
+    }, null as string | null);
+  };
+
+  // Check if table needs syncing based on metadata
+  const shouldSyncTable = async (tableName: string): Promise<boolean> => {
+    try {
+      const metadata = getSyncMetadata();
+      const lastSyncTime = metadata[tableName];
+
+      if (!lastSyncTime) {
+        console.log(`🔍 Table ${tableName} has no sync metadata - needs sync`);
+        return true;
+      }
+
+      console.log(
+        `🔍 Checking if ${tableName} needs sync (last sync: ${lastSyncTime})`
+      );
+
+      // Check remote data for changes since last sync
+      const { data: remoteData, error: fetchError } = await supabase
+        .from(tableName)
+        .select("last_changed")
+        .gt("last_changed", lastSyncTime)
+        .limit(1);
+
+      if (fetchError) {
+        console.warn(
+          `Warning: Could not check remote changes for ${tableName}:`,
+          fetchError
+        );
+        return true; // Sync on error to be safe
+      }
+
+      const hasRemoteChanges = remoteData && remoteData.length > 0;
+      if (hasRemoteChanges) {
+        console.log(`📥 Table ${tableName} has remote changes since last sync`);
+        return true;
+      }
+
+      // Check local data for changes since last sync
+      const db = await Database.load("sqlite:ergolab.db");
+      const localData = await db.select(
+        `SELECT last_changed FROM "${tableName}" WHERE last_changed > ? LIMIT 1`,
+        [lastSyncTime]
+      );
+
+      const hasLocalChanges = Array.isArray(localData) && localData.length > 0;
+      if (hasLocalChanges) {
+        console.log(`📤 Table ${tableName} has local changes since last sync`);
+        return true;
+      }
+
+      console.log(
+        `⏭️ Table ${tableName} has no changes since last sync - skipping`
+      );
+      return false;
+    } catch (error) {
+      console.warn(
+        `Warning: Could not check sync necessity for ${tableName}:`,
+        error
+      );
+      return true; // Sync on error to be safe
+    }
+  };
 
   // Normalize timestamp formats between SQLite and PostgreSQL
   const normalizeTimestamp = (timestamp: string): string => {
@@ -85,25 +211,99 @@ export function useDatabaseSync() {
 
   // Sync a single table between Supabase and SQLite
   const syncTable = useCallback(
-    async (tableName: string, primaryKey: string) => {
+    async (
+      tableName: string,
+      primaryKey: string,
+      forceSync: boolean = false
+    ) => {
+      console.log(`🔄 Starting sync for table: ${tableName}`);
+      const tableStartTime = Date.now();
+
       try {
+        // Check if sync is needed based on metadata (unless forced)
+        if (!forceSync) {
+          const needsSync = await shouldSyncTable(tableName);
+          if (!needsSync) {
+            console.log(`⏭️ Skipping ${tableName} - no changes detected`);
+            return { uploaded: 0, downloaded: 0 };
+          }
+        } else {
+          console.log(
+            `🔒 Force syncing ${tableName} - metadata check bypassed`
+          );
+        }
+
         const db = await Database.load("sqlite:ergolab.db");
         const tableStats = { uploaded: 0, downloaded: 0 };
 
+        // Get last sync metadata for incremental sync
+        const metadata = getSyncMetadata();
+        const lastSyncTime = metadata[tableName];
+        const isFirstSync = !lastSyncTime;
+
+        console.log(
+          `🔍 Sync type for ${tableName}: ${
+            isFirstSync
+              ? "FULL (first sync)"
+              : `INCREMENTAL (since ${lastSyncTime})`
+          }`
+        );
+
         // Add a timeout for this sync operation to prevent hanging
         const syncPromise = (async () => {
-          // 1. Pull changes from Supabase
-          const { data: remoteChanges, error: fetchError } = await supabase
-            .from(tableName)
-            .select("*");
+          // 1. Pull changes from Supabase (incremental)
+          console.log(
+            `📥 Fetching ${
+              isFirstSync ? "all" : "changed"
+            } remote data from Supabase for table: ${tableName}`
+          );
+
+          let remoteQuery = supabase.from(tableName).select("*");
+
+          // Apply incremental filter if not first sync
+          if (!isFirstSync) {
+            remoteQuery = remoteQuery.gt("last_changed", lastSyncTime);
+          }
+
+          const { data: remoteChanges, error: fetchError } = await remoteQuery;
 
           if (fetchError)
             throw new Error(
               `Error fetching from Supabase: ${fetchError.message}`
             );
 
-          // 2. Get all local changes
-          const localChanges = await db.select(`SELECT * FROM "${tableName}"`);
+          console.log(
+            `📥 Found ${remoteChanges?.length || 0} ${
+              isFirstSync ? "total" : "changed"
+            } remote records for table: ${tableName}`
+          );
+
+          // 2. Get local changes (incremental)
+          console.log(
+            `📤 Fetching ${
+              isFirstSync ? "all" : "changed"
+            } local data from SQLite for table: ${tableName}`
+          );
+
+          let localChanges;
+          if (isFirstSync) {
+            // First sync - get all local records
+            localChanges = await db.select(`SELECT * FROM "${tableName}"`);
+          } else {
+            // Incremental sync - only get records changed since last sync
+            localChanges = await db.select(
+              `SELECT * FROM "${tableName}" WHERE last_changed > ?`,
+              [lastSyncTime]
+            );
+          }
+
+          console.log(
+            `📤 Found ${
+              Array.isArray(localChanges) ? localChanges.length : 0
+            } ${
+              isFirstSync ? "total" : "changed"
+            } local records for table: ${tableName}`
+          );
 
           // 3. Apply remote changes to local database
           if (
@@ -111,6 +311,9 @@ export function useDatabaseSync() {
             Array.isArray(remoteChanges) &&
             remoteChanges.length > 0
           ) {
+            console.log(
+              `🔄 Processing ${remoteChanges.length} remote records for table: ${tableName}`
+            );
             for (const row of remoteChanges) {
               try {
                 // Check if record exists locally
@@ -131,10 +334,12 @@ export function useDatabaseSync() {
                     isTimestampNewer(row.last_changed, localRecord.last_changed)
                   ) {
                     // Remote is newer, update local
+                    console.log(
+                      `⬇️ Updating local record ${row[primaryKey]} in table: ${tableName} (remote is newer)`
+                    );
                     const columns = Object.keys(row).filter(
                       (k) => k !== primaryKey
                     );
-                    const placeholders = columns.map(() => "?").join(", ");
                     const sets = columns
                       .map((col) => `"${col}" = ?`)
                       .join(", ");
@@ -146,11 +351,22 @@ export function useDatabaseSync() {
                       );
                       tableStats.downloaded++;
                     } catch (updateError) {
+                      console.error(
+                        `❌ Error updating local record ${row[primaryKey]} in table: ${tableName}:`,
+                        updateError
+                      );
                       throw updateError;
                     }
+                  } else {
+                    console.log(
+                      `⏭️ Skipping local record ${row[primaryKey]} in table: ${tableName} (local is newer or same)`
+                    );
                   }
                 } else {
                   // Record doesn't exist locally, insert it
+                  console.log(
+                    `⬇️ Inserting new local record ${row[primaryKey]} in table: ${tableName}`
+                  );
                   const columns = Object.keys(row);
                   const placeholders = columns.map(() => "?").join(", ");
 
@@ -167,6 +383,10 @@ export function useDatabaseSync() {
                       insertError instanceof Error
                         ? insertError.message
                         : String(insertError);
+                    console.error(
+                      `❌ Error inserting record ${row[primaryKey]} in table: ${tableName}:`,
+                      errorMessage
+                    );
                     if (
                       errorMessage.includes("FOREIGN KEY constraint failed")
                     ) {
@@ -183,6 +403,10 @@ export function useDatabaseSync() {
                   rowError instanceof Error
                     ? rowError.message
                     : String(rowError);
+                console.error(
+                  `❌ Error processing remote record ${row[primaryKey]} in table: ${tableName}:`,
+                  errorMessage
+                );
                 if (
                   !errorMessage.includes("FOREIGN KEY constraint failed") &&
                   !errorMessage.includes("Foreign key constraint failed")
@@ -194,53 +418,49 @@ export function useDatabaseSync() {
             }
           }
 
-          // 4. Apply local changes to Supabase
+          // 4. Push local changes to Supabase
           if (Array.isArray(localChanges) && localChanges.length > 0) {
+            console.log(
+              `🔼 Processing ${localChanges.length} local records for upload to table: ${tableName}`
+            );
             for (const row of localChanges) {
               try {
-                // Check if record exists remotely
-                const { data: existingRemote, error: remoteCheckError } =
+                // For incremental sync, we can assume the record needs to be uploaded
+                // since we only fetched records that changed since last sync
+                // But we still need to check if it exists remotely to decide insert vs update
+
+                console.log(
+                  `🔍 Checking if record ${row[primaryKey]} exists remotely in table: ${tableName}`
+                );
+                const { data: existingRemote, error: checkError } =
                   await supabase
                     .from(tableName)
-                    .select(primaryKey)
+                    .select(`${primaryKey}, last_changed`)
                     .eq(primaryKey, row[primaryKey])
-                    .single();
+                    .maybeSingle();
 
-                if (remoteCheckError && remoteCheckError.code !== "PGRST116") {
+                if (checkError && checkError.code !== "PGRST116") {
+                  console.error(
+                    `❌ Error checking remote record ${row[primaryKey]} in table: ${tableName}:`,
+                    checkError
+                  );
                   throw new Error(
-                    `Error checking remote record ${
-                      row[primaryKey]
-                    } in ${tableName}: ${remoteCheckError.message} (Code: ${
-                      remoteCheckError.code || "N/A"
-                    }, Details: ${remoteCheckError.details || "N/A"}, Hint: ${
-                      remoteCheckError.hint || "N/A"
-                    })`
+                    `Error checking remote record: ${checkError.message}`
                   );
                 }
 
                 if (existingRemote) {
-                  // Record exists remotely, get it to compare timestamps
-                  const { data: remoteRecord, error: getRemoteError } =
-                    await supabase
-                      .from(tableName)
-                      .select("*")
-                      .eq(primaryKey, row[primaryKey])
-                      .single();
-
-                  if (getRemoteError) {
-                    throw new Error(
-                      `Error getting remote record: ${getRemoteError.message}`
-                    );
-                  }
-
-                  // Compare timestamps to determine which version is newer
+                  // Record exists remotely, compare timestamps
                   if (
                     isTimestampNewer(
                       row.last_changed,
-                      remoteRecord.last_changed
+                      (existingRemote as any).last_changed
                     )
                   ) {
                     // Local is newer, update remote
+                    console.log(
+                      `⬆️ Updating remote record ${row[primaryKey]} in table: ${tableName} (local is newer)`
+                    );
                     try {
                       const { error: updateError } = await supabase
                         .from(tableName)
@@ -248,23 +468,239 @@ export function useDatabaseSync() {
                         .eq(primaryKey, row[primaryKey]);
 
                       if (updateError) {
+                        console.error(
+                          `❌ Error updating remote record ${row[primaryKey]} in table: ${tableName}:`,
+                          updateError
+                        );
                         throw new Error(
                           `Error updating remote record: ${updateError.message}`
                         );
                       }
                       tableStats.uploaded++;
                     } catch (supaUpdateError) {
+                      console.error(
+                        `❌ Error in Supabase update for record ${row[primaryKey]} in table: ${tableName}:`,
+                        supaUpdateError
+                      );
                       throw supaUpdateError;
                     }
+                  } else {
+                    console.log(
+                      `⏭️ Skipping remote record ${row[primaryKey]} in table: ${tableName} (remote is newer or same)`
+                    );
                   }
                 } else {
                   // Record doesn't exist remotely, insert it
+                  console.log(
+                    `⬆️ Inserting new remote record ${row[primaryKey]} in table: ${tableName}`
+                  );
+
+                  // Special handling for foreign key constraints
+
+                  // Training models - check if referenced training_plan exists
+                  if (tableName === "training_models" && row.training_plan_id) {
+                    console.log(
+                      `🔍 Checking if training plan ${row.training_plan_id} exists for training model ${row[primaryKey]}`
+                    );
+
+                    const { data: planExists, error: planCheckError } =
+                      await supabase
+                        .from("training_plans")
+                        .select("id")
+                        .eq("id", row.training_plan_id)
+                        .maybeSingle();
+
+                    if (planCheckError && planCheckError.code !== "PGRST116") {
+                      console.error(
+                        `❌ Error checking training plan existence for ${row[primaryKey]}:`,
+                        planCheckError
+                      );
+                      throw new Error(
+                        `Error checking training plan: ${planCheckError.message}`
+                      );
+                    }
+
+                    if (!planExists) {
+                      console.warn(
+                        `⚠️ Training plan ${row.training_plan_id} not found remotely for training model ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                      );
+                      // Skip this record - it will be retried in the next sync after the training plan is synced
+                      continue;
+                    }
+                  }
+
+                  // Sessions - check if referenced training_plan exists (plan_id field)
+                  if (tableName === "sessions" && row.plan_id) {
+                    console.log(
+                      `🔍 Checking if training plan ${row.plan_id} exists for session ${row[primaryKey]}`
+                    );
+
+                    const { data: planExists, error: planCheckError } =
+                      await supabase
+                        .from("training_plans")
+                        .select("id")
+                        .eq("id", row.plan_id)
+                        .maybeSingle();
+
+                    if (planCheckError && planCheckError.code !== "PGRST116") {
+                      console.error(
+                        `❌ Error checking training plan existence for session ${row[primaryKey]}:`,
+                        planCheckError
+                      );
+                      throw new Error(
+                        `Error checking training plan: ${planCheckError.message}`
+                      );
+                    }
+
+                    if (!planExists) {
+                      console.warn(
+                        `⚠️ Training plan ${row.plan_id} not found remotely for session ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                      );
+                      continue;
+                    }
+                  }
+
+                  // Session days - check if referenced session exists
+                  if (tableName === "session_days" && row.session_id) {
+                    console.log(
+                      `🔍 Checking if session ${row.session_id} exists for session_day ${row[primaryKey]}`
+                    );
+
+                    const { data: sessionExists, error: sessionCheckError } =
+                      await supabase
+                        .from("sessions")
+                        .select("id")
+                        .eq("id", row.session_id)
+                        .maybeSingle();
+
+                    if (
+                      sessionCheckError &&
+                      sessionCheckError.code !== "PGRST116"
+                    ) {
+                      console.error(
+                        `❌ Error checking session existence for session_day ${row[primaryKey]}:`,
+                        sessionCheckError
+                      );
+                      throw new Error(
+                        `Error checking session: ${sessionCheckError.message}`
+                      );
+                    }
+
+                    if (!sessionExists) {
+                      console.warn(
+                        `⚠️ Session ${row.session_id} not found remotely for session_day ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                      );
+                      continue;
+                    }
+                  }
+
+                  // Training blocks - check if referenced session exists
+                  if (tableName === "training_blocks" && row.session_id) {
+                    console.log(
+                      `🔍 Checking if session ${row.session_id} exists for training_block ${row[primaryKey]}`
+                    );
+
+                    const { data: sessionExists, error: sessionCheckError } =
+                      await supabase
+                        .from("sessions")
+                        .select("id")
+                        .eq("id", row.session_id)
+                        .maybeSingle();
+
+                    if (
+                      sessionCheckError &&
+                      sessionCheckError.code !== "PGRST116"
+                    ) {
+                      console.error(
+                        `❌ Error checking session existence for training_block ${row[primaryKey]}:`,
+                        sessionCheckError
+                      );
+                      throw new Error(
+                        `Error checking session: ${sessionCheckError.message}`
+                      );
+                    }
+
+                    if (!sessionExists) {
+                      console.warn(
+                        `⚠️ Session ${row.session_id} not found remotely for training_block ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                      );
+                      continue;
+                    }
+                  }
+
+                  // Selected exercises - check if referenced session and exercise exist
+                  if (tableName === "selected_exercises") {
+                    if (row.session_id) {
+                      const { data: sessionExists, error: sessionCheckError } =
+                        await supabase
+                          .from("sessions")
+                          .select("id")
+                          .eq("id", row.session_id)
+                          .maybeSingle();
+
+                      if (
+                        sessionCheckError &&
+                        sessionCheckError.code !== "PGRST116"
+                      ) {
+                        console.error(
+                          `❌ Error checking session existence for selected_exercise ${row[primaryKey]}:`,
+                          sessionCheckError
+                        );
+                        throw new Error(
+                          `Error checking session: ${sessionCheckError.message}`
+                        );
+                      }
+
+                      if (!sessionExists) {
+                        console.warn(
+                          `⚠️ Session ${row.session_id} not found remotely for selected_exercise ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                        );
+                        continue;
+                      }
+                    }
+
+                    if (row.exercise_id) {
+                      const {
+                        data: exerciseExists,
+                        error: exerciseCheckError,
+                      } = await supabase
+                        .from("exercises")
+                        .select("id")
+                        .eq("id", row.exercise_id)
+                        .maybeSingle();
+
+                      if (
+                        exerciseCheckError &&
+                        exerciseCheckError.code !== "PGRST116"
+                      ) {
+                        console.error(
+                          `❌ Error checking exercise existence for selected_exercise ${row[primaryKey]}:`,
+                          exerciseCheckError
+                        );
+                        throw new Error(
+                          `Error checking exercise: ${exerciseCheckError.message}`
+                        );
+                      }
+
+                      if (!exerciseExists) {
+                        console.warn(
+                          `⚠️ Exercise ${row.exercise_id} not found remotely for selected_exercise ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                        );
+                        continue;
+                      }
+                    }
+                  }
+
                   try {
                     const { error: insertError } = await supabase
                       .from(tableName)
                       .insert(row);
 
                     if (insertError) {
+                      console.error(
+                        `❌ Error inserting remote record ${row[primaryKey]} in table: ${tableName}:`,
+                        insertError
+                      );
                       throw new Error(
                         `Error inserting remote record ${
                           row[primaryKey]
@@ -277,35 +713,100 @@ export function useDatabaseSync() {
                     }
                     tableStats.uploaded++;
                   } catch (supaInsertError) {
+                    console.error(
+                      `❌ Error in Supabase insert for record ${row[primaryKey]} in table: ${tableName}:`,
+                      supaInsertError
+                    );
                     throw supaInsertError;
                   }
                 }
               } catch (rowProcessingError) {
+                console.error(
+                  `❌ Error processing local record ${row[primaryKey]} in table: ${tableName}:`,
+                  rowProcessingError
+                );
                 throw rowProcessingError;
               }
             }
           }
 
+          const tableEndTime = Date.now();
+          const tableDuration = tableEndTime - tableStartTime;
+
+          // Update sync metadata after successful sync
+          const currentTime = new Date().toISOString();
+
+          // Determine the latest timestamp from both datasets to store as sync metadata
+          const remoteLatest = getLatestTimestamp(remoteChanges || []);
+          const localLatest = getLatestTimestamp(
+            Array.isArray(localChanges) ? localChanges : []
+          );
+
+          let syncTimestamp = currentTime;
+          if (remoteLatest && localLatest) {
+            syncTimestamp = isTimestampNewer(remoteLatest, localLatest)
+              ? remoteLatest
+              : localLatest;
+          } else if (remoteLatest) {
+            syncTimestamp = remoteLatest;
+          } else if (localLatest) {
+            syncTimestamp = localLatest;
+          }
+
+          updateTableSyncMetadata(tableName, syncTimestamp);
+
+          console.log(
+            `✅ Table ${tableName} sync completed in ${tableDuration}ms - Downloaded: ${tableStats.downloaded}, Uploaded: ${tableStats.uploaded}`
+          );
+
           return tableStats;
         })();
 
-        // Set a timeout to prevent indefinite hanging
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => {
+        // Set a timeout to prevent indefinite hanging and properly manage cleanup
+        let timeoutId: NodeJS.Timeout | null = null;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            console.error(
+              `⏰ Sync timeout for table ${tableName} after 30 seconds`
+            );
             reject(new Error(`Sync timeout for table ${tableName}`));
           }, 30000); // 30 second timeout
         });
 
         // Race the sync operation against the timeout
-        return (await Promise.race([syncPromise, timeoutPromise])) as {
-          uploaded: number;
-          downloaded: number;
-        };
+        try {
+          const result = await Promise.race([syncPromise, timeoutPromise]);
+          // Clear timeout on successful completion
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+          return result as { uploaded: number; downloaded: number };
+        } catch (error) {
+          // Clear timeout on error
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+          throw error;
+        }
       } catch (error) {
+        const tableEndTime = Date.now();
+        const tableDuration = tableEndTime - tableStartTime;
+        console.error(
+          `❌ Table ${tableName} sync failed after ${tableDuration}ms:`,
+          error
+        );
         throw error;
       }
     },
-    [isTimestampNewer]
+    [
+      isTimestampNewer,
+      shouldSyncTable,
+      getLatestTimestamp,
+      updateTableSyncMetadata,
+      getSyncMetadata,
+    ]
   );
 
   // Main sync function that syncs all tables
@@ -318,6 +819,12 @@ export function useDatabaseSync() {
         return;
       }
 
+      // Prevent sync during data loading operations
+      if (isDataLoading) {
+        console.log("⚠️ Skipping sync - data loading in progress");
+        return;
+      }
+
       // Update last attempt time
       lastSyncAttemptTimeRef.current = now;
 
@@ -327,9 +834,13 @@ export function useDatabaseSync() {
         return;
       }
 
+      console.log(`🔄 Starting ${force ? "forced " : ""}sync of all tables...`);
+      const allTablesStartTime = Date.now();
+
       try {
         // Set flag to indicate sync is in progress
         isSyncInProgressRef.current = true;
+        setLoading(true);
         setSyncStatus("syncing");
         setError(null);
 
@@ -361,7 +872,23 @@ export function useDatabaseSync() {
         // First pass - try to sync each table in the order defined in TABLES
         for (const table of TABLES) {
           try {
-            const tableStats = await syncTable(table.name, table.primaryKey);
+            let tableStats;
+
+            // Remove the special skipping logic for training_models
+            // Let training_models sync normally with foreign key checks
+
+            // Special handling for junction tables with composite keys
+            if (table.name === "training_plan_models") {
+              // TODO: Implement proper composite key sync for junction tables
+              // For now, using training_plan_id as primary key will work but may miss some edge cases
+              console.log(
+                `⚠️ Syncing ${table.name} - composite key table using partial key`
+              );
+            }
+
+            // Use regular sync for all tables
+            tableStats = await syncTable(table.name, table.primaryKey, force);
+
             stats.tables[table.name] = tableStats;
             stats.uploaded += tableStats.uploaded;
             stats.downloaded += tableStats.downloaded;
@@ -419,9 +946,11 @@ export function useDatabaseSync() {
             retryTable.attempts++;
 
             try {
+              // Use regular sync for all tables during retry
               const tableStats = await syncTable(
                 retryTable.name,
-                retryTable.primaryKey
+                retryTable.primaryKey,
+                force
               );
 
               // Success! Add to stats and mark as synced
@@ -457,6 +986,9 @@ export function useDatabaseSync() {
 
         setSyncStats(stats);
 
+        const allTablesEndTime = Date.now();
+        const allTablesDuration = allTablesEndTime - allTablesStartTime;
+
         // Set appropriate status based on whether there were any errors
         if (stats.errors.length > 0) {
           setSyncStatus("error");
@@ -465,17 +997,31 @@ export function useDatabaseSync() {
               .map((e) => e.table)
               .join(", ")}`
           );
+          console.error(
+            `❌ All tables sync completed with errors in ${allTablesDuration}ms`
+          );
         } else {
           setSyncStatus("success");
+          console.log(
+            `🎉 All tables sync completed successfully in ${allTablesDuration}ms`
+          );
         }
 
         // After sync completes
         isSyncInProgressRef.current = false;
+        setLoading(false);
         hasPerformedInitialSyncRef.current = true;
       } catch (error) {
+        const allTablesEndTime = Date.now();
+        const allTablesDuration = allTablesEndTime - allTablesStartTime;
+        console.error(
+          `❌ All tables sync failed after ${allTablesDuration}ms:`,
+          error
+        );
         setError(error instanceof Error ? error.message : String(error));
         setSyncStatus("error");
         isSyncInProgressRef.current = false;
+        setLoading(false);
       }
     },
     [isOnline, syncTable]
@@ -484,14 +1030,21 @@ export function useDatabaseSync() {
   // Function to sync a specific table
   const syncSpecificTable = useCallback(
     async (tableName: string, force: boolean = false) => {
+      console.log(
+        `🎯 Starting specific table sync for: ${tableName}${
+          force ? " (forced)" : ""
+        }`
+      );
+      const specificTableStartTime = Date.now();
       const now = Date.now();
 
       if (isSyncInProgressRef.current) {
-        console.log("Sync already in progress, skipping this request");
+        console.log("⚠️ Sync already in progress, skipping this request");
         return;
       }
 
       if (!isOnline) {
+        console.error(`❌ Cannot sync ${tableName} while offline`);
         setError("Cannot sync while offline");
         setSyncStatus("error");
         return;
@@ -499,6 +1052,7 @@ export function useDatabaseSync() {
 
       try {
         isSyncInProgressRef.current = true;
+        setLoading(true);
         setSyncStatus("syncing");
         setError(null);
 
@@ -509,7 +1063,10 @@ export function useDatabaseSync() {
           throw new Error(`Table ${tableName} not found in sync configuration`);
         }
 
-        const tableStats = await syncTable(table.name, table.primaryKey);
+        console.log(
+          `🔄 Syncing table ${tableName} with primary key: ${table.primaryKey}`
+        );
+        const tableStats = await syncTable(table.name, table.primaryKey, force);
 
         // Update sync stats for this table
         setSyncStats((prev) => ({
@@ -522,13 +1079,26 @@ export function useDatabaseSync() {
           },
         }));
 
+        const specificTableEndTime = Date.now();
+        const specificTableDuration =
+          specificTableEndTime - specificTableStartTime;
+        console.log(
+          `✅ Specific table sync for ${tableName} completed successfully in ${specificTableDuration}ms`
+        );
         setSyncStatus("success");
       } catch (error) {
-        console.error(`Error syncing table ${tableName}:`, error);
+        const specificTableEndTime = Date.now();
+        const specificTableDuration =
+          specificTableEndTime - specificTableStartTime;
+        console.error(
+          `❌ Specific table sync for ${tableName} failed after ${specificTableDuration}ms:`,
+          error
+        );
         setError(error instanceof Error ? error.message : String(error));
         setSyncStatus("error");
       } finally {
         isSyncInProgressRef.current = false;
+        setLoading(false);
       }
     },
     [isOnline, syncTable]
@@ -619,57 +1189,394 @@ export function useDatabaseSync() {
         await syncBasic();
     }
   };
-  // Trigger sync when coming back online
-  useEffect(() => {
-    let mounted = true;
-    let initialSyncTimeoutId: number | null = null;
 
-    const handleOnlineStatusChange = async () => {
-      // Only trigger a new sync if:
-      // 1. Component is still mounted
-      // 2. We're online
-      // 3. A sync is not currently in progress
-      // 4. Previous sync wasn't successful OR we haven't done an initial sync yet
-      if (
-        mounted &&
-        isOnline &&
-        !isSyncInProgressRef.current &&
-        (syncStatus !== "success" || !hasPerformedInitialSyncRef.current)
-      ) {
-        await syncAllTables(hasPerformedInitialSyncRef.current === false); // Force sync on first run
-      }
-    };
+  // Sync all training plan related tables
+  const syncTrainingPlans = async () => {
+    console.log("🔄 Starting training plans sync...");
+    const startTime = Date.now();
 
-    // When hook is first mounted, delay the initial sync slightly
-    if (isOnline && !hasPerformedInitialSyncRef.current) {
-      // Clear any existing timeout
-      if (initialSyncTimeoutId !== null) {
-        clearTimeout(initialSyncTimeoutId);
-      }
+    try {
+      // Sync in order due to foreign key dependencies
+      console.log("📋 Syncing exercises table...");
+      await syncSpecificTable("exercises");
+      console.log("✅ Exercises table synced successfully");
 
-      // Set a new timeout
-      initialSyncTimeoutId = window.setTimeout(() => {
-        handleOnlineStatusChange();
-        initialSyncTimeoutId = null;
-      }, 3000); // 3 second delay for initial sync
+      // Sync training_plans normally
+      console.log("📋 Syncing training_plans table...");
+      await syncTable("training_plans", "id");
+      console.log("✅ Training plans table synced successfully");
+
+      console.log("📋 Syncing training_models table...");
+      await syncSpecificTable("training_models");
+      console.log("✅ Training models table synced successfully");
+
+      // No need to update model_id values anymore with the new structure
+
+      console.log("📋 Syncing sessions table...");
+      await syncSpecificTable("sessions");
+      console.log("✅ Sessions table synced successfully");
+
+      console.log("📋 Syncing session_days table...");
+      await syncSpecificTable("session_days");
+      console.log("✅ Session days table synced successfully");
+
+      console.log("📋 Syncing training_blocks table...");
+      await syncSpecificTable("training_blocks");
+      console.log("✅ Training blocks table synced successfully");
+
+      console.log("📋 Syncing selected_exercises table...");
+      await syncSpecificTable("selected_exercises");
+      console.log("✅ Selected exercises table synced successfully");
+
+      console.log("📋 Syncing progressions table...");
+      await syncSpecificTable("progressions");
+      console.log("✅ Progressions table synced successfully");
+
+      console.log("📋 Syncing volume_reductions table...");
+      await syncSpecificTable("volume_reductions");
+      console.log("✅ Volume reductions table synced successfully");
+
+      console.log("📋 Syncing effort_reductions table...");
+      await syncSpecificTable("effort_reductions");
+      console.log("✅ Effort reductions table synced successfully");
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      console.log(
+        `🎉 Training plans sync completed successfully in ${duration}ms`
+      );
+    } catch (error) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      console.error(
+        `❌ Training plans sync failed after ${duration}ms:`,
+        error
+      );
+      throw error;
     }
+  };
 
-    return () => {
-      mounted = false;
-      if (initialSyncTimeoutId !== null) {
-        clearTimeout(initialSyncTimeoutId);
+  // Sync only training models and their dependencies
+  const syncTrainingModels = async () => {
+    console.log("🔄 Starting training models sync...");
+    const startTime = Date.now();
+
+    try {
+      console.log(
+        "📋 Syncing exercises table (dependency for training models)..."
+      );
+      await syncSpecificTable("exercises");
+      console.log("✅ Exercises table synced successfully");
+
+      console.log(
+        "📋 Syncing training_plans table (dependency for training models)..."
+      );
+      await syncSpecificTable("training_plans");
+      console.log("✅ Training plans table synced successfully");
+
+      console.log("📋 Syncing training_models table...");
+      await syncSpecificTable("training_models");
+      console.log("✅ Training models table synced successfully");
+
+      console.log("📋 Syncing training_plan_models relationship table...");
+      await syncSpecificTable("training_plan_models");
+      console.log(
+        "✅ Training plan models relationship table synced successfully"
+      );
+
+      console.log("📋 Syncing sessions table...");
+      await syncSpecificTable("sessions");
+      console.log("✅ Sessions table synced successfully");
+
+      console.log("📋 Syncing session_days table...");
+      await syncSpecificTable("session_days");
+      console.log("✅ Session days table synced successfully");
+
+      console.log("📋 Syncing training_blocks table...");
+      await syncSpecificTable("training_blocks");
+      console.log("✅ Training blocks table synced successfully");
+
+      console.log("📋 Syncing selected_exercises table...");
+      await syncSpecificTable("selected_exercises");
+      console.log("✅ Selected exercises table synced successfully");
+
+      console.log("📋 Syncing progressions table...");
+      await syncSpecificTable("progressions");
+      console.log("✅ Progressions table synced successfully");
+
+      console.log("📋 Syncing volume_reductions table...");
+      await syncSpecificTable("volume_reductions");
+      console.log("✅ Volume reductions table synced successfully");
+
+      console.log("📋 Syncing effort_reductions table...");
+      await syncSpecificTable("effort_reductions");
+      console.log("✅ Effort reductions table synced successfully");
+
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      console.log(
+        `🎉 Training models sync completed successfully in ${duration}ms`
+      );
+    } catch (error) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      console.error(
+        `❌ Training models sync failed after ${duration}ms:`,
+        error
+      );
+      throw error;
+    }
+  };
+
+  // Sync only exercises
+  const syncExercises = async () => {
+    await syncSpecificTable("exercises");
+  };
+
+  // Sync all training data for a specific user
+  const syncUserTrainingData = async (userId: string) => {
+    try {
+      setLoading(true);
+      setSyncStatus("syncing");
+      setError(null);
+
+      // For user-specific training data, we need to sync all related tables
+      // since the filtering happens at the application level, not the sync level
+      await syncTrainingPlans();
+
+      setSyncStatus("success");
+    } catch (error) {
+      console.error("Error syncing user training data:", error);
+      setError(error instanceof Error ? error.message : String(error));
+      setSyncStatus("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to manually trigger initial sync (prevents automatic sync on mount)
+  const startInitialSync = useCallback(
+    async (force: boolean = false) => {
+      if (isSyncInProgressRef.current) {
+        console.log("⚠️ Sync already in progress, skipping manual start");
+        return;
       }
-    };
-  }, [isOnline, syncAllTables, syncStatus]);
+
+      if (!isOnline) {
+        console.log("⚠️ Cannot start sync while offline");
+        setError("Cannot sync while offline");
+        setSyncStatus("error");
+        return;
+      }
+
+      console.log("🚀 Manually starting initial sync...");
+      await syncAllTables(force || !hasPerformedInitialSyncRef.current);
+    },
+    [isOnline, syncAllTables]
+  );
+
+  // Reset sync metadata (useful for debugging or force full sync)
+  const resetSyncMetadata = (): void => {
+    try {
+      localStorage.removeItem(SYNC_METADATA_KEY);
+      console.log("🗑️ Sync metadata cleared from localStorage");
+    } catch (error) {
+      console.error("Failed to clear sync metadata:", error);
+    }
+  };
+
+  // Get current sync metadata for debugging
+  const getCurrentSyncMetadata = (): SyncMetadata => {
+    return getSyncMetadata();
+  };
+
+  // Record-level sync functions
+  const syncSingleRecord = useCallback(
+    async (
+      tableName: string,
+      recordId: string,
+      operation: "insert" | "update" | "delete",
+      data?: any
+    ): Promise<boolean> => {
+      if (!isOnline) {
+        console.log(
+          `⚠️ Cannot sync record ${tableName}:${recordId} while offline`
+        );
+        return false;
+      }
+
+      try {
+        console.log(`🔄 Syncing ${operation} for ${tableName}:${recordId}`);
+
+        switch (operation) {
+          case "insert":
+            const { error: insertError } = await supabase
+              .from(tableName)
+              .insert(data);
+
+            if (insertError) {
+              throw new Error(`Insert failed: ${insertError.message}`);
+            }
+            break;
+
+          case "update":
+            // Check if record exists remotely first
+            const { data: existing, error: checkError } = await supabase
+              .from(tableName)
+              .select("id, last_changed")
+              .eq("id", recordId)
+              .maybeSingle();
+
+            if (checkError && checkError.code !== "PGRST116") {
+              throw new Error(`Check failed: ${checkError.message}`);
+            }
+
+            if (existing) {
+              // Update existing record
+              const { error: updateError } = await supabase
+                .from(tableName)
+                .update(data)
+                .eq("id", recordId);
+
+              if (updateError) {
+                throw new Error(`Update failed: ${updateError.message}`);
+              }
+            } else {
+              // Record doesn't exist, insert it
+              const { error: insertError } = await supabase
+                .from(tableName)
+                .insert({ ...data, id: recordId });
+
+              if (insertError) {
+                throw new Error(`Insert failed: ${insertError.message}`);
+              }
+            }
+            break;
+
+          case "delete":
+            // Soft delete by updating deleted_at
+            const { error: deleteError } = await supabase
+              .from(tableName)
+              .update({
+                deleted_at: new Date().toISOString(),
+                last_changed: new Date().toISOString(),
+              })
+              .eq("id", recordId);
+
+            if (deleteError) {
+              throw new Error(`Delete failed: ${deleteError.message}`);
+            }
+            break;
+        }
+
+        console.log(
+          `✅ Successfully synced ${operation} for ${tableName}:${recordId}`
+        );
+        return true;
+      } catch (error) {
+        console.error(
+          `❌ Failed to sync ${operation} for ${tableName}:${recordId}:`,
+          error
+        );
+        return false;
+      }
+    },
+    [isOnline]
+  );
+
+  // Batch sync multiple records
+  const syncRecordBatch = useCallback(
+    async (
+      records: Array<{
+        tableName: string;
+        recordId: string;
+        operation: "insert" | "update" | "delete";
+        data?: any;
+      }>
+    ): Promise<{ successful: number; failed: number }> => {
+      if (!isOnline) {
+        console.log(`⚠️ Cannot sync record batch while offline`);
+        return { successful: 0, failed: records.length };
+      }
+
+      console.log(`🔄 Syncing batch of ${records.length} records`);
+
+      const results = await Promise.allSettled(
+        records.map((record) =>
+          syncSingleRecord(
+            record.tableName,
+            record.recordId,
+            record.operation,
+            record.data
+          )
+        )
+      );
+
+      let successful = 0;
+      let failed = 0;
+
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled" && result.value === true) {
+          successful++;
+        } else {
+          failed++;
+          console.error(
+            `❌ Failed to sync record ${records[index].tableName}:${records[index].recordId}`
+          );
+        }
+      });
+
+      console.log(
+        `📊 Batch sync completed: ${successful} successful, ${failed} failed`
+      );
+      return { successful, failed };
+    },
+    [syncSingleRecord, isOnline]
+  );
+
+  // Functions to control data loading state
+  const setDataLoadingState = useCallback((loading: boolean) => {
+    console.log(`🔄 Data loading state: ${loading ? "START" : "END"}`);
+    setIsDataLoading(loading);
+  }, []);
+
+  const withDataLoading = useCallback(
+    async <T>(operation: () => Promise<T>): Promise<T> => {
+      setDataLoadingState(true);
+      try {
+        const result = await operation();
+        return result;
+      } finally {
+        setDataLoadingState(false);
+      }
+    },
+    [setDataLoadingState]
+  );
 
   return {
     syncAllTables,
     syncSpecificTable,
     uploadAndSyncTable,
+    startInitialSync,
     syncStatus,
     syncStats,
     error,
     isOnline,
+    loading,
     syncResult,
+    // Training data sync functions
+    syncTrainingPlans,
+    syncTrainingModels,
+    syncExercises,
+    syncUserTrainingData,
+    // Sync metadata functions
+    resetSyncMetadata,
+    getCurrentSyncMetadata,
+    // Record-level sync functions
+    syncSingleRecord,
+    syncRecordBatch,
+    // Functions to control data loading state
+    setDataLoadingState,
+    withDataLoading,
   };
 }

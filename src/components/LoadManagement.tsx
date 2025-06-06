@@ -23,6 +23,7 @@ function LoadManagement({
   animation,
   selectedExercises,
   onSave,
+  isModel = false,
 }: {
   animation: string;
   selectedExercises: Exercise[];
@@ -32,13 +33,16 @@ function LoadManagement({
     factorToReduce: "volume" | "effort" | undefined,
     blockModel: "sequential" | "series" | undefined
   ) => void;
+  isModel?: boolean;
 }) {
-  const { planState, currentSelectedExercise } = useNewPlan();
+  const { planState, model, currentSelectedExercise } = useNewPlan();
   const { t } = useTranslation();
+
+  const currentPlan = isModel ? model : planState;
 
   const defaultProgression = currentSelectedExercise
     ? generateInitialProgression(
-        planState.nOfWeeks,
+        currentPlan.nOfWeeks,
         currentSelectedExercise.series,
         currentSelectedExercise.repetitions,
         currentSelectedExercise.effort
@@ -46,7 +50,7 @@ function LoadManagement({
     : [];
 
   const [progression, setProgression] = useState<Progression[]>(
-    defaultProgression.slice(0, planState.nOfWeeks)
+    defaultProgression.slice(0, currentPlan.nOfWeeks)
   );
   const [handleProgression, setHandleProgression] = useState(true);
   const [progressionModified, setProgressionModified] = useState(false);
@@ -254,7 +258,7 @@ function LoadManagement({
   };
 
   const resetProgressionState = () => {
-    setProgression(defaultProgression.slice(0, planState.nOfWeeks));
+    setProgression(defaultProgression.slice(0, currentPlan.nOfWeeks));
     setCurrentSeriesValue({ value: "", index: -1 });
     setCurrentRepetitionsValue({ value: "", index: -1 });
     setCurrentEffortValue({ value: "", index: -1 });
@@ -608,7 +612,7 @@ function LoadManagement({
           </>
         )}
 
-        {/* Toggle Gestion de Fatiga */}
+        {/* Toggle Gestión de Fatiga */}
         <div className="flex gap-x-8 mt-8 mb-2 items-center">
           <p className="text-darkGray text-lg ">Gestión de Fatiga</p>
           <button
@@ -636,7 +640,7 @@ function LoadManagement({
               className="text-secondary ml-4 cursor-pointer hover:opacity-70 active:opacity-40 transition-all duration-200"
               onClick={resetFormState}
             >
-              Reiniciar gestion de fatiga
+              Reiniciar gestión de fatiga
             </p>
           )}
         </div>
