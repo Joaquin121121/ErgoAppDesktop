@@ -133,6 +133,7 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
     currentSelectedExercise: SelectedExercise,
     isModel: boolean = false
   ) => {
+    console.log("currentSelectedExercise", currentSelectedExercise);
     if (!currentSelectedExercise) return;
     const currentPlan = isModel ? model : planState;
     const processedExercise = {
@@ -143,63 +144,59 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
     };
 
     if (isModel) {
-      setModel((prev) => {
-        const updatedSessions = [...prev.sessions];
-        if (!updatedSessions[sessionIndex]) return prev; // guard
-        updatedSessions[sessionIndex].exercises = [
-          ...updatedSessions[sessionIndex].exercises,
-          processedExercise,
-        ];
-        setCurrentSelectedExercise(null);
-        const updatedModel = { ...prev, sessions: updatedSessions };
+      const updatedSessions = [...model.sessions];
+      if (!updatedSessions[sessionIndex]) return; // guard
+      updatedSessions[sessionIndex].exercises = [
+        ...updatedSessions[sessionIndex].exercises,
+        processedExercise,
+      ];
+      setCurrentSelectedExercise(null);
+      const updatedModel = { ...model, sessions: updatedSessions };
 
-        // Only update database if model is not new
-        if (!isNewModel) {
-          // Update database and queue for sync
-          updateSession(updatedSessions[sessionIndex])
-            .then(() => {
-              // Queue the selected exercise for sync
-              queueHighChange(
-                "selected_exercises",
-                processedExercise.id,
-                "insert",
-                processedExercise
-              );
-            })
-            .catch(console.error);
-        }
+      // Only update database if model is not new
+      if (!isNewModel) {
+        // Update database and queue for sync
+        updateSession(updatedSessions[sessionIndex])
+          .then(() => {
+            // Queue the selected exercise for sync
+            queueHighChange(
+              "selected_exercises",
+              processedExercise.id,
+              "insert",
+              processedExercise
+            );
+          })
+          .catch(console.error);
+      }
 
-        return updatedModel;
-      });
+      setModel(updatedModel);
     } else {
-      setPlanState((prev) => {
-        const updatedSessions = [...prev.sessions];
-        if (!updatedSessions[sessionIndex]) return prev; // guard
-        updatedSessions[sessionIndex].exercises = [
-          ...updatedSessions[sessionIndex].exercises,
-          processedExercise,
-        ];
-        setCurrentSelectedExercise(null);
-        const updatedPlan = { ...prev, sessions: updatedSessions };
+      const updatedSessions = [...planState.sessions];
+      if (!updatedSessions[sessionIndex]) return; // guard
+      updatedSessions[sessionIndex].exercises = [
+        ...updatedSessions[sessionIndex].exercises,
+        processedExercise,
+      ];
+      setCurrentSelectedExercise(null);
+      const updatedPlan = { ...planState, sessions: updatedSessions };
 
-        // Only update database if plan is not new
-        if (!isNewTrainingPlan) {
-          // Update database and queue for sync
-          updateSession(updatedSessions[sessionIndex])
-            .then(() => {
-              // Queue the selected exercise for sync
-              queueHighChange(
-                "selected_exercises",
-                processedExercise.id,
-                "insert",
-                processedExercise
-              );
-            })
-            .catch(console.error);
-        }
+      // Only update database if plan is not new
+      if (!isNewTrainingPlan) {
+        // Update database and queue for sync
+        updateSession(updatedSessions[sessionIndex])
+          .then(() => {
+            // Queue the selected exercise for sync
+            queueHighChange(
+              "selected_exercises",
+              processedExercise.id,
+              "insert",
+              processedExercise
+            );
+          })
+          .catch(console.error);
+      }
 
-        return updatedPlan;
-      });
+      setPlanState(updatedPlan);
     }
   };
 

@@ -33,7 +33,7 @@ function OptionCard({
         <p className="text-2xl">{title}</p>
         {icon && <img src={`${icon}.png`} alt={title} className="w-7 h-7" />}
       </div>
-      <p className="text-darkGray">{subtitle}</p>
+      <p className="text-darkGray px-8">{subtitle}</p>
       {/* You can use value, target, and param here as needed */}
       {callToAction && (
         <TonalButton

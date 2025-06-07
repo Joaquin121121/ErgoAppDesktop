@@ -1413,10 +1413,6 @@ function TestInProgress({
     }
   }, [flightTimes, floorTimes, status]);
 
-  useEffect(() => {
-    simulateTest();
-  }, []);
-
   // Handle real-time bar growth for multipleJumps
   useEffect(() => {
     if (study.type === "multipleJumps" && status === "Saltando") {
