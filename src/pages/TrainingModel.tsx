@@ -82,14 +82,12 @@ const TrainingModel = ({
       >
         <div className="my-10 w-4/5 flex justify-around items-center">
           <div className="w-[122px]" />
-          {isNew ? (
-            <p className="text-3xl">Nuevo Modelo de Entrenamiento</p>
-          ) : (
-            <p className="text-3xl">
-              Modelo de Entrenamiento:{" "}
-              <span className="text-secondary">{model.name}</span>
-            </p>
-          )}
+
+          <p className="text-3xl">
+            Modelo de Entrenamiento:{" "}
+            <span className="text-secondary">{model.name}</span>
+          </p>
+
           <TonalButton
             inverse
             title="Volver"
