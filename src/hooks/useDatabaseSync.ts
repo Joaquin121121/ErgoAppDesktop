@@ -691,6 +691,195 @@ export function useDatabaseSync() {
                     }
                   }
 
+                  // Progressions - check if referenced selected_exercise or training_block exists
+                  if (tableName === "progressions") {
+                    if (row.selected_exercise_id) {
+                      const {
+                        data: exerciseExists,
+                        error: exerciseCheckError,
+                      } = await supabase
+                        .from("selected_exercises")
+                        .select("id")
+                        .eq("id", row.selected_exercise_id)
+                        .maybeSingle();
+
+                      if (
+                        exerciseCheckError &&
+                        exerciseCheckError.code !== "PGRST116"
+                      ) {
+                        console.error(
+                          `❌ Error checking selected_exercise existence for progression ${row[primaryKey]}:`,
+                          exerciseCheckError
+                        );
+                        throw new Error(
+                          `Error checking selected_exercise: ${exerciseCheckError.message}`
+                        );
+                      }
+
+                      if (!exerciseExists) {
+                        console.warn(
+                          `⚠️ Selected exercise ${row.selected_exercise_id} not found remotely for progression ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                        );
+                        continue;
+                      }
+                    }
+
+                    if (row.training_block_id) {
+                      const { data: blockExists, error: blockCheckError } =
+                        await supabase
+                          .from("training_blocks")
+                          .select("id")
+                          .eq("id", row.training_block_id)
+                          .maybeSingle();
+
+                      if (
+                        blockCheckError &&
+                        blockCheckError.code !== "PGRST116"
+                      ) {
+                        console.error(
+                          `❌ Error checking training_block existence for progression ${row[primaryKey]}:`,
+                          blockCheckError
+                        );
+                        throw new Error(
+                          `Error checking training_block: ${blockCheckError.message}`
+                        );
+                      }
+
+                      if (!blockExists) {
+                        console.warn(
+                          `⚠️ Training block ${row.training_block_id} not found remotely for progression ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                        );
+                        continue;
+                      }
+                    }
+                  }
+
+                  // Volume reductions - check if referenced selected_exercise or training_block exists
+                  if (tableName === "volume_reductions") {
+                    if (row.selected_exercise_id) {
+                      const {
+                        data: exerciseExists,
+                        error: exerciseCheckError,
+                      } = await supabase
+                        .from("selected_exercises")
+                        .select("id")
+                        .eq("id", row.selected_exercise_id)
+                        .maybeSingle();
+
+                      if (
+                        exerciseCheckError &&
+                        exerciseCheckError.code !== "PGRST116"
+                      ) {
+                        console.error(
+                          `❌ Error checking selected_exercise existence for volume_reduction ${row[primaryKey]}:`,
+                          exerciseCheckError
+                        );
+                        throw new Error(
+                          `Error checking selected_exercise: ${exerciseCheckError.message}`
+                        );
+                      }
+
+                      if (!exerciseExists) {
+                        console.warn(
+                          `⚠️ Selected exercise ${row.selected_exercise_id} not found remotely for volume_reduction ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                        );
+                        continue;
+                      }
+                    }
+
+                    if (row.training_block_id) {
+                      const { data: blockExists, error: blockCheckError } =
+                        await supabase
+                          .from("training_blocks")
+                          .select("id")
+                          .eq("id", row.training_block_id)
+                          .maybeSingle();
+
+                      if (
+                        blockCheckError &&
+                        blockCheckError.code !== "PGRST116"
+                      ) {
+                        console.error(
+                          `❌ Error checking training_block existence for volume_reduction ${row[primaryKey]}:`,
+                          blockCheckError
+                        );
+                        throw new Error(
+                          `Error checking training_block: ${blockCheckError.message}`
+                        );
+                      }
+
+                      if (!blockExists) {
+                        console.warn(
+                          `⚠️ Training block ${row.training_block_id} not found remotely for volume_reduction ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                        );
+                        continue;
+                      }
+                    }
+                  }
+
+                  // Effort reductions - check if referenced selected_exercise or training_block exists
+                  if (tableName === "effort_reductions") {
+                    if (row.selected_exercise_id) {
+                      const {
+                        data: exerciseExists,
+                        error: exerciseCheckError,
+                      } = await supabase
+                        .from("selected_exercises")
+                        .select("id")
+                        .eq("id", row.selected_exercise_id)
+                        .maybeSingle();
+
+                      if (
+                        exerciseCheckError &&
+                        exerciseCheckError.code !== "PGRST116"
+                      ) {
+                        console.error(
+                          `❌ Error checking selected_exercise existence for effort_reduction ${row[primaryKey]}:`,
+                          exerciseCheckError
+                        );
+                        throw new Error(
+                          `Error checking selected_exercise: ${exerciseCheckError.message}`
+                        );
+                      }
+
+                      if (!exerciseExists) {
+                        console.warn(
+                          `⚠️ Selected exercise ${row.selected_exercise_id} not found remotely for effort_reduction ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                        );
+                        continue;
+                      }
+                    }
+
+                    if (row.training_block_id) {
+                      const { data: blockExists, error: blockCheckError } =
+                        await supabase
+                          .from("training_blocks")
+                          .select("id")
+                          .eq("id", row.training_block_id)
+                          .maybeSingle();
+
+                      if (
+                        blockCheckError &&
+                        blockCheckError.code !== "PGRST116"
+                      ) {
+                        console.error(
+                          `❌ Error checking training_block existence for effort_reduction ${row[primaryKey]}:`,
+                          blockCheckError
+                        );
+                        throw new Error(
+                          `Error checking training_block: ${blockCheckError.message}`
+                        );
+                      }
+
+                      if (!blockExists) {
+                        console.warn(
+                          `⚠️ Training block ${row.training_block_id} not found remotely for effort_reduction ${row[primaryKey]}. Skipping this record and will retry in next sync.`
+                        );
+                        continue;
+                      }
+                    }
+                  }
+
                   try {
                     const { error: insertError } = await supabase
                       .from(tableName)

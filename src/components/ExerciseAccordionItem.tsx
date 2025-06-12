@@ -236,6 +236,8 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
             onProgressionBlur(currentWeek, "effort", e.target.value)
           }
           type="number"
+          min={1}
+          max={10}
         />
         <input
           className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${inputStyles.input}`}
@@ -244,6 +246,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           onBlur={onInputBlur}
           name="restTime"
           type="number"
+          min={1}
         />
         <div
           className="flex flex-grow justify-center items-center"
@@ -330,6 +333,8 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
                   onBlur={(e) =>
                     onProgressionBlur(index, "effort", e.target.value)
                   }
+                  min={1}
+                  max={10}
                 />
                 <input
                   className={`text-lg text-center rounded-2xl w-16 mx-auto border border-transparent ${inputStyles.input}`}
@@ -338,6 +343,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
                   name="restTime"
                   onChange={handleInputChange}
                   onBlur={onInputBlur}
+                  min={1}
                 />
                 <div></div>
                 <div></div>

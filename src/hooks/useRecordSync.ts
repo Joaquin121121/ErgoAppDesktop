@@ -66,8 +66,8 @@ export function useRecordSync(options: RecordSyncOptions = {}) {
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Functions to control sync behavior
-  const [autoSyncEnabled, setAutoSyncEnabled] = useState(false); // Default to disabled to prevent automatic sync on load
-  const [dataSyncDisabled, setDataSyncDisabled] = useState(false);
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true); // Default to disabled to prevent automatic sync on load
+  const [dataSyncDisabled, setDataSyncDisabled] = useState(true);
 
   // Refs for debounced operations
   const syncTimeouts = useRef<Map<SyncPriority, NodeJS.Timeout>>(new Map());
@@ -139,6 +139,7 @@ export function useRecordSync(options: RecordSyncOptions = {}) {
 
       if (delay === 0 && autoSyncEnabled) {
         // Critical priority - sync immediately only if auto-sync is enabled
+
         processPriorityQueue(priority);
       } else {
         // Schedule with delay
@@ -169,6 +170,7 @@ export function useRecordSync(options: RecordSyncOptions = {}) {
       }
 
       setIsProcessing(true);
+      console.log("🔄 Processing priority queue", priority);
 
       try {
         // Get changes for this priority that haven't been processed
@@ -180,6 +182,9 @@ export function useRecordSync(options: RecordSyncOptions = {}) {
         );
 
         if (changesToProcess.length === 0) {
+          console.log(
+            `🔄 No changes to process for priority ${SyncPriority[priority]}`
+          );
           return;
         }
 
