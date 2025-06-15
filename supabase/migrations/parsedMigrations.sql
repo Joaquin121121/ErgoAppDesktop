@@ -580,4 +580,110 @@ CREATE INDEX IF NOT EXISTS idx_selected_exercises_exercise_session ON "selected_
 -- Covering indexes for sync metadata queries (include commonly selected columns)
 CREATE INDEX IF NOT EXISTS idx_training_plans_sync_cover ON "training_plans"("last_changed", "id", "deleted_at");
 CREATE INDEX IF NOT EXISTS idx_training_plan_models_sync_cover ON "training_plan_models"("last_changed", "training_plan_id", "model_id", "deleted_at");
-CREATE INDEX IF NOT EXISTS idx_sessions_sync_cover ON "sessions"("last_changed", "id", "plan_id", "deleted_at"); 
+CREATE INDEX IF NOT EXISTS idx_sessions_sync_cover ON "sessions"("last_changed", "id", "plan_id", "deleted_at");
+
+-- ========================================
+-- CASCADING SOFT DELETE TRIGGERS
+-- ========================================
+
+-- These triggers ensure that when a parent record is soft-deleted (i.e., `deleted_at` is set),
+-- the soft deletion cascades to all its children, maintaining data integrity.
+-- They also handle the "un-deletion" case, where setting `deleted_at` to NULL on the parent
+-- will also propagate NULL to the children.
+
+
+
+-- Parent: athlete
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_athlete
+AFTER UPDATE OF deleted_at ON "athlete"
+FOR EACH ROW
+BEGIN
+    UPDATE "base_result" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
+    UPDATE "bosco_result" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
+    UPDATE "event" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
+    UPDATE "multiple_drop_jump_result" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
+END;
+
+-- Parent: base_result
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_base_result
+AFTER UPDATE OF deleted_at ON "base_result"
+FOR EACH ROW
+BEGIN
+    UPDATE "basic_result" SET deleted_at = NEW.deleted_at WHERE base_result_id = NEW.id;
+    UPDATE "drop_jump_result" SET deleted_at = NEW.deleted_at WHERE base_result_id = NEW.id;
+    UPDATE "jump_time" SET deleted_at = NEW.deleted_at WHERE base_result_id = NEW.id;
+    UPDATE "multiple_jumps_result" SET deleted_at = NEW.deleted_at WHERE base_result_id = NEW.id;
+END;
+
+-- Parent: bosco_result
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_bosco_result
+AFTER UPDATE OF deleted_at ON "bosco_result"
+FOR EACH ROW
+BEGIN
+    UPDATE "basic_result" SET deleted_at = NEW.deleted_at WHERE bosco_result_id = NEW.id;
+END;
+
+-- Parent: multiple_drop_jump_result
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_multiple_drop_jump_result
+AFTER UPDATE OF deleted_at ON "multiple_drop_jump_result"
+FOR EACH ROW
+BEGIN
+    UPDATE "drop_jump_result" SET deleted_at = NEW.deleted_at WHERE multiple_drop_jump_id = NEW.id;
+END;
+
+-- Parent: training_plans
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_training_plans
+AFTER UPDATE OF deleted_at ON "training_plans"
+FOR EACH ROW
+BEGIN
+    UPDATE "training_models" SET deleted_at = NEW.deleted_at WHERE training_plan_id = NEW.id;
+    UPDATE "training_plan_models" SET deleted_at = NEW.deleted_at WHERE training_plan_id = NEW.id;
+    UPDATE "sessions" SET deleted_at = NEW.deleted_at WHERE plan_id = NEW.id;
+END;
+
+-- Parent: training_models
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_training_models
+AFTER UPDATE OF deleted_at ON "training_models"
+FOR EACH ROW
+BEGIN
+    UPDATE "training_plan_models" SET deleted_at = NEW.deleted_at WHERE model_id = NEW.id;
+END;
+
+-- Parent: sessions
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_sessions
+AFTER UPDATE OF deleted_at ON "sessions"
+FOR EACH ROW
+BEGIN
+    UPDATE "session_days" SET deleted_at = NEW.deleted_at WHERE session_id = NEW.id;
+    UPDATE "training_blocks" SET deleted_at = NEW.deleted_at WHERE session_id = NEW.id;
+    UPDATE "selected_exercises" SET deleted_at = NEW.deleted_at WHERE session_id = NEW.id;
+END;
+
+-- Parent: training_blocks
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_training_blocks
+AFTER UPDATE OF deleted_at ON "training_blocks"
+FOR EACH ROW
+BEGIN
+    UPDATE "selected_exercises" SET deleted_at = NEW.deleted_at WHERE block_id = NEW.id;
+    UPDATE "progressions" SET deleted_at = NEW.deleted_at WHERE training_block_id = NEW.id;
+    UPDATE "volume_reductions" SET deleted_at = NEW.deleted_at WHERE training_block_id = NEW.id;
+    UPDATE "effort_reductions" SET deleted_at = NEW.deleted_at WHERE training_block_id = NEW.id;
+END;
+
+-- Parent: exercises
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_exercises
+AFTER UPDATE OF deleted_at ON "exercises"
+FOR EACH ROW
+BEGIN
+    UPDATE "selected_exercises" SET deleted_at = NEW.deleted_at WHERE exercise_id = NEW.id;
+END;
+
+-- Parent: selected_exercises
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_selected_exercises
+AFTER UPDATE OF deleted_at ON "selected_exercises"
+FOR EACH ROW
+BEGIN
+    UPDATE "progressions" SET deleted_at = NEW.deleted_at WHERE selected_exercise_id = NEW.id;
+    UPDATE "volume_reductions" SET deleted_at = NEW.deleted_at WHERE selected_exercise_id = NEW.id;
+    UPDATE "effort_reductions" SET deleted_at = NEW.deleted_at WHERE selected_exercise_id = NEW.id;
+END; 

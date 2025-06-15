@@ -208,6 +208,10 @@ export interface BaseResult {
   times: JumpTime[];
   avgFlightTime: number;
   avgHeightReached: number;
+  avgFloorTime?: number;
+  avgPerformance?: number;
+  avgStiffness?: number;
+  performanceDrop?: number;
   takeoffFoot: "right" | "left" | "both";
   sensitivity: number;
 }
@@ -239,8 +243,6 @@ export interface MultipleJumpsResult extends BaseResult {
   criteria: "numberOfJumps" | "stiffness" | "time";
   criteriaValue: number | null;
   avgFloorTime: number;
-  stiffness?: number[]; // Helper to avoid extra calculations
-  performance: number[];
   avgStiffness: number;
   avgPerformance: number;
   performanceDrop: number;

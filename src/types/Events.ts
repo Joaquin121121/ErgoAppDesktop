@@ -1,6 +1,20 @@
 export interface Event {
+  id: string;
+  eventType: "competition" | "test" | "trainingSession";
   name: string;
   date: Date;
-  duration: number;
-  eventType: "competition" | "test" | "trainingSession";
+  duration?: number;
+  athleteId: string;
+}
+export interface RawEvent {
+  id: string;
+  event_type: string;
+  event_name: string;
+  event_date: string;
+  duration: number | null;
+  last_changed: string;
+  coach_id: string;
+  deleted_at: string | null;
+  created_at: string;
+  athlete_id: string;
 }

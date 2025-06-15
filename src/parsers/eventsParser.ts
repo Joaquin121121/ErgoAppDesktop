@@ -1,22 +1,8 @@
 import Database from "@tauri-apps/plugin-sql";
 import { v4 as uuidv4 } from "uuid";
-import { CalendarEvent } from "../components/Calendar";
+import { Event, RawEvent } from "../types/Events";
 
-interface RawEvent {
-  id: string;
-  event_type: string;
-  event_name: string;
-  event_date: string;
-  duration: number | null;
-  last_changed: string;
-  coach_id: string;
-  deleted_at: string | null;
-  created_at: string;
-  athlete_id: string;
-}
-
-// Get all events for a coach
-export const getEvents = async (coachId: string): Promise<CalendarEvent[]> => {
+export const getEvents = async (coachId: string): Promise<Event[]> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
 
@@ -27,27 +13,28 @@ export const getEvents = async (coachId: string): Promise<CalendarEvent[]> => {
       [coachId]
     );
 
-    return events.map((event: RawEvent) => ({
-      id: event.id,
-      coach_id: event.coach_id,
-      event_type: event.event_type as
-        | "competition"
-        | "trainingSession"
-        | "testSession",
-      event_name: event.event_name,
-      event_date: event.event_date,
-      duration: event.duration || undefined,
-      last_changed: event.last_changed,
-      athlete_id: event.athlete_id,
-    }));
+    return events.map(
+      (event: RawEvent) =>
+        ({
+          id: event.id,
+          eventType: event.event_type as
+            | "competition"
+            | "test"
+            | "trainingSession",
+          name: event.event_name,
+          date: new Date(event.event_date),
+          duration: event.duration || undefined,
+          athleteId: event.athlete_id,
+        } as Event)
+    );
   } catch (error) {
     return [];
   }
 };
 
-// Save or update an event
 export const saveEvent = async (
-  event: Omit<CalendarEvent, "id"> & { id?: string },
+  event: Event,
+  coachId: string,
   externalDb?: any
 ): Promise<{ success: boolean; id?: string; error?: string }> => {
   const dbToUse =
@@ -64,42 +51,39 @@ export const saveEvent = async (
       const now = new Date().toISOString();
 
       if (event.id) {
-        // Update existing event
         await dbToUse.execute(
           `UPDATE event 
            SET event_type = ?, event_name = ?, event_date = ?, 
                duration = ?, last_changed = ?, athlete_id = ?
            WHERE id = ? AND deleted_at IS NULL`,
           [
-            event.event_type,
-            event.event_name,
-            event.event_date,
+            event.eventType,
+            event.name,
+            event.date,
             event.duration || null,
             now,
-            event.athlete_id,
+            event.athleteId,
             event.id,
           ]
         );
       } else {
-        // Insert new event
         await dbToUse.execute(
           `INSERT INTO event (id, event_type, event_name, event_date, 
                              duration, last_changed, coach_id, athlete_id, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             eventId,
-            event.event_type,
-            event.event_name,
-            event.event_date,
+            event.eventType,
+            event.name,
+            event.date,
             event.duration || null,
             now,
-            event.coach_id,
-            event.athlete_id,
+            coachId,
+            event.athleteId,
             now,
           ]
         );
 
-        // Verify the event was inserted
         const verifyResult = await dbToUse.select(
           "SELECT id FROM event WHERE id = ?",
           [eventId]
@@ -122,7 +106,6 @@ export const saveEvent = async (
       throw innerError;
     }
   } catch (error) {
-    // Check if it's a foreign key constraint error
     if (
       error instanceof Error &&
       (error.message.includes("FOREIGN KEY constraint failed") ||
@@ -142,7 +125,6 @@ export const saveEvent = async (
   }
 };
 
-// Soft delete an event
 export const deleteEvent = async (
   eventId: string | number,
   externalDb?: any
@@ -152,7 +134,6 @@ export const deleteEvent = async (
   const isManagingTransaction = !externalDb;
 
   try {
-    // Ensure eventId is a string
     const eventIdStr = eventId.toString();
 
     if (isManagingTransaction) {
@@ -161,22 +142,6 @@ export const deleteEvent = async (
 
     try {
       const now = new Date().toISOString();
-
-      // First check if the event exists and is not already deleted
-      const existingEvent = await dbToUse.select(
-        "SELECT id, deleted_at FROM event WHERE id = ?",
-        [eventIdStr]
-      );
-
-      if (existingEvent.length === 0) {
-        throw new Error(`Event with ID ${eventIdStr} not found in database`);
-      }
-
-      if (existingEvent[0].deleted_at !== null) {
-        throw new Error(`Event with ID ${eventIdStr} is already deleted`);
-      }
-
-      // Soft delete the event
       await dbToUse.execute(
         "UPDATE event SET deleted_at = ?, last_changed = ? WHERE id = ?",
         [now, now, eventIdStr]
@@ -201,13 +166,14 @@ export const deleteEvent = async (
   }
 };
 
-// Get events for a specific athlete
 export const getEventsByAthlete = async (
   athleteId: string,
-  coachId: string
-): Promise<CalendarEvent[]> => {
+  coachId: string,
+  externalDb?: any
+): Promise<Event[]> => {
   try {
-    const db = await (Database as any).load("sqlite:ergolab.db");
+    const db =
+      externalDb || (await (Database as any).load("sqlite:ergolab.db"));
 
     const events = await db.select(
       `SELECT * FROM event 
@@ -216,41 +182,29 @@ export const getEventsByAthlete = async (
       [athleteId, coachId]
     );
 
-    return events.map((event: RawEvent) => ({
-      id: event.id,
-      coach_id: event.coach_id,
-      event_type: event.event_type as
-        | "competition"
-        | "trainingSession"
-        | "testSession",
-      event_name: event.event_name,
-      event_date: event.event_date,
-      duration: event.duration || undefined,
-      last_changed: event.last_changed,
-      athlete_id: event.athlete_id,
-    }));
+    return events.map(
+      (event: RawEvent) =>
+        ({
+          id: event.id,
+          eventType: event.event_type as
+            | "competition"
+            | "test"
+            | "trainingSession",
+          name: event.event_name,
+          date: new Date(event.event_date),
+          duration: event.duration || undefined,
+          athleteId: event.athlete_id,
+        } as Event)
+    );
   } catch (error) {
     return [];
   }
 };
 
-// Batch save multiple events
 export const saveAllEvents = async (data: {
-  events: (Omit<CalendarEvent, "id"> & { id?: string })[];
+  events: Event[];
   coachId: string;
 }): Promise<{ success: boolean; results: any[]; error?: string }> => {
-  if (!data || !data.events || !data.coachId) {
-    return {
-      success: false,
-      error: "Invalid input: events array and coachId are required.",
-      results: [],
-    };
-  }
-
-  if (data.events.length === 0) {
-    return { success: true, results: [] };
-  }
-
   const db = await (Database as any).load("sqlite:ergolab.db");
 
   try {
@@ -266,7 +220,7 @@ export const saveAllEvents = async (data: {
         await db.execute("ROLLBACK");
         return {
           success: false,
-          error: `Failed to save event ${i} (${event.event_name}): ${result.error}`,
+          error: `Failed to save event ${i} (${event.name}): ${result.error}`,
           results: operationResults,
         };
       }
@@ -291,7 +245,6 @@ export const saveAllEvents = async (data: {
   }
 };
 
-// Check if a coach exists in the database
 export const checkCoachExists = async (coachId: string): Promise<boolean> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
@@ -305,7 +258,6 @@ export const checkCoachExists = async (coachId: string): Promise<boolean> => {
   }
 };
 
-// Check if an athlete exists in the database
 export const checkAthleteExists = async (
   athleteId: string
 ): Promise<boolean> => {
@@ -321,7 +273,6 @@ export const checkAthleteExists = async (
   }
 };
 
-// Delete all events for a specific athlete
 export const deleteEventsForAthlete = async (
   athleteId: string,
   externalDb?: any
@@ -338,14 +289,12 @@ export const deleteEventsForAthlete = async (
     try {
       const now = new Date().toISOString();
 
-      // Get all events for this athlete that aren't already deleted
       const athleteEvents = await dbToUse.select(
         "SELECT id FROM event WHERE athlete_id = ? AND deleted_at IS NULL",
         [athleteId]
       );
 
       if (athleteEvents.length > 0) {
-        // Soft delete all events for this athlete
         await dbToUse.execute(
           "UPDATE event SET deleted_at = ?, last_changed = ? WHERE athlete_id = ? AND deleted_at IS NULL",
           [now, now, athleteId]
