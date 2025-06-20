@@ -1,15 +1,125 @@
 import React from "react";
 
+export interface RawTrainingPlan {
+  id: string;
+  n_of_weeks: number;
+  n_of_sessions: number;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface RawTrainingModel {
+  id: string;
+  name: string;
+  description: string | null;
+  training_plan_id: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface RawSession {
+  id: string;
+  plan_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface RawSessionDay {
+  id: string;
+  session_id: string;
+  day_name: string;
+  created_at: string;
+  deleted_at: string | null;
+}
+
+export interface RawTrainingBlock {
+  id: string;
+  session_id: string;
+  name: string;
+  series: number;
+  repetitions: string;
+  effort: number;
+  block_model: "sequential" | "series";
+  comments: string | null;
+  rest_time: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface RawSelectedExercise {
+  id: string;
+  session_id: string;
+  exercise_id: string;
+  block_id: string | null;
+  series: number;
+  repetitions: string;
+  effort: number;
+  rest_time: number;
+  comments: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface RawExercise {
+  id: string;
+  name: string;
+  video_ref: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface RawProgression {
+  id: string;
+  selected_exercise_id: string | null;
+  training_block_id: string | null;
+  series: number;
+  repetitions: string;
+  effort: number;
+  week_number: number;
+  created_at: string;
+  deleted_at: string | null;
+}
+
+export interface RawVolumeReduction {
+  id: string;
+  selected_exercise_id: string | null;
+  training_block_id: string | null;
+  fatigue_level: string;
+  reduction_percentage: number;
+  created_at: string;
+  deleted_at: string | null;
+}
+
+export interface RawEffortReduction {
+  id: string;
+  selected_exercise_id: string | null;
+  training_block_id: string | null;
+  effort_level: string;
+  reduction_amount: number;
+  created_at: string;
+  deleted_at: string | null;
+}
+
 // Type definitions for training plans
 export type DayName = string;
 
 export interface Progression {
+  id: string;
   series: number;
   repetitions: string;
   effort: number;
 }
 
 export interface DisplayProgression {
+  id: string;
   series: string;
   repetitions: string;
   effort: string;
@@ -40,15 +150,16 @@ export interface SelectedExercise {
   progression: Progression[];
   comments: string;
   blockId?: string;
-  last_changed?: string;
 }
 
 export interface VolumeReduction {
-  [fatigueLevel: string]: number;
+  id: string;
+  [fatigueLevel: string]: number | string;
 }
 
 export interface EffortReduction {
-  [effortLevel: string]: number;
+  id: string;
+  [effortLevel: string]: number | string;
 }
 
 export interface TrainingBlock {
@@ -62,12 +173,10 @@ export interface TrainingBlock {
   reduceVolume?: VolumeReduction;
   reduceEffort?: EffortReduction;
   selectedExercises: SelectedExercise[]; //Dont include in db schema
-  exercisesInSeries: SelectedExercise[]; //Dont include in db schema
   blockModel: "sequential" | "series";
   progression: Progression[];
   comments: string;
   restTime: number;
-  last_changed?: string;
 }
 
 export interface Session {
@@ -76,7 +185,6 @@ export interface Session {
   name: string;
   days: DayName[];
   exercises: (SelectedExercise | TrainingBlock)[];
-  last_changed?: string;
 }
 
 export interface PlanState {
@@ -84,7 +192,8 @@ export interface PlanState {
   nOfWeeks: number;
   sessions: Session[];
   nOfSessions: number;
-  last_changed?: string;
+  modelId?: string;
+  athleteId?: string;
 }
 
 export interface TrainingModel extends PlanState {
@@ -101,44 +210,36 @@ export interface RangeEntry {
 export interface NewPlanContextType {
   planState: PlanState;
   setPlanState: React.Dispatch<React.SetStateAction<PlanState>>;
-  updateWeeks: (weeks: number, isModel?: boolean) => void;
-  linkTrainingPlanToModel: (planId: string, modelId: string) => Promise<void>;
-  unlinkTrainingPlanFromModel: (
-    planId: string,
-    modelId: string
-  ) => Promise<void>;
+  updateWeeks: (weeks: number, isModel?: boolean) => Promise<void>;
   addSession: (
     session: Omit<Session, "id" | "planId">,
     isModel?: boolean
   ) => Promise<PlanState | TrainingModel>;
   updateSession: (
-    index: number,
-    session: Omit<Session, "id" | "planId">,
+    session: Session,
     isModel?: boolean
   ) => Promise<PlanState | TrainingModel>;
-  removeSession: (index: number, isModel?: boolean) => void;
+  removeSession: (index: number, isModel?: boolean) => Promise<void>;
   addTrainingBlock: (
     sessionIndex: number,
     exerciseData: Exercise[],
-    selectedExercise: SelectedExercise, //contains the default data for the block
-    blockModel: "sequential" | "series",
+    trainingBlock: Omit<TrainingBlock, "id" | "selectedExercises">,
     isModel?: boolean
-  ) => void;
-
+  ) => Promise<PlanState | TrainingModel | void>;
   updateTrainingBlock: (
     sessionIndex: number,
     exerciseId: string,
     block: TrainingBlock,
     isModel?: boolean
-  ) => void;
+  ) => Promise<void>;
   removeExercise: (
     sessionIndex: number,
     exerciseId: string,
     blockId?: string,
     isModel?: boolean
-  ) => void;
+  ) => Promise<void>;
   resetPlan: () => void;
-  updateNOfSessions: (n: number, isModel?: boolean) => void;
+  updateNOfSessions: (n: number, isModel?: boolean) => Promise<void>;
   currentExerciseBlock: TrainingBlock | null;
   setCurrentExerciseBlock: React.Dispatch<
     React.SetStateAction<TrainingBlock | null>
@@ -150,43 +251,35 @@ export interface NewPlanContextType {
   saveSelectedExercise: (
     sessionIndex: number,
     currentSelectedExercise: SelectedExercise,
-    isModel?: boolean
-  ) => void;
+    isModel: boolean
+  ) => Promise<void>;
   model: TrainingModel;
   setModel: React.Dispatch<React.SetStateAction<TrainingModel>>;
   resetModelState: () => void;
-  updateExerciseProperty: (
+  updateProgression: (
     sessionIndex: number,
     exerciseId: string,
-    property: keyof SelectedExercise,
-    value: any,
-    blockId?: string,
+    progressionIndex: number,
+    progression: Progression,
     isModel?: boolean
-  ) => void;
-  updateExerciseProgression: (
-    sessionIndex: number,
-    exerciseId: string,
-    weekIndex: number,
-    field: keyof Progression,
-    value: string | number,
-    blockId?: string,
-    isModel?: boolean
-  ) => void;
-  // Manual save functions
+  ) => Promise<void>;
   saveNewTrainingPlan: (updatedPlan?: PlanState) => Promise<void>;
   saveNewTrainingModel: (updatedModel?: TrainingModel) => Promise<void>;
-  // New boolean flags to track if model/plan are new
   isNewModel: boolean;
   isNewTrainingPlan: boolean;
   setIsNewModel: React.Dispatch<React.SetStateAction<boolean>>;
   setIsNewTrainingPlan: React.Dispatch<React.SetStateAction<boolean>>;
-  // Expose sync functionality
-  syncStats: any;
-  isProcessing: boolean;
-  forceSyncAll: () => void;
-  // Model metadata update functions
   updateModelName: (name: string) => Promise<void>;
   updateModelDescription: (description: string) => Promise<void>;
+  deleteTrainingModel: (modelId: string) => Promise<void>;
+  createTrainingPlanFromModel: () => Promise<void>;
+  updateSelectedExercise: (
+    sessionIndex: number,
+    exerciseId: string,
+    exercise: SelectedExercise,
+    blockId?: string,
+    isModel?: boolean
+  ) => Promise<void>;
 }
 
 // Default values
@@ -198,10 +291,13 @@ export const defaultTrainingBlock: TrainingBlock = {
   series: 3,
   repetitions: "8-12",
   effort: 70,
-  reduceVolume: {},
-  reduceEffort: {},
+  reduceVolume: {
+    id: "",
+  },
+  reduceEffort: {
+    id: "",
+  },
   selectedExercises: [],
-  exercisesInSeries: [],
   blockModel: "sequential",
   progression: [],
   comments: "",
@@ -225,31 +321,37 @@ export const defaultPlanState: PlanState = {
 
 export const defaultProgression: Progression[] = [
   {
+    id: "",
     series: 3,
     repetitions: "6-8",
     effort: 80,
   },
   {
+    id: "",
     series: 3,
     repetitions: "8-10",
     effort: 85,
   },
   {
+    id: "",
     series: 3,
     repetitions: "10-12",
     effort: 90,
   },
   {
+    id: "",
     series: 3,
     repetitions: "12-14",
     effort: 95,
   },
   {
+    id: "",
     series: 3,
     repetitions: "14-16",
     effort: 100,
   },
   {
+    id: "",
     series: 4,
     repetitions: "14-16",
     effort: 100,

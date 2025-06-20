@@ -1,7 +1,6 @@
-import React, { useEffect } from "react";
+import React from "react";
 import SeamlessLoopPlayer from "./SeamlessLoopPlayer";
 import TonalButton from "./TonalButton";
-import navAnimations from "../styles/animations.module.css";
 import { useState } from "react";
 import inputStyles from "../styles/inputStyles.module.css";
 import OutlinedButton from "./OutlinedButton";
@@ -9,7 +8,7 @@ import { useNewPlan } from "../contexts/NewPlanContext";
 
 interface TrainingPlanCreatorProps {
   isCreatingPlan: boolean;
-  onNext: () => void;
+  onNext: (usingModel: boolean) => void;
   displayPopup: () => void;
   animation: string;
   handleToggleCreatingPlan: () => void;
@@ -32,83 +31,107 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
     nOfSessions: { value: "", error: "" },
   });
   const [validationAttempted, setValidationAttempted] = useState(false);
-  const [useAsModel, setUseAsModel] = useState(false);
+  const [useModel, setUseModel] = useState(false);
 
   const {
+    setPlanState,
+    setModel,
     planState,
     model,
-    updateNOfSessions,
-    updateWeeks,
-    updateModelDescription,
-    updateModelName,
+    createTrainingPlanFromModel,
   } = useNewPlan();
 
-  const currentPlan = isModel ? model : planState;
+  const validateForm = () => {
+    const newFormState = { ...formState };
+    let hasErrors = false;
 
-  const localOnNext = () => {
-    setValidationAttempted(true);
     if (isModel) {
       if (formState.modelName.value === "") {
-        setFormState({
-          ...formState,
-          modelName: {
-            value: "",
-            error: "El nombre del modelo no puede estar vacío",
-          },
-        });
-        return;
+        newFormState.modelName = {
+          value: "",
+          error: "El nombre del modelo no puede estar vacío",
+        };
+        hasErrors = true;
       }
       if (formState.modelDescription.value === "") {
-        setFormState({
-          ...formState,
-          modelDescription: {
-            value: "",
-            error: "La descripcion del modelo no puede estar vacía",
-          },
-        });
-        return;
+        newFormState.modelDescription = {
+          value: "",
+          error: "La descripcion del modelo no puede estar vacía",
+        };
+        hasErrors = true;
       }
     }
+
     if (
       parseInt(formState.nOfWeeks.value) === 0 ||
       formState.nOfWeeks.value === ""
     ) {
-      setFormState({
-        ...formState,
-        nOfWeeks: { value: "", error: "El numero de semanas no puede ser 0" },
-      });
-      return;
+      newFormState.nOfWeeks = {
+        value: "",
+        error: "El numero de semanas no puede ser 0",
+      };
+      hasErrors = true;
     }
+
     if (
       parseInt(formState.nOfSessions.value) === 0 ||
       formState.nOfSessions.value === ""
     ) {
-      setFormState({
-        ...formState,
-        nOfSessions: {
-          value: "",
-          error: "El numero de sesiones no puede ser 0",
-        },
-      });
+      newFormState.nOfSessions = {
+        value: "",
+        error: "El numero de sesiones no puede ser 0",
+      };
+      hasErrors = true;
+    }
+
+    if (useModel && formState.modelName.value === "") {
+      newFormState.modelName = {
+        value: "",
+        error: "El nombre del modelo no puede estar vacío",
+      };
+      hasErrors = true;
+    }
+
+    if (hasErrors) {
+      setFormState(newFormState);
+    }
+
+    return !hasErrors;
+  };
+
+  const localOnNext = async () => {
+    setValidationAttempted(true);
+    if (!useModel && !validateForm()) {
+      console.log("Formulario invalido");
       return;
     }
-    if (useAsModel && formState.modelName.value === "") {
-      setFormState({
-        ...formState,
-        modelName: {
-          value: "",
-          error: "El nombre del modelo no puede estar vacío",
-        },
-      });
-      return;
-    }
-    updateNOfSessions(parseInt(formState.nOfSessions.value), isModel);
-    updateWeeks(parseInt(formState.nOfWeeks.value), isModel);
     if (isModel) {
-      updateModelDescription(formState.modelDescription.value);
-      updateModelName(formState.modelName.value);
+      setModel({
+        ...model,
+        name: formState.modelName.value,
+        description: formState.modelDescription.value,
+        nOfWeeks: parseInt(formState.nOfWeeks.value),
+        nOfSessions: parseInt(formState.nOfSessions.value),
+        sessions: [],
+      });
+    } else {
+      if (useModel) {
+        await createTrainingPlanFromModel();
+      } else {
+        setPlanState({
+          ...planState,
+          nOfWeeks: parseInt(formState.nOfWeeks.value),
+          nOfSessions: parseInt(formState.nOfSessions.value),
+          sessions: [],
+        });
+      }
     }
-    onNext();
+    onNext(useModel);
+  };
+
+  const onUseModel = () => {
+    setUseModel(true);
+    displayPopup();
   };
 
   return (
@@ -158,7 +181,8 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
                   formState.nOfWeeks.error &&
                   inputStyles.focused
                 } `}
-                value={formState.nOfWeeks.value}
+                value={useModel ? planState.nOfWeeks : formState.nOfWeeks.value}
+                contentEditable={useModel}
                 onChange={(e) => {
                   if (parseInt(e.target.value) > 0 || e.target.value === "") {
                     setFormState({
@@ -171,63 +195,6 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
               <p className="text-lg text-darkGray">semanas</p>
             </div>
 
-            {!isModel && (
-              <>
-                <p className="mt-8 text-lg">Usar como modelo?</p>
-                <div className="flex gap-x-8 mt-2">
-                  <button
-                    className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                      useAsModel
-                        ? "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
-                        : ""
-                    }`}
-                    onClick={() => setUseAsModel(true)}
-                  >
-                    Sí
-                  </button>
-                  <button
-                    className={`rounded-2xl px-4 py-1 flex items-center justify-center font-light text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
-                      !useAsModel
-                        ? "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
-                        : ""
-                    }`}
-                    onClick={() => setUseAsModel(false)}
-                  >
-                    No
-                  </button>
-                </div>
-                <p
-                  className="mt-4 text-secondary hover:opacity-70 active:opacity-40 transition-all duration-200 cursor-pointer"
-                  onClick={() => {
-                    displayPopup();
-                  }}
-                >
-                  Seleccionar modelo base
-                </p>
-              </>
-            )}
-
-            {useAsModel && (
-              <>
-                <p className="mt-8 text-lg">Nombre del Modelo</p>
-                <input
-                  type="text"
-                  className={`${
-                    inputStyles.input
-                  } bg-offWhite rounded-2xl shadow-sm pl-2 w-80 h-10 text-tertiary ${
-                    validationAttempted &&
-                    formState.modelName.error &&
-                    inputStyles.focused
-                  }`}
-                  onChange={(e) => {
-                    setFormState({
-                      ...formState,
-                      modelName: { value: e.target.value, error: "" },
-                    });
-                  }}
-                />
-              </>
-            )}
             <p className=" text-lg mb-2 mt-8">Numero de sesiones</p>
             <div className="flex gap-x-4 items-center">
               <input
@@ -239,7 +206,10 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
                   formState.nOfSessions.error &&
                   inputStyles.focused
                 } `}
-                value={formState.nOfSessions.value}
+                value={
+                  useModel ? planState.nOfSessions : formState.nOfSessions.value
+                }
+                contentEditable={useModel}
                 onChange={(e) => {
                   if (parseInt(e.target.value) > 0 || e.target.value === "") {
                     setFormState({
@@ -266,10 +236,10 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
                 />
               </>
             )}
-            {!useAsModel && !isModel && (
+            {!useModel && !isModel && (
               <OutlinedButton
                 title="Usar Modelo Preexistente"
-                onClick={displayPopup}
+                onClick={onUseModel}
                 containerStyles="mt-8 self-center"
                 icon="modelRed"
               />

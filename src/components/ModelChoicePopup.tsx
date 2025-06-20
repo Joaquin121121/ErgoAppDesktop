@@ -3,6 +3,8 @@ import navAnimations from "../styles/animations.module.css";
 import OutlinedButton from "./OutlinedButton";
 import inputStyles from "../styles/inputStyles.module.css";
 import { useNewPlan } from "../contexts/NewPlanContext";
+import { useTrainingModels } from "../contexts/TrainingModelsContext";
+import { PlanState, TrainingModel } from "../types/trainingPlan";
 function ModelChoicePopup({
   closePopup,
   externalClose,
@@ -16,36 +18,26 @@ function ModelChoicePopup({
   const [searchTerm, setSearchTerm] = useState("");
   const [searchBarFocus, setSearchBarFocus] = useState(false);
 
-  const { linkTrainingPlanToModel, planState } = useNewPlan();
+  const { setPlanState } = useNewPlan();
+  const { trainingModels } = useTrainingModels();
 
-  const data = [
-    {
-      id: 1,
-      name: "Modelo Ciclistas",
-      blocks: 4,
-      trainingModel: "2x1",
-      duration: "12 semanas",
-    },
-    {
-      id: 2,
-      name: "Modelo Triatletas",
-      blocks: 6,
-      trainingModel: "3x1",
-      duration: "16 semanas",
-    },
-    {
-      id: 3,
-      name: "Modelo Runners",
-      blocks: 5,
-      trainingModel: "2x2",
-      duration: "10 semanas",
-    },
-  ];
+  const [loadedModels, setLoadedModels] =
+    useState<TrainingModel[]>(trainingModels);
 
-  // Filter models based on search term
-  const filteredModels = data.filter((model) =>
+  const filteredModels = loadedModels.filter((model) =>
     model.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const useModel = (model: TrainingModel) => {
+    const newPlanState: PlanState = {
+      id: model.id,
+      nOfWeeks: model.nOfWeeks,
+      nOfSessions: model.nOfSessions,
+      sessions: model.sessions,
+    };
+    setPlanState(newPlanState);
+    onClose();
+  };
 
   const onClose = () => {
     setAnimation(navAnimations.popupFadeOutTop);
@@ -114,17 +106,7 @@ function ModelChoicePopup({
               className={`w-3/4 border border-gray rounded-2xl flex hover:cursor-pointer hover:bg-offWhite active:opacity-40 transition-all duration-200 ${
                 index > 0 ? "mt-2" : ""
               }`}
-              onClick={async () => {
-                try {
-                  await linkTrainingPlanToModel(
-                    planState.id,
-                    model.id.toString()
-                  );
-                  onClose();
-                } catch (error) {
-                  console.error("Error linking plan to model:", error);
-                }
-              }}
+              onClick={() => useModel(model)}
             >
               <div className="w-2/5 flex items-center justify-center">
                 <img src="/planRed.png" alt="" className="h-16 w-16" />
@@ -132,16 +114,16 @@ function ModelChoicePopup({
               <div className="w-3/5 flex flex-col items-center">
                 <p className="text-secondary text-xl mt-8 mb-4">{model.name}</p>
                 <p className="text-darkGray text-lg">
-                  N de bloques:{" "}
-                  <span className="text-tertiary">{model.blocks}</span>
-                </p>
-                <p className="mt-2 text-darkGray text-lg">
-                  Modelo de Entrenamiento:{" "}
-                  <span className="text-tertiary">{model.trainingModel}</span>
+                  N de sesiones:{" "}
+                  <span className="text-tertiary">
+                    {model.nOfSessions} sesiones
+                  </span>
                 </p>
                 <p className="mt-2 text-darkGray text-lg">
                   Duracion:{" "}
-                  <span className="text-tertiary">{model.duration}</span>
+                  <span className="text-tertiary">
+                    {model.nOfWeeks} semanas
+                  </span>
                 </p>
                 <OutlinedButton
                   containerStyles="my-4"

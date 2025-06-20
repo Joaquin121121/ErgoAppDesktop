@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import { useStudyContext } from "../contexts/StudyContext";
 import { CompletedStudy, units, boscoTests } from "../types/Studies";
 import { useTranslation } from "react-i18next";
 import { formatDate } from "../utils/utils";

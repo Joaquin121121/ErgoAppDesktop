@@ -11,9 +11,10 @@ import AthleteFilter from "../components/AthleteFilter";
 import { athleteAgeRanges } from "../types/Athletes";
 import { useAthleteComparison } from "../contexts/AthleteComparisonContext";
 import { useBlur } from "../contexts/BlurContext";
-import getAthletes, { deleteAthlete } from "../hooks/parseAthletes";
+import { getAthletes, deleteAthlete } from "../parsers/athleteDataParser";
 import { useUser } from "../contexts/UserContext";
 import { useDatabaseSync } from "../hooks/useDatabaseSync";
+import { useAthletes } from "../contexts/AthletesContext";
 // New interface for filter state
 interface FilterState {
   age: string[];
@@ -46,7 +47,6 @@ function Athletes({
     left: 0,
     top: 0,
   });
-  const { syncSpecificTable } = useDatabaseSync();
   const { user } = useUser();
   // Updated filter state to handle multiple criteria
   const [selectedFilters, setSelectedFilters] = useState<FilterState>({
@@ -61,8 +61,10 @@ function Athletes({
 
   const navigate = useNavigate();
   const { isBlurred, setIsBlurred } = useBlur();
-
-  const [loadedAthletes, setLoadedAthletes] = useState<[string, Athlete][]>([]);
+  const { athletes } = useAthletes();
+  const [loadedAthletes, setLoadedAthletes] = useState<[string, Athlete][]>(
+    athletes.map((athlete) => [athlete.name, athlete])
+  );
   const [filteredAthletes, setFilteredAthletes] = useState<[string, Athlete][]>(
     []
   );
@@ -73,7 +75,7 @@ function Athletes({
   const { resetAthlete, setAthlete, setSelectedAthletes } = useStudyContext();
   const filterButtonRef = useRef(null);
   const { setAthleteToCompare1, setAthleteToCompare2 } = useAthleteComparison();
-
+  const { pushRecord } = useDatabaseSync();
   // Effect to update categories when discipline changes
   useEffect(() => {
     if (selectedFilters.discipline.length === 0) {
@@ -170,6 +172,7 @@ function Athletes({
     const athlete = loadedAthletes.find((athlete) => athlete[0] === key);
     if (athlete) {
       setAthlete(athlete[1]);
+
       console.log(athlete[1]);
       customNavigate("forward", "athletes", "athleteMenu");
       setTimeout(() => {
@@ -180,8 +183,7 @@ function Athletes({
 
   const onDelete = async () => {
     try {
-      await deleteAthlete(athleteToDeleteId);
-      syncSpecificTable("athlete");
+      await deleteAthlete(athleteToDeleteId, pushRecord);
       setLoadedAthletes(
         loadedAthletes.filter((e) => e[1].name !== athleteToDelete)
       );
@@ -203,11 +205,6 @@ function Athletes({
 
   // Effects
   useEffect(() => {
-    const loadAthletes = async () => {
-      const athletes = await getAthletes(user.id);
-      setLoadedAthletes(athletes.map((athlete) => [athlete.name, athlete]));
-    };
-    loadAthletes();
     resetAthlete();
     setSelectedAthletes([]);
   }, []);
@@ -282,8 +279,8 @@ function Athletes({
       >
         {/* <div className="absolute w-16 h-16 top-8 right-8 bg-gray rounded-full"></div> */}
         <div className="flex mt-12">
-          <h1 className="pt-2">Hola Profe!</h1>
-          <img src="/hand.png" className="h-16 w-16 ml-12" />
+          <h1 className="pt-2">Atletas</h1>
+          {/*           <img src="/athleteGroup.jpg" className="h-20 w-20 ml-12" /> */}
         </div>
         <div className="w-4/5  flex items-center justify-center">
           {comparing ? (

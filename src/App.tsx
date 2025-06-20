@@ -5,6 +5,7 @@ import Studies from "./pages/Studies";
 import Athletes from "./pages/Athletes";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import { StudyProvider } from "./contexts/StudyContext";
 import { useNavigate } from "react-router-dom";
 import StartTest from "./pages/StartTest";
 import NewTest from "./pages/NewTest";
@@ -31,6 +32,7 @@ import AthleteMenu from "./pages/AthleteMenu";
 import TrainingMenu from "./pages/TrainingMenu";
 import { NewPlanProvider } from "./contexts/NewPlanContext";
 import AuthGate, { Page } from "./components/AuthGate";
+import { AthletesProvider } from "./contexts/AthletesContext";
 // Import useDatabaseSync for type checking only
 import { useDatabaseSync } from "./hooks/useDatabaseSync";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -38,6 +40,7 @@ import { PhysicalSize } from "@tauri-apps/api/window";
 import ContentLibrary from "./pages/ContentLibrary";
 import TrainingModelLibrary from "./pages/TrainingModelLibrary";
 import TrainingModel from "./pages/TrainingModel";
+import { TrainingModelsProvider } from "./contexts/TrainingModelsContext";
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
@@ -419,29 +422,35 @@ function App() {
 
   return (
     <UserProvider>
-      <AthleteComparisonProvider>
-        <NewEventProvider>
-          <NewPlanProvider>
-            <BlurProvider>
-              <CalendarProvider>
-                <HashRouter>
-                  <AuthGate
-                    WithLayout={WithLayout}
-                    layoutProps={{
-                      isExpanded,
-                      setIsExpanded,
-                      selectedOption,
-                      setSelectedOption,
-                    }}
-                  >
-                    <RouteContentWrapper />
-                  </AuthGate>
-                </HashRouter>
-              </CalendarProvider>
-            </BlurProvider>
-          </NewPlanProvider>
-        </NewEventProvider>
-      </AthleteComparisonProvider>
+      <AthletesProvider>
+        <StudyProvider>
+          <TrainingModelsProvider>
+            <AthleteComparisonProvider>
+              <NewEventProvider>
+                <NewPlanProvider>
+                  <BlurProvider>
+                    <CalendarProvider>
+                      <HashRouter>
+                        <AuthGate
+                          WithLayout={WithLayout}
+                          layoutProps={{
+                            isExpanded,
+                            setIsExpanded,
+                            selectedOption,
+                            setSelectedOption,
+                          }}
+                        >
+                          <RouteContentWrapper />
+                        </AuthGate>
+                      </HashRouter>
+                    </CalendarProvider>
+                  </BlurProvider>
+                </NewPlanProvider>
+              </NewEventProvider>
+            </AthleteComparisonProvider>
+          </TrainingModelsProvider>
+        </StudyProvider>
+      </AthletesProvider>
     </UserProvider>
   );
 }

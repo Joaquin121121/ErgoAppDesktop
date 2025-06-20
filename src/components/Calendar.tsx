@@ -17,16 +17,6 @@ import CalendarEvent from "./CalendarEvent";
 import styles from "../styles/animations.module.css";
 import { useBlur } from "../contexts/BlurContext";
 import { useCalendar } from "../contexts/CalendarContext";
-export interface CalendarEvent {
-  id?: string;
-  coach_id: string;
-  event_type: "competition" | "trainingSession" | "testSession";
-  event_name: string;
-  event_date: Date | string;
-  duration?: number;
-  last_changed: Date | string;
-  athlete_id: string;
-}
 
 interface CalendarProps {
   locale?: Locale;
@@ -283,7 +273,7 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
             const isCurrentDay = isToday(day);
             const isPastDay = isPast(day) && !isToday(day);
             const eventsForDay = events.filter((event) =>
-              isSameDay(new Date(event.event_date), day)
+              isSameDay(new Date(event.date), day)
             );
             return (
               <div
@@ -337,7 +327,8 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
                   return (
                     <CalendarEvent
                       key={eventIndex}
-                      {...event}
+                      eventType={event.eventType}
+                      eventName={event.name}
                       onClick={() => {
                         setSelectedDate(day);
                         setEventInfo(event);
@@ -364,7 +355,7 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
         >
           <img src="/back.png" className="w-7 h-7" alt="Previous" />
         </button>
-        <div className="w-60 relative">
+        <div className="w-80 relative">
           <p className="text-darkGray text-center">{footerText}</p>
           <div className="flex justify-center items-center">
             <img

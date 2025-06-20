@@ -39,11 +39,11 @@ function CompletedStudyInfo({
   const studyInfo = athlete.completedStudies.find((e) => e.id === id);
   const stiffness =
     studyInfo.results.type === "multipleJumps"
-      ? studyInfo.results.stiffness
+      ? studyInfo.results.times.map((e) => e.stiffness)
       : [];
   const performance =
     studyInfo.results.type === "multipleJumps"
-      ? studyInfo.results.performance
+      ? studyInfo.results.times.map((e) => e.performance)
       : [];
 
   const { isBlurred, setIsBlurred } = useBlur();
@@ -155,15 +155,15 @@ function CompletedStudyInfo({
                     <td
                       className={`text-inherit w-40 flex items-center justify-center `}
                       style={{
-                        opacity: e.deleted && "60%",
-                        color: e.deleted && "#9E9E9E",
+                        opacity: e.deleted ? "60%" : "100%",
+                        color: e.deleted ? "#9E9E9E" : "inherit",
                       }}
                     >
                       {i + 1}
                     </td>
                     <td
-                      className="text-inherit w-52 flex items-center justify-center"
-                      style={{ opacity: e.deleted && "60%" }}
+                      className="text-inherit w-52 flex items-center justify-center "
+                      style={{ opacity: e.deleted ? "60%" : "100%" }}
                     >
                       {e.time ? `${e.time.toFixed(2)} s` : "-"}
                     </td>
@@ -171,14 +171,14 @@ function CompletedStudyInfo({
                       study.results.type === "multipleJumps" && (
                         <td
                           className="text-inherit w-52 flex items-center justify-center"
-                          style={{ opacity: e.deleted && "60%" }}
+                          style={{ opacity: e.deleted ? "60%" : "100%" }}
                         >
                           {e.floorTime ? `${e.floorTime.toFixed(2)} s` : "-"}
                         </td>
                       )}
                     <td
                       className="text-inherit opacity w-36 flex items-center justify-center"
-                      style={{ opacity: e.deleted && "60%" }}
+                      style={{ opacity: e.deleted ? "60%" : "100%" }}
                     >
                       {e.time
                         ? `${(((9.81 * e.time ** 2) / 8) * 100).toFixed(2)} cm`
@@ -189,7 +189,7 @@ function CompletedStudyInfo({
                         <>
                           <td
                             className="text-inherit opacity w-36 flex items-center justify-center"
-                            style={{ opacity: e.deleted && "60%" }}
+                            style={{ opacity: e.deleted ? "60%" : "100%" }}
                           >
                             {stiffness?.[i]
                               ? `${stiffness[i].toFixed(2)}`
@@ -197,7 +197,7 @@ function CompletedStudyInfo({
                           </td>
                           <td
                             className="text-inherit opacity w-36 flex items-center justify-center"
-                            style={{ opacity: e.deleted && "60%" }}
+                            style={{ opacity: e.deleted ? "60%" : "100%" }}
                           >
                             {performance?.[i]
                               ? `${performance[i].toFixed(2)}%`

@@ -25,9 +25,7 @@ const initialAthlete: Athlete = {
   institution: "",
   comments: "",
   completedStudies: [],
-  createdAt: new Date(),
   deletedAt: null,
-  lastChanged: new Date(),
 };
 
 // Context interface

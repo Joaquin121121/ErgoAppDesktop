@@ -1,6 +1,31 @@
 -- Supabase Migration Script
--- WARNING: This will delete all data except from 'exercises' and 'training_plan_models' tables
+-- WARNING: This will delete all data except from 'exercises' tables
 -- Make sure to backup your data before running this script
+
+-- Clean up all tables except exercises
+DELETE FROM "athlete";
+DELETE FROM "base_result";
+DELETE FROM "basic_result";
+DELETE FROM "bosco_result";
+DELETE FROM "coach";
+DELETE FROM "drop_jump_result";
+DELETE FROM "event";
+DELETE FROM "jump_time";
+DELETE FROM "multiple_drop_jump_result";
+DELETE FROM "multiple_jumps_result";
+
+-- Clean up training-related tables except exercises
+DELETE FROM "training_plans";
+DELETE FROM "training_models";
+DELETE FROM "sessions";
+DELETE FROM "session_days";
+DELETE FROM "training_blocks";
+DELETE FROM "selected_exercises";
+DELETE FROM "progressions";
+DELETE FROM "volume_reductions";
+DELETE FROM "effort_reductions";
+
+-- Preserve: exercises
 
 -- Drop all triggers first to avoid conflicts
 DROP TRIGGER IF EXISTS set_last_changed_effort_reductions ON effort_reductions;
@@ -25,7 +50,7 @@ DROP FUNCTION IF EXISTS update_last_changed_training_models();
 DROP FUNCTION IF EXISTS update_last_changed_training_plans();
 
 -- Drop tables in reverse dependency order
--- Preserve: exercises, training_plan_models
+-- Preserve: exercises
 DROP TABLE IF EXISTS effort_reductions CASCADE;
 DROP TABLE IF EXISTS volume_reductions CASCADE;
 DROP TABLE IF EXISTS progressions CASCADE;
@@ -379,5 +404,5 @@ CREATE INDEX idx_selected_exercises_exercise_session ON selected_exercises(exerc
 CREATE INDEX idx_training_plans_sync_cover ON training_plans(last_changed, id, deleted_at);
 CREATE INDEX idx_sessions_sync_cover ON sessions(last_changed, id, plan_id, deleted_at);
 
--- Note: This script preserves 'exercises' and 'training_plan_models' tables
+-- Note: This script preserves 'exercises' tables
 -- All other tables and their data will be recreated from scratch 

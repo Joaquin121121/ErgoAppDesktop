@@ -35,18 +35,6 @@ CREATE TABLE IF NOT EXISTS "training_models" (
     FOREIGN KEY ("training_plan_id") REFERENCES "training_plans"("id")
 );
 
--- Training plan models relationship table
-CREATE TABLE IF NOT EXISTS "training_plan_models" (
-    "training_plan_id" UUID NOT NULL,
-    "model_id" UUID NOT NULL,
-    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "deleted_at" TIMESTAMP,
-    PRIMARY KEY ("training_plan_id", "model_id"),
-    FOREIGN KEY ("training_plan_id") REFERENCES "training_plans"("id"),
-    FOREIGN KEY ("model_id") REFERENCES "training_models"("id")
-);
-
 -- Sessions table
 CREATE TABLE IF NOT EXISTS "sessions" (
     "id" UUID PRIMARY KEY,
@@ -190,14 +178,6 @@ BEGIN
     UPDATE "training_models" SET last_changed = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
--- training_plan_models table
-CREATE TRIGGER IF NOT EXISTS set_last_changed_training_plan_models
-AFTER UPDATE ON "training_plan_models"
-BEGIN
-    UPDATE "training_plan_models" SET last_changed = CURRENT_TIMESTAMP 
-    WHERE training_plan_id = NEW.training_plan_id AND model_id = NEW.model_id;
-END;
-
 -- sessions table
 CREATE TRIGGER IF NOT EXISTS set_last_changed_sessions
 AFTER UPDATE ON "sessions"
@@ -256,7 +236,6 @@ END;
 CREATE INDEX IF NOT EXISTS idx_exercises_last_changed ON "exercises"("last_changed");
 CREATE INDEX IF NOT EXISTS idx_training_plans_last_changed ON "training_plans"("last_changed");
 CREATE INDEX IF NOT EXISTS idx_training_models_last_changed ON "training_models"("last_changed");
-CREATE INDEX IF NOT EXISTS idx_training_plan_models_last_changed ON "training_plan_models"("last_changed");
 CREATE INDEX IF NOT EXISTS idx_sessions_last_changed ON "sessions"("last_changed");
 CREATE INDEX IF NOT EXISTS idx_session_days_last_changed ON "session_days"("last_changed");
 CREATE INDEX IF NOT EXISTS idx_training_blocks_last_changed ON "training_blocks"("last_changed");
@@ -270,7 +249,6 @@ CREATE INDEX IF NOT EXISTS idx_effort_reductions_last_changed ON "effort_reducti
 CREATE INDEX IF NOT EXISTS idx_exercises_deleted_at ON "exercises"("deleted_at");
 CREATE INDEX IF NOT EXISTS idx_training_plans_deleted_at ON "training_plans"("deleted_at");
 CREATE INDEX IF NOT EXISTS idx_training_models_deleted_at ON "training_models"("deleted_at");
-CREATE INDEX IF NOT EXISTS idx_training_plan_models_deleted_at ON "training_plan_models"("deleted_at");
 CREATE INDEX IF NOT EXISTS idx_sessions_deleted_at ON "sessions"("deleted_at");
 CREATE INDEX IF NOT EXISTS idx_session_days_deleted_at ON "session_days"("deleted_at");
 CREATE INDEX IF NOT EXISTS idx_training_blocks_deleted_at ON "training_blocks"("deleted_at");
@@ -282,8 +260,6 @@ CREATE INDEX IF NOT EXISTS idx_effort_reductions_deleted_at ON "effort_reduction
 -- Foreign key indexes for join performance
 CREATE INDEX IF NOT EXISTS idx_training_plans_user_id ON "training_plans"("user_id");
 CREATE INDEX IF NOT EXISTS idx_training_models_training_plan_id ON "training_models"("training_plan_id");
-CREATE INDEX IF NOT EXISTS idx_training_plan_models_training_plan_id ON "training_plan_models"("training_plan_id");
-CREATE INDEX IF NOT EXISTS idx_training_plan_models_model_id ON "training_plan_models"("model_id");
 CREATE INDEX IF NOT EXISTS idx_sessions_plan_id ON "sessions"("plan_id");
 CREATE INDEX IF NOT EXISTS idx_session_days_session_id ON "session_days"("session_id");
 CREATE INDEX IF NOT EXISTS idx_training_blocks_session_id ON "training_blocks"("session_id");
@@ -304,7 +280,6 @@ CREATE INDEX IF NOT EXISTS idx_effort_reductions_training_block_id ON "effort_re
 CREATE INDEX IF NOT EXISTS idx_exercises_deleted_last_changed ON "exercises"("deleted_at", "last_changed");
 CREATE INDEX IF NOT EXISTS idx_training_plans_deleted_last_changed ON "training_plans"("deleted_at", "last_changed");
 CREATE INDEX IF NOT EXISTS idx_training_models_deleted_last_changed ON "training_models"("deleted_at", "last_changed");
-CREATE INDEX IF NOT EXISTS idx_training_plan_models_deleted_last_changed ON "training_plan_models"("deleted_at", "last_changed");
 CREATE INDEX IF NOT EXISTS idx_sessions_deleted_last_changed ON "sessions"("deleted_at", "last_changed");
 CREATE INDEX IF NOT EXISTS idx_session_days_deleted_last_changed ON "session_days"("deleted_at", "last_changed");
 CREATE INDEX IF NOT EXISTS idx_training_blocks_deleted_last_changed ON "training_blocks"("deleted_at", "last_changed");
@@ -329,12 +304,5 @@ CREATE INDEX IF NOT EXISTS idx_effort_reductions_block_deleted ON "effort_reduct
 -- Special indexes for common application queries
 CREATE INDEX IF NOT EXISTS idx_training_plans_user_deleted ON "training_plans"("user_id", "deleted_at");
 CREATE INDEX IF NOT EXISTS idx_training_models_plan_deleted ON "training_models"("training_plan_id", "deleted_at");
-CREATE INDEX IF NOT EXISTS idx_training_plan_models_plan_deleted ON "training_plan_models"("training_plan_id", "deleted_at");
-CREATE INDEX IF NOT EXISTS idx_training_plan_models_model_deleted ON "training_plan_models"("model_id", "deleted_at");
 CREATE INDEX IF NOT EXISTS idx_progressions_week_number ON "progressions"("week_number");
-CREATE INDEX IF NOT EXISTS idx_selected_exercises_exercise_session ON "selected_exercises"("exercise_id", "session_id");
-
--- Covering indexes for sync metadata queries (include commonly selected columns)
-CREATE INDEX IF NOT EXISTS idx_training_plans_sync_cover ON "training_plans"("last_changed", "id", "deleted_at");
-CREATE INDEX IF NOT EXISTS idx_training_plan_models_sync_cover ON "training_plan_models"("last_changed", "training_plan_id", "model_id", "deleted_at");
-CREATE INDEX IF NOT EXISTS idx_sessions_sync_cover ON "sessions"("last_changed", "id", "plan_id", "deleted_at"); 
+CREATE INDEX IF NOT EXISTS idx_selected_exercises_exercise_session ON "selected_exercises"("exercise_id", "session_id"); 

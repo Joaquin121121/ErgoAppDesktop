@@ -4,13 +4,11 @@ import CompletedStudyCard from "../components/CompletedStudyCard";
 import OutlinedButton from "../components/OutlinedButton";
 import { useNavigate } from "react-router-dom";
 import { useJsonFiles } from "../hooks/useJsonFiles";
-import { naturalToCamelCase } from "../utils/utils";
 import TonalButton from "../components/TonalButton";
 import Filter from "../components/Filter";
 import { useBlur } from "../contexts/BlurContext";
 import { Studies, Study, validComparisons } from "../types/Studies";
-import { deleteResult } from "../hooks/parseStudies";
-import { useDatabaseSync } from "../hooks/useDatabaseSync";
+import { deleteTest } from "../parsers/testDataParser";
 function AthleteStudies({
   isExpanded,
   animation,
@@ -28,7 +26,6 @@ function AthleteStudies({
 
   const navigate = useNavigate();
   const studies = athlete.completedStudies;
-  const { syncResult } = useDatabaseSync();
   const [studyToDelete, setStudyToDelete] = useState(null);
   const [comparing, setComparing] = useState(false);
   const [filtering, setFiltering] = useState(false);
@@ -87,8 +84,7 @@ function AthleteStudies({
       (study) => study.id === studyToDelete
     );
     try {
-      await deleteResult(resultToDelete.id, resultToDelete.results.type);
-      syncResult(resultToDelete.results.type);
+      await deleteTest(resultToDelete.id, resultToDelete.results.type);
       setStudyToDelete(null);
     } catch (error) {
       console.log(error);

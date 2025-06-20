@@ -11,6 +11,7 @@ import TrainingPlanCRUD from "../components/TrainingPlanCRUD";
 import SeamlessLoopPlayer from "../components/SeamlessLoopPlayer";
 import ModelChoicePopup from "../components/ModelChoicePopup";
 import NewExercisePopup from "../components/NewExercisePopup";
+import { useNewPlan } from "../contexts/NewPlanContext";
 
 const TrainingMenu = ({
   isExpanded,
@@ -28,6 +29,7 @@ const TrainingMenu = ({
   const { athlete } = useStudyContext();
   const navigate = useNavigate();
   const [closePopup, setClosePopup] = useState(false);
+  const { setPlanState, resetPlan } = useNewPlan();
 
   const trainingSolutions = parseAllTrainingSolutions() || [];
 
@@ -54,7 +56,9 @@ const TrainingMenu = ({
 
   const { isBlurred, setIsBlurred } = useBlur();
 
-  const [creatingPlan, setCreatingPlan] = useState(false);
+  const [creatingPlan, setCreatingPlan] = useState(
+    !!athlete.currentTrainingPlan
+  );
   const [collapseAccordion, setCollapseAccordion] = useState(false);
   const [displayPopup, setDisplayPopup] = useState(false);
   const [sessionIndex, setSessionIndex] = useState(0);
@@ -120,6 +124,15 @@ const TrainingMenu = ({
     setCollapseAccordion(true);
   }, [creatingPlan]);
 
+  useEffect(() => {
+    resetPlan();
+  }, []);
+
+  useEffect(() => {
+    if (!athlete.currentTrainingPlan?.nOfWeeks) return;
+    setPlanState(athlete.currentTrainingPlan);
+  }, [athlete.currentTrainingPlan]);
+
   return (
     <>
       <div
@@ -171,7 +184,7 @@ const TrainingMenu = ({
                 setDisplayPopup={setDisplayPopup}
                 showExercisePopup={showExercisePopup}
                 onToggleCreatingPlan={handleToggleCreatingPlan}
-                isNew
+                isNew={!athlete.currentTrainingPlan}
               />
             ) : (
               <div className="flex flex-col items-center">

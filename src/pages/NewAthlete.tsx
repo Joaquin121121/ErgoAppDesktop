@@ -16,9 +16,10 @@ import navAnimation from "../styles/animations.module.css";
 import OutlinedButton from "../components/OutlinedButton";
 import { useBlur } from "../contexts/BlurContext";
 import { useNewEvent } from "../contexts/NewEventContext";
-import { saveAllAthletes, saveAthleteInfo } from "../hooks/parseAthletes";
+import { saveAllAthletes, saveAthleteInfo } from "../parsers/athleteDataParser";
 import { useUser } from "../contexts/UserContext";
 import { useDatabaseSync } from "../hooks/useDatabaseSync";
+
 function NewAthlete({
   isExpanded,
   animation,
@@ -36,8 +37,6 @@ function NewAthlete({
 
   const [searchParams] = useSearchParams();
   const from = searchParams.get("from");
-
-  const { syncSpecificTable } = useDatabaseSync();
 
   const navigate = useNavigate();
   const { isBlurred, setIsBlurred } = useBlur();
@@ -65,7 +64,8 @@ function NewAthlete({
     completedStudies: "",
   });
 
-  const { saveJson, readDirectoryJsons } = useJsonFiles();
+  const { pushRecord } = useDatabaseSync();
+
   const { athlete, setAthlete, resetAthlete, setSelectedAthletes } =
     useStudyContext();
   const { updateAthleteName } = useNewEvent();
@@ -481,27 +481,13 @@ function NewAthlete({
     setErrors({ ...errors, [field]: "" });
   };
 
-  const loadAthletes = async () => {
-    try {
-      const result = await readDirectoryJsons("athletes");
-      const parsedAthletes = result.files
-        .map((item) => transformToAthlete(item.content)) // Access the content property
-        .filter((athlete): athlete is Athlete => athlete !== null);
-
-      console.log("Final parsed athletes:", parsedAthletes);
-      setLoadedAthletes(parsedAthletes);
-    } catch (error) {
-      console.log(error);
-    }
-  };
   const saveAthlete = async () => {
     if (!validateAthlete(athlete)) {
       return;
     }
 
     try {
-      await saveAthleteInfo(athlete, user.id);
-      syncSpecificTable("athlete");
+      await saveAthleteInfo(athlete, user.id, pushRecord);
       updateAthleteName(athlete.name);
 
       customNavigate("back", "newAthlete", from ? from : "startTest");
@@ -523,10 +509,7 @@ function NewAthlete({
       index === currentAthleteIndex ? athleteToSave : athlete
     );
     try {
-      await saveAllAthletes({
-        athleteInfo: localAthletesToSave,
-        coachId: user.id,
-      });
+      await saveAllAthletes(localAthletesToSave, user.id, pushRecord);
       setSelectedAthletes([...localAthletesToSave]);
       resetAthlete();
       customNavigate("back", "newAthlete", from ? "athletes" : "startTest");
@@ -606,10 +589,6 @@ function NewAthlete({
       }
     }
   }, [athlete?.weightUnit]);
-
-  useEffect(() => {
-    loadAthletes();
-  }, []);
 
   useEffect(() => {
     if (countryReset) {

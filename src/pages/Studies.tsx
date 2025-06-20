@@ -13,12 +13,7 @@ import inputStyles from "../styles/inputStyles.module.css";
 import { availableEquipment } from "../types/Studies";
 import ReusableFilter from "../components/ReusableFilter";
 import { useUser } from "../contexts/UserContext";
-import HandleUpdate from "../components/HandleUpdate";
-import { check, Update } from "@tauri-apps/plugin-updater";
-import { relaunch } from "@tauri-apps/plugin-process";
-import { getVersion } from "@tauri-apps/api/app";
 import { useBlur } from "../contexts/BlurContext";
-import { supabase } from "../supabase";
 
 function Studies({
   isExpanded,
@@ -171,8 +166,7 @@ function Studies({
       >
         {/* <div className="absolute w-16 h-16 top-8 right-8 bg-gray rounded-full"></div> */}
         <div className="flex mt-12">
-          <h1 className="pt-2">Hola Profe!</h1>
-          <img src="/hand.png" className="h-16 w-16 ml-12" />
+          <h1 className="pt-2">Evaluaciones</h1>
         </div>
         <div className="self-end w-3/4 flex items-center">
           <div

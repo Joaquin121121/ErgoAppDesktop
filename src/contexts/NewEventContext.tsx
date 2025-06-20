@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from "react";
 
-type EventType = "competition" | "trainingSession" | "testSession";
+type EventType = "competition" | "trainingSession" | "test";
 
 interface EventFormState {
   eventName: {
@@ -66,10 +66,10 @@ interface NewEventContextType {
   clearDraft: () => void;
   initializeEventEdit: (eventData: {
     id: number | string;
-    event_name: string;
-    event_type: string;
-    athlete_name: string;
-    athlete_id: string;
+    name: string;
+    eventType: string;
+    athleteName: string;
+    athleteId: string;
     time: string;
     duration?: number;
   }) => void;
@@ -236,10 +236,10 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
 
   const initializeEventEdit = (eventData: {
     id: number | string;
-    event_name: string;
-    event_type: string;
-    athlete_name: string;
-    athlete_id: string;
+    name: string;
+    eventType: string;
+    athleteName: string;
+    athleteId: string;
     time: string;
     duration?: number;
   }) => {
@@ -250,13 +250,13 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
     } else {
       // No draft or draft for different event, initialize with event data
       setValidationAttempted(false);
-      updateEventName(eventData.event_name);
-      updateEventType(eventData.event_type as EventType);
-      updateAthleteName(eventData.athlete_name);
-      updateAthleteId(eventData.athlete_id);
+      updateEventName(eventData.name);
+      updateEventType(eventData.eventType as EventType);
+      updateAthleteName(eventData.athleteName);
+      updateAthleteId(eventData.athleteId);
       updateStartTime(eventData.time);
       updateDuration(eventData.duration?.toString() || "0");
-      setSearchTerm(eventData.athlete_name);
+      setSearchTerm(eventData.athleteName);
     }
   };
 

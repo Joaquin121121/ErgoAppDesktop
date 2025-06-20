@@ -14,15 +14,19 @@ import { formattedDisciplines } from "../constants/data";
 import { getStateByCodeAndCountry } from "country-state-city/lib/state";
 import { useSearchParams } from "react-router-dom";
 import _ from "lodash";
-import getAthletes, { saveAthleteInfo } from "../hooks/parseAthletes";
+import { getAthletes, saveAthleteInfo } from "../parsers/athleteDataParser";
 import { useUser } from "../contexts/UserContext";
 import AthleteFilter from "../components/AthleteFilter";
+import { useDatabaseSync } from "../hooks/useDatabaseSync";
+import { useAthletes } from "../contexts/AthletesContext";
 
 const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
+  const { athletes, setAthletes } = useAthletes();
+
   const [searchBarFocus, setSearchBarFocus] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAthleteName, setSelectedAthleteName] = useState("");
-  const [loadedAthletes, setLoadedAthletes] = useState([]);
+  const [loadedAthletes, setLoadedAthletes] = useState(athletes);
   const [showDropdown, setShowDropdown] = useState(false);
   const [prevHeight, setPrevHeight] = useState<string>("");
   const [prevHeightUnit, setPrevHeightUnit] = useState<"cm" | "ft" | "">("");
@@ -83,7 +87,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   } = useStudyContext();
   const [originalAthlete, setOriginalAthlete] = useState(athlete);
   const { user } = useUser();
-
+  const { pushRecord } = useDatabaseSync();
   const countries = Country.getAllCountries();
 
   const genders = [
@@ -93,8 +97,9 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   ];
 
   const [athletesFilteredBySelection, setAthletesFilteredBySelection] =
-    useState([]);
-  const [athletesFilteredBySearch, setAthletesFilteredBySearch] = useState([]);
+    useState(athletes);
+  const [athletesFilteredBySearch, setAthletesFilteredBySearch] =
+    useState(athletes);
 
   const handleAthleteSelect = (selectedAthlete) => {
     /*     if (
@@ -322,16 +327,6 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
     setAthlete({ ...athlete, [field]: value });
     setErrors({ ...errors, [field]: "" });
   };
-  const loadAthletes = async () => {
-    try {
-      const athletes = await getAthletes(user.id);
-      setLoadedAthletes(athletes);
-      setAthletesFilteredBySelection(athletes);
-      setAthletesFilteredBySearch(athletes);
-    } catch (error) {
-      console.log(error);
-    }
-  };
 
   const onSave = async () => {
     console.log("athlete", athlete);
@@ -402,7 +397,8 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
 
     try {
       console.log("athlete", athlete);
-      const result = await saveAthleteInfo(athlete, user.id);
+      const result = await saveAthleteInfo(athlete, user.id, pushRecord);
+      setAthletes(athletes.map((a) => (a.id === athlete.id ? athlete : a)));
       console.log("result", result);
       customNavigate("back", "selectAthlete", from ? "athletes" : "startTest");
       setTimeout(() => {
@@ -454,7 +450,7 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
         validateFilter(selectedFilters.institution, athlete.institution) &&
         validateFilter(selectedFilters.category, athlete.category) &&
         validateFilter(selectedFilters.gender, athlete.gender) &&
-        validateFilter(selectedFilters.age, athlete.age)
+        validateFilter(selectedFilters.age, athlete.birthDate)
     );
     if (newSelectedAthletes.length === 0) {
       setSelectedAthleteName("");
@@ -660,8 +656,6 @@ const SelectAthlete = ({ isExpanded, animation, customNavigate }) => {
   useEffect(() => {
     if (from) {
       handleAthleteSelect(athlete);
-    } else {
-      loadAthletes();
     }
   }, []);
 

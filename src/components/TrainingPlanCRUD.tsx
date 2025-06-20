@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useBlur } from "../contexts/BlurContext";
 import TrainingPlanCreator from "./TrainingPlanCreator";
 import SessionInfoStage from "./SessionInfoStage";
@@ -56,13 +56,19 @@ const TrainingPlanCRUD: React.FC<TrainingPlanCRUDProps> = ({
     }, 200);
   };
 
+  const creatorOnNext = (usingModel: boolean) => {
+    if (usingModel) {
+      goToStage("initialStage", "sessionOverviewStage");
+    } else {
+      goToStage("initialStage", "sessionInfoStage");
+    }
+  };
+
   const creationStages = {
     initialStage: (
       <TrainingPlanCreator
         isCreatingPlan={true}
-        onNext={() => {
-          goToStage("initialStage", "sessionInfoStage");
-        }}
+        onNext={creatorOnNext}
         displayPopup={() => {
           setIsBlurred(true);
           setDisplayPopup(true);

@@ -12,35 +12,45 @@ import type {
   CustomStudyResult,
 } from "../types/Studies";
 import { v4 as uuidv4 } from "uuid";
+import { PendingRecord } from "../types/Sync";
+import { TableName } from "../constants/dbMetadata";
 
 export const deleteTest = async (
   testId: string,
   studyType: StudyType,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   db?: any
 ) => {
   const dbToUse = db || (await (Database as any).load("sqlite:ergolab.db"));
+  const now = new Date().toISOString();
+
   try {
     if (studyType === "bosco") {
       dbToUse.execute(
         `UPDATE bosco_result 
         SET deleted_at = ?
         WHERE id = ?`,
-        [new Date().toISOString(), testId]
+        [now, testId]
       );
+      pushRecord([{ tableName: "bosco_result" as TableName, id: testId }]);
     } else if (studyType === "multipleDropJump") {
       dbToUse.execute(
         `UPDATE multiple_drop_jump_result 
         SET deleted_at = ?
         WHERE id = ?`,
-        [new Date().toISOString(), testId]
+        [now, testId]
       );
+      pushRecord([
+        { tableName: "multiple_drop_jump_result" as TableName, id: testId },
+      ]);
     } else {
       dbToUse.execute(
         `UPDATE base_result 
         SET deleted_at = ?
         WHERE id = ?`,
-        [new Date().toISOString(), testId]
+        [now, testId]
       );
+      pushRecord([{ tableName: "base_result" as TableName, id: testId }]);
     }
     return "success";
   } catch (error) {
@@ -72,9 +82,9 @@ const createBaseResult = async (
       ]
     );
 
-    return baseResultId;
+    return { tableName: "base_result" as TableName, id: baseResultId };
   } catch (error) {
-    return "error";
+    console.error(error);
   }
 };
 
@@ -84,15 +94,17 @@ const createJumpTimes = async (
   times: JumpTime[]
 ) => {
   try {
+    const pendingRecords: PendingRecord[] = [];
     const currentTimestamp = new Date().toISOString();
 
     for (let index = 0; index < times.length; index++) {
       const time = times[index];
+      const jumpTimeId = uuidv4();
       await db.execute(
         `INSERT INTO jump_time (id, created_at, base_result_id, "index", time, deleted, floor_time, stiffness, performance, last_changed)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          uuidv4(),
+          jumpTimeId,
           currentTimestamp,
           baseResultId,
           index,
@@ -104,19 +116,25 @@ const createJumpTimes = async (
           currentTimestamp,
         ]
       );
+      pendingRecords.push({
+        tableName: "jump_time" as TableName,
+        id: jumpTimeId,
+      });
     }
-
-    return "success";
+    return pendingRecords;
   } catch (error) {
-    return "error";
+    console.error(error);
+    return [];
   }
 };
 
 export const addBasicResult = async (
   study: CompletedStudy,
   athleteId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
 ) => {
+  const pendingRecords: PendingRecord[] = [];
   const dbToUse =
     externalDb || (await (Database as any).load("sqlite:ergolab.db"));
   const isManagingTransaction = !externalDb;
@@ -133,15 +151,14 @@ export const addBasicResult = async (
     }
 
     try {
-      const baseResultId = await createBaseResult(
+      const baseResultRecord = await createBaseResult(
         dbToUse,
         athleteId,
         result.takeoffFoot,
         result.sensitivity
       );
-
-      if (baseResultId === "error")
-        throw new Error("Failed to create base_result");
+      pendingRecords.push(baseResultRecord);
+      const baseResultId = baseResultRecord.id;
 
       const basicResultId = uuidv4();
       const currentTimestamp = new Date().toISOString();
@@ -160,24 +177,24 @@ export const addBasicResult = async (
           null,
         ]
       );
+      pendingRecords.push({
+        tableName: "basic_result",
+        id: basicResultId,
+      });
 
-      const jumpTimeError = await createJumpTimes(
+      const jumpTimeRecords = await createJumpTimes(
         dbToUse,
         baseResultId,
         result.times
       );
-
-      if (jumpTimeError) throw jumpTimeError;
+      pendingRecords.push(...jumpTimeRecords);
 
       if (isManagingTransaction) {
         await dbToUse.execute("COMMIT");
+        pushRecord(pendingRecords);
+        return basicResultId;
       }
-
-      return {
-        success: true,
-        resultId: basicResultId,
-        baseResultId,
-      };
+      return pendingRecords;
     } catch (innerError) {
       if (isManagingTransaction) {
         await dbToUse.execute("ROLLBACK");
@@ -186,18 +203,17 @@ export const addBasicResult = async (
     }
   } catch (error) {
     console.error("Error adding basic result:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-    };
+    return [];
   }
 };
 
 export const addBoscoResult = async (
   study: CompletedStudy,
   athleteId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
 ) => {
+  const pendingRecords: PendingRecord[] = [];
   const dbToUse =
     externalDb || (await (Database as any).load("sqlite:ergolab.db"));
   const isManagingTransaction = !externalDb;
@@ -220,6 +236,11 @@ export const addBoscoResult = async (
         [boscoResultId, currentTimestamp, currentTimestamp, athleteId]
       );
 
+      pendingRecords.push({
+        tableName: "bosco_result",
+        id: boscoResultId,
+      });
+
       const tests = [
         { type: "cmj", data: result.cmj },
         { type: "squatJump", data: result.squatJump },
@@ -227,15 +248,14 @@ export const addBoscoResult = async (
       ];
 
       for (const test of tests) {
-        const baseResultId = await createBaseResult(
+        const baseResultRecord = await createBaseResult(
           dbToUse,
           athleteId,
           test.data.takeoffFoot,
           test.data.sensitivity
         );
-
-        if (baseResultId === "error")
-          throw new Error("Failed to create base_result for Bosco sub-test");
+        const baseResultId = baseResultRecord.id;
+        pendingRecords.push(baseResultRecord);
 
         const basicResultId = uuidv4();
         await dbToUse.execute(
@@ -253,22 +273,25 @@ export const addBoscoResult = async (
           ]
         );
 
-        const jumpTimeError = await createJumpTimes(
+        pendingRecords.push({
+          tableName: "basic_result",
+          id: basicResultId,
+        });
+
+        const jumpTimeRecords = await createJumpTimes(
           dbToUse,
           baseResultId,
           test.data.times
         );
-        if (jumpTimeError) throw jumpTimeError;
+        pendingRecords.push(...jumpTimeRecords);
       }
 
       if (isManagingTransaction) {
         await dbToUse.execute("COMMIT");
+        pushRecord(pendingRecords);
+        return boscoResultId;
       }
-
-      return {
-        success: true,
-        resultId: boscoResultId,
-      };
+      return pendingRecords;
     } catch (innerError) {
       if (isManagingTransaction) {
         await dbToUse.execute("ROLLBACK");
@@ -277,18 +300,17 @@ export const addBoscoResult = async (
     }
   } catch (error) {
     console.error("Error adding Bosco result:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-    };
+    return [];
   }
 };
 
 export const addMultipleJumpsResult = async (
   study: CompletedStudy,
   athleteId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
 ) => {
+  const pendingRecords: PendingRecord[] = [];
   const dbToUse =
     externalDb || (await (Database as any).load("sqlite:ergolab.db"));
   const isManagingTransaction = !externalDb;
@@ -301,15 +323,14 @@ export const addMultipleJumpsResult = async (
     }
 
     try {
-      const baseResultId = await createBaseResult(
+      const baseResultRecord = await createBaseResult(
         dbToUse,
         athleteId,
         result.takeoffFoot,
         result.sensitivity
       );
-
-      if (baseResultId === "error")
-        throw new Error("Failed to create base_result");
+      const baseResultId = baseResultRecord.id;
+      pendingRecords.push(baseResultRecord);
 
       const multipleJumpsResultId = uuidv4();
       const currentTimestamp = new Date().toISOString();
@@ -327,22 +348,24 @@ export const addMultipleJumpsResult = async (
         ]
       );
 
-      const jumpTimeError = await createJumpTimes(
+      pendingRecords.push({
+        tableName: "multiple_jumps_result",
+        id: multipleJumpsResultId,
+      });
+
+      const jumpTimeRecords = await createJumpTimes(
         dbToUse,
         baseResultId,
         result.times
       );
-      if (jumpTimeError) throw jumpTimeError;
+      pendingRecords.push(...jumpTimeRecords);
 
       if (isManagingTransaction) {
         await dbToUse.execute("COMMIT");
+        pushRecord(pendingRecords);
+        return multipleJumpsResultId;
       }
-
-      return {
-        success: true,
-        resultId: multipleJumpsResultId,
-        baseResultId,
-      };
+      return pendingRecords;
     } catch (innerError) {
       if (isManagingTransaction) {
         await dbToUse.execute("ROLLBACK");
@@ -351,18 +374,17 @@ export const addMultipleJumpsResult = async (
     }
   } catch (error) {
     console.error("Error adding Multiple Jumps result:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-    };
+    return [];
   }
 };
 
 export const addMultipleDropJumpResult = async (
   study: CompletedStudy,
   athleteId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
 ) => {
+  const pendingRecords: PendingRecord[] = [];
   const dbToUse =
     externalDb || (await (Database as any).load("sqlite:ergolab.db"));
   const isManagingTransaction = !externalDb;
@@ -376,78 +398,73 @@ export const addMultipleDropJumpResult = async (
       await dbToUse.execute("BEGIN TRANSACTION");
     }
 
-    try {
-      const multipleDropJumpId = uuidv4();
-      await dbToUse.execute(
-        `INSERT INTO multiple_drop_jump_result (id, created_at, last_changed, height_unit, takeoff_foot, best_height, athlete_id)
+    const multipleDropJumpId = uuidv4();
+    await dbToUse.execute(
+      `INSERT INTO multiple_drop_jump_result (id, created_at, last_changed, height_unit, takeoff_foot, best_height, athlete_id)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        multipleDropJumpId,
+        currentTimestamp,
+        currentTimestamp,
+        result.heightUnit,
+        result.takeoffFoot,
+        result.bestHeight,
+        athleteId,
+      ]
+    );
+    pendingRecords.push({
+      tableName: "multiple_drop_jump_result",
+      id: multipleDropJumpId,
+    });
+
+    for (const dropJump of result.dropJumps) {
+      const baseResultRecord = await createBaseResult(
+        dbToUse,
+        athleteId,
+        dropJump.takeoffFoot,
+        dropJump.sensitivity
+      );
+
+      const baseResultId = baseResultRecord.id;
+      pendingRecords.push(baseResultRecord);
+
+      const dropJumpResultId = uuidv4();
+      await dbToUse.execute(
+        `INSERT INTO drop_jump_result (id, created_at, last_changed, height, stiffness, base_result_id, multiple_drop_jump_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
+          dropJumpResultId,
+          currentTimestamp,
+          currentTimestamp,
+          dropJump.height,
+          dropJump.stiffness,
+          baseResultId,
           multipleDropJumpId,
-          currentTimestamp,
-          currentTimestamp,
-          result.heightUnit,
-          result.takeoffFoot,
-          result.bestHeight,
-          athleteId,
         ]
       );
 
-      for (const dropJump of result.dropJumps) {
-        const baseResultId = await createBaseResult(
-          dbToUse,
-          athleteId,
-          dropJump.takeoffFoot,
-          dropJump.sensitivity
-        );
+      pendingRecords.push({
+        tableName: "drop_jump_result",
+        id: dropJumpResultId,
+      });
 
-        if (baseResultId === "error")
-          throw new Error(
-            "Failed to create base_result for drop jump sub-test"
-          );
-
-        const dropJumpResultId = uuidv4();
-        await dbToUse.execute(
-          `INSERT INTO drop_jump_result (id, created_at, last_changed, height, stiffness, base_result_id, multiple_drop_jump_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [
-            dropJumpResultId,
-            currentTimestamp,
-            currentTimestamp,
-            dropJump.height,
-            dropJump.stiffness,
-            baseResultId,
-            multipleDropJumpId,
-          ]
-        );
-
-        const jumpTimeError = await createJumpTimes(
-          dbToUse,
-          baseResultId,
-          dropJump.times
-        );
-        if (jumpTimeError) throw jumpTimeError;
-      }
-
-      if (isManagingTransaction) {
-        await dbToUse.execute("COMMIT");
-      }
-
-      return {
-        success: true,
-        resultId: multipleDropJumpId,
-      };
-    } catch (innerError) {
-      if (isManagingTransaction) {
-        await dbToUse.execute("ROLLBACK");
-      }
-      throw innerError;
+      const jumpTimeRecords = await createJumpTimes(
+        dbToUse,
+        baseResultId,
+        dropJump.times
+      );
+      pendingRecords.push(...jumpTimeRecords);
     }
+
+    if (isManagingTransaction) {
+      await dbToUse.execute("COMMIT");
+      pushRecord(pendingRecords);
+      return multipleDropJumpId;
+    }
+    return pendingRecords;
   } catch (error) {
     console.error("Error adding Multiple Drop Jump result:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-    };
+    return [];
   }
 };
 
@@ -476,46 +493,34 @@ export const addResult = async (
   }
 };
 
-export const addMultipleResults = async (data: {
-  studies: CompletedStudy[];
-  ids: string[];
-}) => {
+export const addMultipleResults = async (
+  data: {
+    studies: CompletedStudy[];
+    ids: string[];
+  },
+  pushRecord: (records: PendingRecord[]) => Promise<void>
+) => {
   if (data.studies.length !== data.ids.length) {
-    return {
-      success: false,
-      error: "Studies and athlete IDs arrays must have the same length.",
-      results: [],
-    };
+    return [];
   }
 
   const db = await (Database as any).load("sqlite:ergolab.db");
   try {
     await db.execute("BEGIN TRANSACTION");
 
-    const operationResults = [];
+    const operationResults: PendingRecord[] = [];
     for (let i = 0; i < data.studies.length; i++) {
       const study = data.studies[i];
       const athleteId = data.ids[i];
-
       const result = await addResult(study, athleteId, db);
-
-      operationResults.push(result);
-      if (!result.success) {
-        console.error(
-          `Failed to add result for study index ${i} (Athlete ID: ${athleteId}). Error: ${result.error}. Rolling back.`
-        );
-        await db.execute("ROLLBACK");
-        return {
-          success: false,
-          error: `Failed to add result for study index ${i} (Athlete ID: ${athleteId}): ${result.error}`,
-          results: operationResults,
-        };
+      if (!Array.isArray(result)) {
+        continue;
       }
+      operationResults.push(...result);
     }
-
     await db.execute("COMMIT");
-    console.log("Successfully added all results. Transaction committed.");
-    return { success: true, results: operationResults };
+    pushRecord(operationResults);
+    return operationResults;
   } catch (error) {
     console.error(
       "Critical error during multiple results addition, attempting rollback:",
@@ -527,13 +532,6 @@ export const addMultipleResults = async (data: {
     } catch (rollbackError) {
       console.error("Failed to rollback after critical error:", rollbackError);
     }
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unknown critical error occurred during multiple results addition.",
-      results: (error as any).results || [],
-    };
+    return [];
   }
 };

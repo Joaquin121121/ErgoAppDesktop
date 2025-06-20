@@ -1,4 +1,4 @@
-import { CalendarEvent } from "../components/Calendar";
+import { Event } from "../types/Events";
 import {
   RangeEntry,
   VolumeReduction,
@@ -232,10 +232,10 @@ export const createTimezoneIndependentDate = (
 };
 
 export const findOverlappingEvents = (
-  events: CalendarEvent[],
-  newEvent: CalendarEvent
+  events: Event[],
+  newEvent: Event
 ): number | string | false => {
-  const newEventStart = new Date(newEvent.event_date);
+  const newEventStart = new Date(newEvent.date);
   const newEventDuration = newEvent.duration || 0; // Default to 0 if duration is missing
   const newEventEnd = new Date(
     newEventStart.getTime() + newEventDuration * 60000
@@ -248,7 +248,7 @@ export const findOverlappingEvents = (
       continue;
     }
 
-    const eventStart = new Date(event.event_date);
+    const eventStart = new Date(event.date);
 
     // Check if the event is on the same day
     if (eventStart.toDateString() === newEventDay) {
@@ -270,7 +270,7 @@ export function getReductionFromRangeEntries(
   rangeEntries: RangeEntry[]
 ): VolumeReduction | EffortReduction {
   if (!rangeEntries) return null;
-  const reductionObject: VolumeReduction | EffortReduction = {};
+  const reductionObject: VolumeReduction | EffortReduction = { id: "" };
 
   rangeEntries.forEach((entry) => {
     const [min, max] = entry.range;
@@ -365,6 +365,7 @@ export const generateInitialProgression = (
     }
 
     progression.push({
+      id: "",
       series: seriesN,
       repetitions: currentReps,
       effort: currentEffort,
@@ -377,6 +378,7 @@ export const generateInitialProgression = (
 export const formatProgression = (progression: Progression[]) => {
   return progression.map((p) => {
     return {
+      id: p.id,
       series: p.series.toString(),
       repetitions: p.repetitions,
       effort: p.effort.toString(),

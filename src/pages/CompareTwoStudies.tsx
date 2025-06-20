@@ -344,12 +344,12 @@ function CompareTwoStudies({
             }
             stiffnessA={
               study1.results.type === "multipleJumps"
-                ? study1.results.stiffness
+                ? study1.results.times.map((e) => e.stiffness)
                 : undefined
             }
             stiffnessB={
               study2.results.type === "multipleJumps"
-                ? study2.results.stiffness
+                ? study2.results.times.map((e) => e.stiffness)
                 : undefined
             }
           />

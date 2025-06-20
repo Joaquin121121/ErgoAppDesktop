@@ -3,6 +3,7 @@ import inputStyles from "../styles/inputStyles.module.css";
 import { useJsonFiles } from "../hooks/useJsonFiles";
 import { Athlete, transformToAthlete } from "../types/Athletes";
 import HourPicker from "./HourPicker";
+import { Event, EventType } from "../types/Events";
 import TonalButton from "./TonalButton";
 import {
   formatDateString,
@@ -11,13 +12,13 @@ import {
   createTimezoneIndependentDate,
 } from "../utils/utils";
 import { useCalendar } from "../contexts/CalendarContext";
+
 import { useNewEvent } from "../contexts/NewEventContext";
 import styles from "../styles/animations.module.css";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
-import getAthletes from "../hooks/parseAthletes";
-// Define the specific event types
-type EventType = "competition" | "trainingSession" | "testSession";
+import getAthletes from "../parsers/athleteDataParser";
+import { useAthletes } from "../contexts/AthletesContext";
 
 function AddEventModal({
   onClose,
@@ -30,7 +31,7 @@ function AddEventModal({
     nextPage: string
   ) => void;
 }) {
-  const { selectedDate, addEvent, coachId } = useCalendar();
+  const { selectedDate, addEvent } = useCalendar();
   const { user } = useUser();
   const {
     formState,
@@ -48,6 +49,7 @@ function AddEventModal({
     resetEvent,
   } = useNewEvent();
 
+  const { athletes } = useAthletes();
   const [animation, setAnimation] = useState(styles.popupFadeInTop);
   const [validationAttempted, setValidationAttempted] = useState(false);
   const eventTypes = [
@@ -55,7 +57,7 @@ function AddEventModal({
       name: "Test",
       defaultIcon: "/testDarkGray.png",
       selectedIcon: "/studiesRed.png",
-      value: "testSession" as EventType,
+      value: "test" as EventType,
     },
     {
       name: "Entrenamiento",
@@ -74,7 +76,7 @@ function AddEventModal({
   // Athlete search states
   const [searchBarFocus, setSearchBarFocus] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loadedAthletes, setLoadedAthletes] = useState<Athlete[]>([]);
+  const [loadedAthletes, setLoadedAthletes] = useState<Athlete[]>(athletes);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
@@ -110,18 +112,6 @@ function AddEventModal({
   const filteredAthletes = loadedAthletes.filter((athlete) =>
     athlete.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Load athletes from database
-  const loadAthletes = async () => {
-    try {
-      // Load athletes from database for the current coach
-      const athletesFromDb = await getAthletes(coachId);
-      setLoadedAthletes(athletesFromDb);
-    } catch (error) {
-      console.error("Error loading athletes:", error);
-      setLoadedAthletes([]);
-    }
-  };
 
   const handleAthleteSelect = (athlete: Athlete) => {
     updateAthleteName(athlete.name);
@@ -249,45 +239,25 @@ function AddEventModal({
       }
 
       // Create the event object
-      const newEvent = {
-        event_name: formState.eventName?.value || "",
-        event_type: formState.eventType?.value as EventType,
-        event_date: eventDateString,
+      const newEvent: Omit<Event, "id"> = {
+        name: formState.eventName?.value || "",
+        eventType: formState.eventType?.value as EventType,
+        date: new Date(eventDateString),
         duration: parseFloat(formState.duration?.value || "0"),
-        coach_id: coachId,
-        last_changed: new Date(),
-        athlete_id: formState.selectedAthleteId?.value,
+        athleteId: formState.selectedAthleteId?.value,
       };
 
-      // Use the context's addEvent function instead of direct Supabase call
       await addEvent(newEvent);
 
-      // Reset the form and close the modal after successful addition
       resetEvent();
       localOnClose();
     } catch (error) {
       console.error("Error adding event:", error);
-
-      // Check if it's a foreign key constraint error
-      if (error instanceof Error) {
-        if (
-          error.message.includes("FOREIGN KEY constraint failed") ||
-          error.message.includes("787")
-        ) {
-          // Show a user-friendly error message
-          alert(
-            "No se pudo agregar el evento. Por favor, verifica que el atleta seleccionado existe en el sistema."
-          );
-        } else {
-          alert("Error al agregar el evento. Por favor, intenta de nuevo.");
-        }
-      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Ensure selected item is visible in the dropdown
   useEffect(() => {
     if (selectedIndex >= 0 && dropdownRef.current) {
       const dropdown = dropdownRef.current;
@@ -310,11 +280,6 @@ function AddEventModal({
   useEffect(() => {
     setSelectedIndex(-1);
   }, [searchTerm, showDropdown]);
-
-  // Load athletes on component mount
-  useEffect(() => {
-    loadAthletes();
-  }, []);
 
   return (
     <div

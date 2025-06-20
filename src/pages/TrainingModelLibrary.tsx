@@ -7,12 +7,9 @@ import { useNavigate } from "react-router-dom";
 import TrainingModelCard from "../components/TrainingModelCard";
 import { TrainingModel, defaultPlanState } from "../types/trainingPlan";
 import { useNewPlan } from "../contexts/NewPlanContext";
-import {
-  getTrainingModels,
-  deleteTrainingModel,
-} from "../hooks/parseTrainingData";
-import { useTrainingPlanSync } from "../hooks/useTrainingPlanSync";
+import { getTrainingModels } from "../parsers/trainingDataParser";
 import useBackspaceNavigation from "../hooks/useBackspaceNavigation";
+import { useTrainingModels } from "../contexts/TrainingModelsContext";
 function TrainingModelLibrary({
   isExpanded,
   animation,
@@ -27,14 +24,15 @@ function TrainingModelLibrary({
   ) => void;
 }) {
   const { isBlurred, setIsBlurred } = useBlur();
+  const { trainingModels } = useTrainingModels();
   const [searchBarFocus, setSearchBarFocus] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const filterButtonRef = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
-  const { setModel, resetModelState, setIsNewModel } = useNewPlan();
-  const { deleteTrainingModel: syncDeleteTrainingModel } =
-    useTrainingPlanSync();
-  const [loadedModels, setLoadedModels] = useState<TrainingModel[]>([]);
+  const { setModel, resetModelState, setIsNewModel, deleteTrainingModel } =
+    useNewPlan();
+  const [loadedModels, setLoadedModels] =
+    useState<TrainingModel[]>(trainingModels);
   const [filteredModels, setFilteredModels] = useState<TrainingModel[]>();
   const [modelToDelete, setModelToDelete] = useState<TrainingModel | null>(
     null
@@ -50,9 +48,6 @@ function TrainingModelLibrary({
     try {
       // Delete from local database
       await deleteTrainingModel(modelToDelete.id);
-
-      // Sync deletion to remote database
-      await syncDeleteTrainingModel(modelToDelete.id);
 
       // Update UI state
       setLoadedModels(
@@ -91,12 +86,7 @@ function TrainingModelLibrary({
   }, [searchTerm]);
 
   useEffect(() => {
-    const loadModels = async () => {
-      const models = await getTrainingModels();
-      setLoadedModels(models);
-      setFilteredModels(models);
-    };
-    loadModels();
+    resetModelState();
   }, []);
 
   return (

@@ -179,7 +179,7 @@ function AthleteFilter({
   return (
     <div
       className={`bg-white shadow-sm z-50 rounded-2xl p-8 mx-auto fixed top-[5%] left-1/2 -translate-x-1/2 flex flex-col`}
-      style={{ minWidth: "75%" }}
+      style={{ minWidth: "90%" }}
     >
       <div
         className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"

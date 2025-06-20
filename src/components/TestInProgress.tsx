@@ -38,7 +38,7 @@ import {
 } from "recharts";
 import { ComposedChart } from "recharts";
 import { useBlur } from "../contexts/BlurContext";
-import { addResult, addMultipleResults } from "../hooks/parseStudies";
+import { addResult, addMultipleResults } from "../parsers/testDataParser";
 import { useDatabaseSync } from "../hooks/useDatabaseSync";
 import { Athlete } from "@/types/Athletes";
 interface MultipleAthletesTest {
@@ -66,6 +66,7 @@ function TestInProgress({
     MultipleAthletesTest[]
   >([]);
   const [selectedAthletePointer, setSelectedAthletePointer] = useState(0);
+  const { pushRecord } = useDatabaseSync();
 
   const [data, setData] = useState<StudyData>({
     avgFlightTime: 0,
@@ -93,7 +94,6 @@ function TestInProgress({
   const { saveJson, readJson } = useJsonFiles();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { syncResult } = useDatabaseSync();
   const [skippedAthletes, setSkippedAthletes] = useState<Athlete[]>([]);
   const [startTime, setStartTime] = useState(new Date());
   const [flightTimes, setFlightTimes] = useState<number[]>([]);
@@ -896,8 +896,6 @@ function TestInProgress({
               sensitivity: study.sensitivity,
               criteria: study.criteria,
               criteriaValue: study.criteriaValue,
-              stiffness: stiffness,
-              performance: performance,
               avgStiffness: data.avgStiffness,
               avgPerformance: data.avgPerformance,
               avgFloorTime: data.avgFloorTime,
@@ -960,7 +958,8 @@ function TestInProgress({
     }
 
     try {
-      const { resultId } = await addResult(studyToSave, athlete.id);
+      const resultId = await addResult(studyToSave, athlete.id, pushRecord);
+      if (Array.isArray(resultId)) return;
       const newAthleteState = {
         ...athlete,
         completedStudies: [
@@ -968,8 +967,6 @@ function TestInProgress({
           { ...studyToSave, id: resultId },
         ],
       };
-
-      syncResult(studyToSave.results.type);
       setTestInProgress(false);
       setIsBlurred(false);
       setAthlete(newAthleteState);
@@ -990,12 +987,15 @@ function TestInProgress({
     const updatedMultipleAthletesTests = saveCurrentTest
       ? await saveTest()
       : multipleAthletesTests;
+
+    console.log("multipleAthletestests:", updatedMultipleAthletesTests);
+    console.log("selectedAthletes:", selectedAthletes);
     const resultsToBeSaved = {
       studies: updatedMultipleAthletesTests.map((e) => e.test),
       ids: selectedAthletes.map((e) => e.id),
     };
     try {
-      await addMultipleResults(resultsToBeSaved);
+      await addMultipleResults(resultsToBeSaved, pushRecord);
       setTestInProgress(false);
       setIsBlurred(false);
       customNavigate("back", "startTest", "athletes");
@@ -1855,7 +1855,7 @@ function TestInProgress({
                   }
                   onClick={
                     selectedAthletePointer === selectedAthletes.length - 1
-                      ? saveAllTests
+                      ? () => saveAllTests(true, selectedAthletes)
                       : nextAthlete
                   }
                   disabled={!allTestsCompleted()}

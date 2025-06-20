@@ -1,9 +1,9 @@
 import React from "react";
-import { CalendarEvent } from "./Calendar";
 import { formatMinutesToHoursAndMinutes } from "../utils/utils";
 import { isToday } from "date-fns";
 import { isTomorrow } from "date-fns";
 import { useBlur } from "../contexts/BlurContext";
+import { Event as EventType } from "../types/Events";
 
 function Event({
   event,
@@ -11,16 +11,14 @@ function Event({
   index,
   setEventInfo,
 }: {
-  event: CalendarEvent;
+  event: EventType;
   selectedDate: Date;
   index: number;
-  setEventInfo: (eventInfo: CalendarEvent | null) => void;
+  setEventInfo: (eventInfo: EventType | null) => void;
 }) {
   const { isBlurred, setIsBlurred } = useBlur();
   const displayName =
-    event.event_name.length > 18
-      ? `${event.event_name.substring(0, 15)}...`
-      : event.event_name;
+    event.name.length > 18 ? `${event.name.substring(0, 15)}...` : event.name;
 
   return (
     <div
@@ -50,7 +48,7 @@ function Event({
           <div className="mt-4 w-3/5 flex gap-x-4 items-center text-darkGray">
             <img src="/schedule.png" alt="" className="h-6 w-6" />
             <p className="text-lg">
-              {new Date(event.event_date).toLocaleTimeString("en-US", {
+              {new Date(event.date).toLocaleTimeString("en-US", {
                 hour: "2-digit",
                 minute: "2-digit",
               })}

@@ -2,27 +2,20 @@ import React, { useState, useEffect, useRef } from "react";
 import styles from "../styles/updatePopupStyles.module.css";
 import { useCalendar } from "../contexts/CalendarContext";
 import { useDatabaseSync } from "../hooks/useDatabaseSync";
-import { useRecordSync } from "../hooks/useRecordSync";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
 
 interface ConnectionStatusProps {
   showUpdate: boolean;
 }
 
 const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
-  const {
-    isOnline,
-    syncStatus,
-    error: syncError,
-    loading,
-    syncAllTables,
-    resetSyncMetadata,
-    startInitialSync,
-  } = useDatabaseSync();
+  const { resetSyncMetadata, fullScaleSync, syncStatus } = useDatabaseSync();
+
+  const { isOnline } = useOnlineStatus();
   const [visible, setVisible] = useState(false);
   const [animation, setAnimation] = useState(styles.fadeInRight);
   const prevOnlineStatusRef = useRef(isOnline);
   const [timerId, setTimerId] = useState<NodeJS.Timeout | null>(null);
-  const { clearQueue } = useRecordSync();
 
   // Constants
   const AUTO_HIDE_DELAY = 5000; // 5 seconds auto-hide delay
@@ -34,7 +27,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
     // Attempt to sync databases on app startup
     const initialSync = async () => {
       try {
-        await startInitialSync();
+        await fullScaleSync();
       } catch (error) {
         console.error("Error during initial database sync:", error);
       }
@@ -42,13 +35,6 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
 
     initialSync();
   }, [isOnline]);
-
-  // Log sync errors for debugging
-  useEffect(() => {
-    if (syncError) {
-      console.error("Database sync error:", syncError);
-    }
-  }, [syncError]);
 
   // Show notification and conditionally set auto-hide based on loading state
   const showNotification = () => {
@@ -63,7 +49,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
     setVisible(true);
 
     // Only set auto-hide timer if not loading
-    if (!loading) {
+    if (syncStatus === "complete") {
       setTimerId(
         setTimeout(() => {
           setAnimation(styles.fadeOutRight);
@@ -78,7 +64,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
 
   // Handle loading state changes - hide notification when loading stops
   useEffect(() => {
-    if (!loading && visible && !timerId) {
+    if (syncStatus === "complete" && visible && !timerId) {
       // Loading stopped and notification is visible but no timer is set
       // Set auto-hide timer
       setTimerId(
@@ -91,7 +77,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
         }, AUTO_HIDE_DELAY)
       );
     }
-  }, [loading, visible, timerId]);
+  }, [syncStatus, visible, timerId]);
 
   // Handle status changes
   useEffect(() => {
@@ -103,20 +89,16 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
     // When coming back online, trigger a sync automatically
     if (onlineStatusChanged && isOnline) {
       console.log("Connection restored - triggering automatic sync");
-      syncAllTables(true);
+      fullScaleSync();
     }
 
     // Show notification whenever status changes
-    if (
-      onlineStatusChanged ||
-      syncStatus === "syncing" ||
-      syncStatus === "error"
-    ) {
+    if (onlineStatusChanged || syncStatus === "syncing") {
       showNotification();
     }
 
     // Also show notification when syncStatus changes to success
-    if (syncStatus === "success") {
+    if (syncStatus === "complete") {
       showNotification();
     }
 

@@ -1,6 +1,8 @@
+export type EventType = "competition" | "test" | "trainingSession";
+
 export interface Event {
   id: string;
-  eventType: "competition" | "test" | "trainingSession";
+  eventType: EventType;
   name: string;
   date: Date;
   duration?: number;

@@ -452,7 +452,7 @@ function LoadManagement({
 
   /* ----------------------------------------------------------------------- */
   return (
-    <div className={`flex flex-col items-center w-[50vw] ${animation}`}>
+    <div className={`flex flex-col items-center  ${animation}`}>
       <p className="text-secondary text-2xl mt-8">
         Añadir {exerciseName ? "Ejercicio: " : "Bloque de Ejercicios"}
         {exerciseName && (

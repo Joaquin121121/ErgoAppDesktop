@@ -1,6 +1,7 @@
 import Database from "@tauri-apps/plugin-sql";
 import { v4 as uuidv4 } from "uuid";
 import { Event, RawEvent } from "../types/Events";
+import { PendingRecord } from "@/types/Sync";
 
 export const getEvents = async (coachId: string): Promise<Event[]> => {
   try {
@@ -32,11 +33,12 @@ export const getEvents = async (coachId: string): Promise<Event[]> => {
   }
 };
 
-export const saveEvent = async (
-  event: Event,
+export const addEvent = async (
+  event: Omit<Event, "id">,
   coachId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
-): Promise<{ success: boolean; id?: string; error?: string }> => {
+): Promise<PendingRecord> => {
   const dbToUse =
     externalDb || (await (Database as any).load("sqlite:ergolab.db"));
   const isManagingTransaction = !externalDb;
@@ -47,111 +49,32 @@ export const saveEvent = async (
     }
 
     try {
-      const eventId = event.id || uuidv4();
+      const eventId = uuidv4();
       const now = new Date().toISOString();
 
-      if (event.id) {
-        await dbToUse.execute(
-          `UPDATE event 
-           SET event_type = ?, event_name = ?, event_date = ?, 
-               duration = ?, last_changed = ?, athlete_id = ?
-           WHERE id = ? AND deleted_at IS NULL`,
-          [
-            event.eventType,
-            event.name,
-            event.date,
-            event.duration || null,
-            now,
-            event.athleteId,
-            event.id,
-          ]
-        );
-      } else {
-        await dbToUse.execute(
-          `INSERT INTO event (id, event_type, event_name, event_date, 
-                             duration, last_changed, coach_id, athlete_id, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            eventId,
-            event.eventType,
-            event.name,
-            event.date,
-            event.duration || null,
-            now,
-            coachId,
-            event.athleteId,
-            now,
-          ]
-        );
-
-        const verifyResult = await dbToUse.select(
-          "SELECT id FROM event WHERE id = ?",
-          [eventId]
-        );
-
-        if (verifyResult.length === 0) {
-          throw new Error("Event was not properly inserted into database");
-        }
-      }
-
-      if (isManagingTransaction) {
-        await dbToUse.execute("COMMIT");
-      }
-
-      return { success: true, id: eventId };
-    } catch (innerError) {
-      if (isManagingTransaction) {
-        await dbToUse.execute("ROLLBACK");
-      }
-      throw innerError;
-    }
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      (error.message.includes("FOREIGN KEY constraint failed") ||
-        error.message.includes("787"))
-    ) {
-      return {
-        success: false,
-        error:
-          "The selected athlete or coach does not exist in the database. Please ensure the athlete is properly saved before creating an event.",
-      };
-    }
-
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-    };
-  }
-};
-
-export const deleteEvent = async (
-  eventId: string | number,
-  externalDb?: any
-): Promise<{ success: boolean; error?: string }> => {
-  const dbToUse =
-    externalDb || (await (Database as any).load("sqlite:ergolab.db"));
-  const isManagingTransaction = !externalDb;
-
-  try {
-    const eventIdStr = eventId.toString();
-
-    if (isManagingTransaction) {
-      await dbToUse.execute("BEGIN TRANSACTION");
-    }
-
-    try {
-      const now = new Date().toISOString();
       await dbToUse.execute(
-        "UPDATE event SET deleted_at = ?, last_changed = ? WHERE id = ?",
-        [now, now, eventIdStr]
+        `INSERT INTO event (id, event_type, event_name, event_date, 
+                           duration, last_changed, coach_id, athlete_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          eventId,
+          event.eventType,
+          event.name,
+          event.date,
+          event.duration || null,
+          now,
+          coachId,
+          event.athleteId,
+          now,
+        ]
       );
 
       if (isManagingTransaction) {
         await dbToUse.execute("COMMIT");
+        pushRecord([{ tableName: "event", id: eventId }]);
+      } else {
+        return { tableName: "event", id: eventId };
       }
-
-      return { success: true };
     } catch (innerError) {
       if (isManagingTransaction) {
         await dbToUse.execute("ROLLBACK");
@@ -159,10 +82,100 @@ export const deleteEvent = async (
       throw innerError;
     }
   } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-    };
+    console.error(error);
+    throw error;
+  }
+};
+
+export const updateEvent = async (
+  event: Event,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
+  externalDb?: any
+): Promise<PendingRecord> => {
+  const dbToUse =
+    externalDb || (await (Database as any).load("sqlite:ergolab.db"));
+  const isManagingTransaction = !externalDb;
+
+  try {
+    if (isManagingTransaction) {
+      await dbToUse.execute("BEGIN TRANSACTION");
+    }
+
+    try {
+      const now = new Date().toISOString();
+
+      await dbToUse.execute(
+        `UPDATE event 
+         SET event_type = ?, event_name = ?, event_date = ?, 
+             duration = ?, last_changed = ?, athlete_id = ?
+         WHERE id = ? AND deleted_at IS NULL`,
+        [
+          event.eventType,
+          event.name,
+          event.date,
+          event.duration || null,
+          now,
+          event.athleteId,
+          event.id,
+        ]
+      );
+
+      if (isManagingTransaction) {
+        await dbToUse.execute("COMMIT");
+        pushRecord([{ tableName: "event", id: event.id }]);
+      } else {
+        return { tableName: "event", id: event.id };
+      }
+    } catch (innerError) {
+      if (isManagingTransaction) {
+        await dbToUse.execute("ROLLBACK");
+      }
+      throw innerError;
+    }
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+export const deleteEvent = async (
+  eventId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
+  externalDb?: any
+): Promise<PendingRecord> => {
+  const dbToUse =
+    externalDb || (await (Database as any).load("sqlite:ergolab.db"));
+  const isManagingTransaction = !externalDb;
+
+  try {
+    if (isManagingTransaction) {
+      await dbToUse.execute("BEGIN TRANSACTION");
+    }
+
+    try {
+      const now = new Date().toISOString();
+      const result = await dbToUse.execute(
+        "UPDATE event SET deleted_at = ?, last_changed = ? WHERE id = ?",
+        [now, now, eventId]
+      );
+      console.log("Result", result);
+
+      if (isManagingTransaction) {
+        await dbToUse.execute("COMMIT");
+        pushRecord([{ tableName: "event", id: eventId }]);
+      } else {
+        return { tableName: "event", id: eventId };
+      }
+    } catch (innerError) {
+      if (isManagingTransaction) {
+        await dbToUse.execute("ROLLBACK");
+      }
+      console.error(innerError);
+      throw innerError;
+    }
+  } catch (error) {
+    console.error(error);
+    throw error;
   }
 };
 
@@ -197,129 +210,7 @@ export const getEventsByAthlete = async (
         } as Event)
     );
   } catch (error) {
+    console.error(error);
     return [];
-  }
-};
-
-export const saveAllEvents = async (data: {
-  events: Event[];
-  coachId: string;
-}): Promise<{ success: boolean; results: any[]; error?: string }> => {
-  const db = await (Database as any).load("sqlite:ergolab.db");
-
-  try {
-    await db.execute("BEGIN TRANSACTION");
-
-    const operationResults = [];
-    for (let i = 0; i < data.events.length; i++) {
-      const event = { ...data.events[i], coach_id: data.coachId };
-
-      const result = await saveEvent(event, db);
-
-      if (!result.success) {
-        await db.execute("ROLLBACK");
-        return {
-          success: false,
-          error: `Failed to save event ${i} (${event.name}): ${result.error}`,
-          results: operationResults,
-        };
-      }
-
-      operationResults.push({ success: true, eventId: result.id });
-    }
-
-    await db.execute("COMMIT");
-    return { success: true, results: operationResults };
-  } catch (error) {
-    try {
-      await db.execute("ROLLBACK");
-    } catch (rollbackError) {}
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unknown critical error occurred",
-      results: [],
-    };
-  }
-};
-
-export const checkCoachExists = async (coachId: string): Promise<boolean> => {
-  try {
-    const db = await (Database as any).load("sqlite:ergolab.db");
-    const result = await db.select(
-      "SELECT id FROM coach WHERE id = ? AND deleted_at IS NULL",
-      [coachId]
-    );
-    return result.length > 0;
-  } catch (error) {
-    return false;
-  }
-};
-
-export const checkAthleteExists = async (
-  athleteId: string
-): Promise<boolean> => {
-  try {
-    const db = await (Database as any).load("sqlite:ergolab.db");
-    const result = await db.select(
-      "SELECT id FROM athlete WHERE id = ? AND deleted_at IS NULL",
-      [athleteId]
-    );
-    return result.length > 0;
-  } catch (error) {
-    return false;
-  }
-};
-
-export const deleteEventsForAthlete = async (
-  athleteId: string,
-  externalDb?: any
-): Promise<{ success: boolean; deletedCount: number; error?: string }> => {
-  const dbToUse =
-    externalDb || (await (Database as any).load("sqlite:ergolab.db"));
-  const isManagingTransaction = !externalDb;
-
-  try {
-    if (isManagingTransaction) {
-      await dbToUse.execute("BEGIN TRANSACTION");
-    }
-
-    try {
-      const now = new Date().toISOString();
-
-      const athleteEvents = await dbToUse.select(
-        "SELECT id FROM event WHERE athlete_id = ? AND deleted_at IS NULL",
-        [athleteId]
-      );
-
-      if (athleteEvents.length > 0) {
-        await dbToUse.execute(
-          "UPDATE event SET deleted_at = ?, last_changed = ? WHERE athlete_id = ? AND deleted_at IS NULL",
-          [now, now, athleteId]
-        );
-      }
-
-      if (isManagingTransaction) {
-        await dbToUse.execute("COMMIT");
-      }
-
-      return {
-        success: true,
-        deletedCount: athleteEvents.length,
-      };
-    } catch (innerError) {
-      if (isManagingTransaction) {
-        await dbToUse.execute("ROLLBACK");
-      }
-      throw innerError;
-    }
-  } catch (error) {
-    return {
-      success: false,
-      deletedCount: 0,
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-    };
   }
 };

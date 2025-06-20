@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { CalendarEvent } from "./Calendar";
 import { isSameDay, isToday, isTomorrow } from "date-fns";
-import Event from "./Event";
-import { formatMinutesToHoursAndMinutes } from "@/utils/utils";
 import TonalButton from "./TonalButton";
 import { useBlur } from "../contexts/BlurContext";
 import { useCalendar } from "../contexts/CalendarContext";
 import styles from "../styles/scrollbar.module.css";
+import { Event as EventType } from "../types/Events";
+import Event from "./Event";
 
 function EventsList() {
-  const [relevantEvents, setRelevantEvents] = useState<CalendarEvent[]>([]);
+  const [relevantEvents, setRelevantEvents] = useState<EventType[]>([]);
   const { isBlurred, setIsBlurred } = useBlur();
   const { setAddingEvent, setEventInfo, events, selectedDate } = useCalendar();
   const handleAddEvent = () => {
@@ -20,10 +19,10 @@ function EventsList() {
   useEffect(() => {
     setRelevantEvents(
       events
-        .filter((event) => isSameDay(event.event_date, selectedDate))
+        .filter((event) => isSameDay(event.date, selectedDate))
         .sort((a, b) => {
-          const dateA = new Date(a.event_date);
-          const dateB = new Date(b.event_date);
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
           return dateA.getTime() - dateB.getTime();
         })
     );

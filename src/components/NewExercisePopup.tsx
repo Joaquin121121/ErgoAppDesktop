@@ -5,6 +5,7 @@ import {
   EffortReduction,
   Exercise,
   Progression,
+  TrainingBlock,
   VolumeReduction,
 } from "../types/trainingPlan";
 import SelectExercises from "./SelectExercises";
@@ -13,7 +14,7 @@ import LoadManagement from "./LoadManagement";
 import { RangeEntry } from "../utils/fatigueHandling";
 import { useNewPlan } from "../contexts/NewPlanContext";
 import TrainingBlockData from "./TrainingBlockData";
-import { getExercises } from "../hooks/parseTrainingData";
+import { getExercises } from "../parsers/trainingDataParser";
 function NewExercisePopup({
   onClose,
   type = "exercise",
@@ -92,6 +93,7 @@ function NewExercisePopup({
     let newSelectedExercise = {
       ...currentSelectedExercise,
     };
+
     if (factorToReduce === "volume") {
       newSelectedExercise.reduceVolume = {
         ...newSelectedExercise.reduceVolume,
@@ -111,11 +113,16 @@ function NewExercisePopup({
         onClose();
       }, 200);
     } else {
+      let newTrainingBlock: Omit<TrainingBlock, "id" | "selectedExercises"> = {
+        ...newSelectedExercise,
+        type: "trainingBlock",
+        blockModel,
+      };
+
       addTrainingBlock(
         sessionIndex,
         selectedExercises,
-        newSelectedExercise,
-        blockModel,
+        newTrainingBlock,
         isModel
       );
       setAnimation(navAnimations.popupFadeOutTop);
@@ -175,8 +182,8 @@ function NewExercisePopup({
 
   return (
     <div
-      className={`bg-white absolute shadow-sm rounded-2xl left-[30%] top-2 flex flex-col items-center h-auto z-50 ${animation} overflow-y-scroll `}
-      style={{ maxHeight: "95vh" }}
+      className={`bg-white absolute shadow-sm rounded-2xl left-[30%] top-2 flex flex-col items-center h-auto z-50 overflow-x-hidden ${animation} overflow-y-scroll `}
+      style={{ maxHeight: "95vh", minWidth: "50vw" }}
     >
       <div
         className="absolute z-50 hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"

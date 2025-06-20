@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import { CalendarEvent } from "./Calendar";
 import { useTranslation } from "react-i18next";
 import {
   formatDateString,
@@ -20,10 +19,10 @@ import { useNewEvent } from "../contexts/NewEventContext";
 import styles from "../styles/animations.module.css";
 import { supabase } from "../supabase";
 import { useNavigate } from "react-router-dom";
-import { saveEvent, deleteEvent as deleteEventDb } from "../hooks/parseEvents";
-import getAthletes from "../hooks/parseAthletes";
-
-type EventType = "competition" | "trainingSession" | "testSession";
+import getAthletes from "../parsers/athleteDataParser";
+import { EventType } from "../types/Events";
+import { useUser } from "../contexts/UserContext";
+import { useAthletes } from "../contexts/AthletesContext";
 
 // Helper to check network connection in real-time
 const checkNetworkConnection = async (): Promise<boolean> => {
@@ -52,6 +51,7 @@ function EventInfoModal({
   ) => void;
 }) {
   const { t } = useTranslation();
+  const { user } = useUser();
   const { readDirectoryJsons } = useJsonFiles();
   const { eventInfo, setEventInfo, updateEvent, deleteEvent } = useCalendar();
   const {
@@ -80,22 +80,34 @@ function EventInfoModal({
     draftEventId,
   } = useNewEvent();
 
+  const { athletes } = useAthletes();
   const [displayDate, setDisplayDate] = useState<Date>(
-    new Date(eventInfo.event_date)
+    new Date(eventInfo.date)
   );
 
   // Get athlete name from loaded athletes
-  const [loadedAthletes, setLoadedAthletes] = useState<Athlete[]>([]);
+  const [loadedAthletes, setLoadedAthletes] = useState<Athlete[]>(athletes);
   const athleteForEvent = loadedAthletes.find(
-    (a) => a.id === eventInfo.athlete_id
+    (a) => a.id === eventInfo.athleteId
   );
   const athleteNameDisplay = athleteForEvent?.name || "Unknown Athlete";
 
   // Initialize the event information in local state for display purposes
   const [eventDisplay, setEventDisplay] = useState({
     ...eventInfo,
-    time: getTimeString(new Date(eventInfo.event_date)),
+    time: getTimeString(new Date(eventInfo.date)),
   });
+
+  const getEventIcon = () => {
+    switch (eventDisplay.eventType) {
+      case "competition":
+        return "/competition.png";
+      case "trainingSession":
+        return "/trainingSessionRed.png";
+      case "test":
+        return "/test.png";
+    }
+  };
 
   // Effect to save draft whenever form state changes in edit mode
   useEffect(() => {
@@ -130,8 +142,8 @@ function EventInfoModal({
   const displayKeys = [
     {
       key: "event_type",
-      icon: editMode ? "info" : `${eventDisplay.event_type}Red`,
-      value: t(eventDisplay.event_type),
+      icon: editMode ? "info" : getEventIcon(),
+      value: t(eventDisplay.eventType),
     },
     {
       key: "athlete_name",
@@ -141,12 +153,12 @@ function EventInfoModal({
     {
       key: "event_date",
       icon: "calendar",
-      value: formatDateString(new Date(eventDisplay.event_date)),
+      value: formatDateString(new Date(eventDisplay.date)),
     },
     {
       key: "time",
       icon: "schedule",
-      value: `${getTimeString(new Date(eventDisplay.event_date))} hs`,
+      value: `${getTimeString(new Date(eventDisplay.date))} hs`,
     },
     {
       key: "duration",
@@ -270,25 +282,11 @@ function EventInfoModal({
 
     setLoading(true);
     try {
-      // Check network connection in real-time before proceeding
-      const isCurrentlyOnline = await checkNetworkConnection();
-      if (!isCurrentlyOnline) {
-        // If offline, we might still proceed with context update,
-        // and rely on offline capabilities if implemented, or inform user.
-        // Potentially show a specific offline message to the user here
-      }
-
-      const eventId = eventInfo.id; // eventId is a string (UUID)
-
-      // Call the deleteEvent function from CalendarContext
-      // This function handles the database operation (via parseEvents) and state update.
-      await deleteEvent(eventId);
-
-      // Clear any draft when deleting
+      console.log("Deleting event", eventInfo.id);
+      await deleteEvent(eventInfo.id);
       clearDraft();
-      localOnClose(); // Closes modal and resets states
+      localOnClose();
     } catch (error) {
-      // This catch block will handle errors from deleteEvent (context) or checkNetworkConnection
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -348,68 +346,44 @@ function EventInfoModal({
 
     // Continue with saving if validation passes
     setLoading(true);
-    try {
-      // Check network connection in real-time before proceeding
-      const isCurrentlyOnline = await checkNetworkConnection();
-      if (!isCurrentlyOnline) {
-      }
 
-      // Use the timezone-independent approach to create the event date
-      const eventDateString = createTimezoneIndependentDate(
-        displayDate.toISOString(),
-        formState.startTime.value
-      );
-
-      // Create updated event object
-      const updatedEvent = {
-        event_name: formState.eventName.value,
-        event_type: formState.eventType.value as EventType,
-        athlete_id: formState.selectedAthleteId.value,
-        event_date: eventDateString,
-        duration: parseFloat(formState.duration.value),
-        coach_id: eventInfo.coach_id,
-        last_changed: new Date(),
-        id: eventInfo.id,
-      };
-
-      // Use the new database function
-      const result = await saveEvent(updatedEvent);
-
-      if (result.success) {
-        // Also update the calendar context
-        await updateEvent(updatedEvent);
-
-        // Update the display event with the new values
-        setEventDisplay({
-          ...updatedEvent,
-          time: formState.startTime.value,
-        });
-
-        // Clear draft after successful save
-        clearDraft();
-
-        // Reset validation and edit mode
-        setValidationAttempted(false);
-        setEditMode(false);
-        resetEvent();
-        localOnClose();
-      } else {
-      }
-    } catch (error) {
-    } finally {
-      setLoading(false);
+    // Check network connection in real-time before proceeding
+    const isCurrentlyOnline = await checkNetworkConnection();
+    if (!isCurrentlyOnline) {
     }
-  };
 
-  // Load athletes from database
-  const loadAthletes = async () => {
-    try {
-      // Load athletes from database for the current coach
-      const athletesFromDb = await getAthletes(eventInfo.coach_id);
-      setLoadedAthletes(athletesFromDb);
-    } catch (error) {
-      setLoadedAthletes([]);
-    }
+    // Use the timezone-independent approach to create the event date
+    const eventDateString = createTimezoneIndependentDate(
+      displayDate.toISOString(),
+      formState.startTime.value
+    );
+
+    // Create updated event object
+    const updatedEvent = {
+      name: formState.eventName.value,
+      eventType: formState.eventType.value as EventType,
+      athleteId: formState.selectedAthleteId.value,
+      date: new Date(eventDateString),
+      duration: parseFloat(formState.duration.value),
+      id: eventInfo.id,
+    };
+
+    // Use the new database function
+    await updateEvent(updatedEvent);
+
+    setEventDisplay({
+      ...updatedEvent,
+      time: formState.startTime.value,
+    });
+
+    // Clear draft after successful save
+    clearDraft();
+
+    // Reset validation and edit mode
+    setValidationAttempted(false);
+    setEditMode(false);
+    resetEvent();
+    localOnClose();
   };
 
   // Initialize form state when entering edit mode
@@ -417,10 +391,10 @@ function EventInfoModal({
     if (editMode && athleteForEvent) {
       initializeEventEdit({
         id: eventInfo.id || "",
-        event_name: eventDisplay.event_name,
-        event_type: eventDisplay.event_type,
-        athlete_name: athleteForEvent.name,
-        athlete_id: eventInfo.athlete_id,
+        name: eventDisplay.name,
+        eventType: eventDisplay.eventType,
+        athleteName: athleteForEvent.name,
+        athleteId: eventInfo.athleteId,
         time: eventDisplay.time,
         duration: eventDisplay.duration,
       });
@@ -450,11 +424,6 @@ function EventInfoModal({
   useEffect(() => {
     setSelectedIndex(-1);
   }, [searchTerm, showDropdown]);
-
-  // Load athletes on component mount
-  useEffect(() => {
-    loadAthletes();
-  }, []);
 
   const filteredAthletes = loadedAthletes.filter((athlete) =>
     athlete.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -488,7 +457,7 @@ function EventInfoModal({
             />
           </div>
         ) : (
-          <span className="text-secondary">{eventDisplay.event_name}</span>
+          <span className="text-secondary">{eventDisplay.name}</span>
         )}
       </p>
 
@@ -496,7 +465,7 @@ function EventInfoModal({
         {/* Event Type */}
         <div className="flex items-center gap-x-4 mb-8">
           <img
-            src={`/${displayKeys[0].icon}.png`}
+            src={displayKeys[0].icon}
             className="h-6 w-6"
             alt={displayKeys[0].key}
           />

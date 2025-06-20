@@ -1,4 +1,5 @@
 import {
+  DisplayProgression,
   Progression,
   SelectedExercise,
   TrainingBlock,
@@ -29,8 +30,9 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     planState,
     model,
     removeExercise,
-    updateExerciseProperty,
-    updateExerciseProgression,
+    saveSelectedExercise,
+    updateProgression,
+    updateSelectedExercise,
   } = useNewPlan();
 
   const currentPlan = isModel ? model : planState;
@@ -47,7 +49,9 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | undefined>(0);
   const [interimRestTime, setInterimRestTime] = useState(restTime);
-  const [displayProgression, setDisplayProgression] = useState([]);
+  const [displayProgression, setDisplayProgression] = useState<
+    DisplayProgression[]
+  >([]);
 
   useEffect(() => {
     if (isExpanded) {
@@ -93,22 +97,15 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
 
   const handleProgressionChange = (
     index: number,
-    field: keyof Progression,
+    field: keyof DisplayProgression,
     value: string
   ) => {
-    const newProgression: Progression[] = [...displayProgression];
-
-    if (field === "repetitions") {
-      newProgression[index][field] = value;
-    } else {
-      newProgression[index][field] = parseInt(value);
-    }
+    const newProgression: DisplayProgression[] = [...displayProgression];
+    newProgression[index][field] = value;
     setDisplayProgression(newProgression);
   };
 
   const onInputBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
-    if (e.target.name !== "restTime") return;
-
     const value = e.target.value;
     const intValue = parseInt(value);
 
@@ -117,23 +114,28 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
       return;
     }
 
-    // Use the new context function instead of direct state manipulation
-    await updateExerciseProperty(
-      sessionIndex,
-      id,
-      "restTime",
-      intValue,
-      blockId,
-      isModel
-    );
+    let exercise: SelectedExercise;
+    exercise = blockId
+      ? ((
+          currentPlan.sessions[sessionIndex].exercises.find(
+            (e) => e.id === blockId
+          ) as TrainingBlock
+        ).selectedExercises.find((e) => e.id === id) as SelectedExercise)
+      : (currentPlan.sessions[sessionIndex].exercises.find(
+          (e) => e.id === id
+        ) as SelectedExercise);
+
+    await updateSelectedExercise(sessionIndex, id, exercise, blockId, isModel);
+
+    setInterimRestTime(intValue);
   };
 
   const onProgressionBlur = async (
     index: number,
-    field: keyof Progression,
+    field: keyof DisplayProgression,
     value: string
   ) => {
-    const newProgression: Progression[] = [...displayProgression];
+    const newProgression: DisplayProgression[] = [...displayProgression];
     const intValue = typeof value === "number" ? value : parseInt(value);
 
     if (field === "effort") {
@@ -152,20 +154,20 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
         setDisplayProgression(formatProgression(progression));
         return;
       }
-      newProgression[index][field] = value;
-    } else {
-      newProgression[index][field] = intValue;
     }
+    newProgression[index][field] = value;
+    const formattedProgression: Progression = {
+      id: progression[index].id,
+      series: parseInt(newProgression[index].series),
+      repetitions: newProgression[index].repetitions,
+      effort: parseInt(newProgression[index].effort),
+    };
 
-    // Use the new context function instead of direct state manipulation
-    const finalValue = field === "repetitions" ? value : intValue;
-    await updateExerciseProgression(
+    await updateProgression(
       sessionIndex,
       id,
       index,
-      field,
-      finalValue,
-      blockId,
+      formattedProgression,
       isModel
     );
 

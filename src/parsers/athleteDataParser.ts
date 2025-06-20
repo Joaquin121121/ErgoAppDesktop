@@ -1,6 +1,6 @@
 import { Athlete, transformToAthlete } from "../types/Athletes";
 import Database from "@tauri-apps/plugin-sql";
-import { DbBaseResult, DbJumpTime } from "../components/dbtypes/Tests";
+import { DbBaseResult, DbJumpTime } from "../dbtypes/Tests";
 import {
   CMJResult,
   SquatJumpResult,
@@ -16,6 +16,7 @@ import {
   BoscoResult,
 } from "../types/Studies";
 import { v4 as uuidv4 } from "uuid";
+import { PendingRecord } from "@/types/Sync";
 
 const calculateAverages = (jumpTimes: JumpTime[]) => {
   const validTimes = jumpTimes.filter((t) => !t.deleted);
@@ -68,7 +69,6 @@ const processBasicResults = async (
       WHERE br.deleted_at IS NULL
       AND br.bosco_result_id IS NULL
     `);
-
   for (const basicResult of basicResults) {
     const baseResult = baseResultMap.get(basicResult.base_result_id);
     if (!baseResult) continue;
@@ -461,12 +461,16 @@ export const getAthletes = async (coachId: string): Promise<Athlete[]> => {
         athletesMap.set(athlete.id, athleteObj);
       }
     });
+    const athleteIds = Array.from(athletesMap.keys());
+    const placeholders = athleteIds.map(() => "?").join(", ");
+
     const baseResults = await db.select(
       `SELECT br.* 
-      FROM base_result br
-      WHERE br.deleted_at IS NULL AND br.athlete_id IN (?)`,
-      [Array.from(athletesMap.keys())]
+   FROM base_result br
+   WHERE br.deleted_at IS NULL AND br.athlete_id IN (${placeholders})`,
+      athleteIds
     );
+    console.log("baseResults", baseResults);
 
     const baseResultMap = new Map<string, DbBaseResult>();
     baseResults.forEach((br: DbBaseResult) => {
@@ -521,8 +525,9 @@ export const getAthletes = async (coachId: string): Promise<Athlete[]> => {
 export const saveAthleteInfo = async (
   athlete: Athlete,
   coachId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
-): Promise<void> => {
+): Promise<PendingRecord> => {
   const dbToUse =
     externalDb || (await (Database as any).load("sqlite:ergolab.db"));
   const isManagingTransaction = !externalDb;
@@ -598,6 +603,9 @@ export const saveAthleteInfo = async (
 
       if (isManagingTransaction) {
         await dbToUse.execute("COMMIT");
+        pushRecord([{ tableName: "athlete", id: athlete.id }]);
+      } else {
+        return { tableName: "athlete", id: athlete.id };
       }
     } catch (innerError) {
       if (isManagingTransaction) {
@@ -615,27 +623,25 @@ export const saveAthleteInfo = async (
   }
 };
 
-export const saveAllAthletes = async (data: {
-  athleteInfo: Athlete[];
-  coachId: string;
-}) => {
-  if (
-    !data ||
-    !data.athleteInfo ||
-    !data.coachId ||
-    data.athleteInfo.length === 0
-  ) {
+export const saveAllAthletes = async (
+  athleteInfo: Athlete[],
+  coachId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>
+) => {
+  if (!athleteInfo || !coachId || athleteInfo.length === 0) {
     return "error";
   }
   const db = await (Database as any).load("sqlite:ergolab.db");
+  const pendingRecords: PendingRecord[] = [];
   try {
     await db.execute("BEGIN TRANSACTION");
 
-    for (let i = 0; i < data.athleteInfo.length; i++) {
-      const athlete = data.athleteInfo[i];
+    for (let i = 0; i < athleteInfo.length; i++) {
+      const athlete = athleteInfo[i];
 
       try {
-        await saveAthleteInfo(athlete, data.coachId, db);
+        const result = await saveAthleteInfo(athlete, coachId, db);
+        pendingRecords.push(result);
       } catch (error) {
         await db.execute("ROLLBACK");
         return "error";
@@ -643,6 +649,7 @@ export const saveAllAthletes = async (data: {
     }
 
     await db.execute("COMMIT");
+    pushRecord(pendingRecords);
     return "success";
   } catch (error) {
     console.error(error);
@@ -656,7 +663,10 @@ export const saveAllAthletes = async (data: {
   }
 };
 
-export const deleteAthlete = async (athleteId: string): Promise<void> => {
+export const deleteAthlete = async (
+  athleteId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>
+): Promise<void> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
 
@@ -664,6 +674,7 @@ export const deleteAthlete = async (athleteId: string): Promise<void> => {
       new Date().toISOString(),
       athleteId,
     ]);
+    pushRecord([{ tableName: "athlete", id: athleteId }]);
   } catch (error) {
     console.error(error);
     throw error;

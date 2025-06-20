@@ -42,7 +42,7 @@ function SelectExercises({
         Haga click en un ejercicio para seleccionarlo
       </p>
       <div
-        className={`h-10 w-1/2 relative rounded-2xl bg-offWhite shadow-sm flex items-center px-4 ${
+        className={`h-10 w-3/4 relative rounded-2xl bg-offWhite shadow-sm flex items-center px-4 ${
           searchBarFocus && inputStyles.focused
         }`}
       >
@@ -67,7 +67,7 @@ function SelectExercises({
         )}
       </div>
       <div className="flex gap-x-8">
-        <div className="grid grid-cols-2 py-4 gap-x-[5%] gap-y-64 w-[40vw] mt-4 px-12 overflow-y-scroll max-h-[600px] flex-grow items-start">
+        <div className="grid grid-cols-2 py-4 gap-x-[5%] gap-y-64 w-[40vw] mt-4 px-12 max-h-[600px] flex-grow items-start">
           {filteredExercises.map((exercise) => (
             <ExerciseCard
               key={exercise.id}

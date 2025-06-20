@@ -124,7 +124,7 @@ function ExerciseData({
     <>
       {showInfo && (
         <div
-          className={`fixed top-16 left-1/2 -translate-x-1/2 w-[40vw] z-50 flex flex-col items-center shadow-sm rounded-2xl bg-white h-auto p-16 ${showInfoAnimation}`}
+          className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center shadow-sm rounded-2xl bg-white h-auto p-16 ${showInfoAnimation}`}
         >
           <div
             className="absolute z-50 hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"

@@ -15,6 +15,7 @@ import {
   RawEffortReduction,
   RawExercise,
 } from "../types/trainingPlan";
+import { PendingRecord } from "../types/Sync";
 
 const getTrainingPlans = async (
   coachId: string,
@@ -191,10 +192,12 @@ const getTrainingPlans = async (
         nOfWeeks: rawPlan.n_of_weeks,
         sessions,
         nOfSessions: rawPlan.n_of_sessions,
+        athleteId: rawPlan.athlete_id,
       };
 
       plans.push(plan);
     }
+    console.log("plans", plans);
 
     return plans;
   } catch (error) {
@@ -208,27 +211,37 @@ const getProgressions = async (
   trainingBlockId: string | null,
   db: any
 ): Promise<Progression[]> => {
-  let query: string;
-  let params: any[];
+  try {
+    let query: string;
+    let params: any[];
 
-  if (selectedExerciseId) {
-    query =
-      "SELECT * FROM progressions WHERE selected_exercise_id = ? AND deleted_at IS NULL ORDER BY week_number ASC";
-    params = [selectedExerciseId];
-  } else if (trainingBlockId) {
-    query =
-      "SELECT * FROM progressions WHERE training_block_id = ? AND deleted_at IS NULL ORDER BY week_number ASC";
-    params = [trainingBlockId];
-  } else {
+    if (selectedExerciseId) {
+      query =
+        "SELECT * FROM progressions WHERE selected_exercise_id = ? AND deleted_at IS NULL ORDER BY week_number ASC";
+      params = [selectedExerciseId];
+    } else if (trainingBlockId) {
+      query =
+        "SELECT * FROM progressions WHERE training_block_id = ? AND deleted_at IS NULL ORDER BY week_number ASC";
+      params = [trainingBlockId];
+    } else {
+      return [];
+    }
+
+    const rawProgressions = await db.select(query, params);
+    const progressions: Progression[] = [];
+    rawProgressions.forEach((prog: RawProgression) => {
+      progressions.push({
+        id: prog.id,
+        series: prog.series,
+        repetitions: prog.repetitions,
+        effort: prog.effort,
+      });
+    });
+    return progressions;
+  } catch (error) {
+    console.error("Error getting progressions:", error);
     return [];
   }
-
-  const rawProgressions = await db.select(query, params);
-  return rawProgressions.map((prog: RawProgression) => ({
-    series: prog.series,
-    repetitions: prog.repetitions,
-    effort: prog.effort,
-  }));
 };
 
 const getVolumeReductions = async (
@@ -236,29 +249,40 @@ const getVolumeReductions = async (
   trainingBlockId: string | null,
   db: any
 ): Promise<VolumeReduction> => {
-  let query: string;
-  let params: any[];
+  try {
+    let query: string;
+    let params: any[];
 
-  if (selectedExerciseId) {
-    query =
-      "SELECT * FROM volume_reductions WHERE selected_exercise_id = ? AND deleted_at IS NULL";
-    params = [selectedExerciseId];
-  } else if (trainingBlockId) {
-    query =
-      "SELECT * FROM volume_reductions WHERE training_block_id = ? AND deleted_at IS NULL";
-    params = [trainingBlockId];
-  } else {
-    return {};
+    if (selectedExerciseId) {
+      query =
+        "SELECT * FROM volume_reductions WHERE selected_exercise_id = ? AND deleted_at IS NULL";
+      params = [selectedExerciseId];
+    } else if (trainingBlockId) {
+      query =
+        "SELECT * FROM volume_reductions WHERE training_block_id = ? AND deleted_at IS NULL";
+      params = [trainingBlockId];
+    } else {
+      return {
+        id: "",
+      };
+    }
+
+    const rawReductions = await db.select(query, params);
+    const reductions: VolumeReduction = {
+      id: "",
+    };
+
+    rawReductions.forEach((reduction: RawVolumeReduction) => {
+      reductions[reduction.fatigue_level] = reduction.reduction_percentage;
+    });
+
+    return reductions;
+  } catch (error) {
+    console.error("Error getting volume reductions:", error);
+    return {
+      id: "",
+    };
   }
-
-  const rawReductions = await db.select(query, params);
-  const reductions: VolumeReduction = {};
-
-  rawReductions.forEach((reduction: RawVolumeReduction) => {
-    reductions[reduction.fatigue_level] = reduction.reduction_percentage;
-  });
-
-  return reductions;
 };
 
 const getEffortReductions = async (
@@ -266,29 +290,41 @@ const getEffortReductions = async (
   trainingBlockId: string | null,
   db: any
 ): Promise<EffortReduction> => {
-  let query: string;
-  let params: any[];
+  try {
+    let query: string;
+    let params: any[];
 
-  if (selectedExerciseId) {
-    query =
-      "SELECT * FROM effort_reductions WHERE selected_exercise_id = ? AND deleted_at IS NULL";
-    params = [selectedExerciseId];
-  } else if (trainingBlockId) {
-    query =
-      "SELECT * FROM effort_reductions WHERE training_block_id = ? AND deleted_at IS NULL";
-    params = [trainingBlockId];
-  } else {
-    return {};
+    if (selectedExerciseId) {
+      query =
+        "SELECT * FROM effort_reductions WHERE selected_exercise_id = ? AND deleted_at IS NULL";
+      params = [selectedExerciseId];
+    } else if (trainingBlockId) {
+      query =
+        "SELECT * FROM effort_reductions WHERE training_block_id = ? AND deleted_at IS NULL";
+      params = [trainingBlockId];
+    } else {
+      return {
+        id: "",
+      };
+    }
+
+    const rawReductions = await db.select(query, params);
+    const reductions: EffortReduction = {
+      id: "",
+    };
+
+    rawReductions.forEach((reduction: RawEffortReduction) => {
+      reductions[reduction.effort_level] = reduction.reduction_amount;
+      reductions.id = reduction.id;
+    });
+
+    return reductions;
+  } catch (error) {
+    console.error("Error getting effort reductions:", error);
+    return {
+      id: "",
+    };
   }
-
-  const rawReductions = await db.select(query, params);
-  const reductions: EffortReduction = {};
-
-  rawReductions.forEach((reduction: RawEffortReduction) => {
-    reductions[reduction.effort_level] = reduction.reduction_amount;
-  });
-
-  return reductions;
 };
 
 const getExercises = async (): Promise<Exercise[]> => {
@@ -313,13 +349,15 @@ const getExercises = async (): Promise<Exercise[]> => {
 const addTrainingPlan = async (
   planState: PlanState,
   userId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
-): Promise<void> => {
+): Promise<PendingRecord[]> => {
   const dbToUse =
     externalDb || (await (Database as any).load("sqlite:ergolab.db"));
   const isManagingTransaction = !externalDb;
 
   try {
+    const recordsToSync: PendingRecord[] = [];
     if (isManagingTransaction) {
       await dbToUse.execute("BEGIN TRANSACTION");
     }
@@ -327,16 +365,34 @@ const addTrainingPlan = async (
     const planId = planState.id || uuidv4();
     const now = new Date().toISOString();
     await dbToUse.execute(
-      `INSERT INTO training_plans (id, n_of_weeks, n_of_sessions, user_id, created_at, last_changed)
-        VALUES (?, ?, ?, ?, ?, ?)`,
-      [planId, planState.nOfWeeks, planState.nOfSessions, userId, now, now]
+      `INSERT INTO training_plans (id, n_of_weeks, n_of_sessions, user_id, athlete_id, created_at, last_changed)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        planId,
+        planState.nOfWeeks,
+        planState.nOfSessions,
+        userId,
+        planState.athleteId || null,
+        now,
+        now,
+      ]
     );
+    recordsToSync.push({ tableName: "training_plans", id: planId });
     for (const session of planState.sessions) {
-      await addSession(session, planId, dbToUse);
+      const sessionRecords = await addSession(
+        session,
+        planId,
+        pushRecord,
+        dbToUse
+      );
+      recordsToSync.push(...sessionRecords);
     }
 
     if (isManagingTransaction) {
       await dbToUse.execute("COMMIT");
+      await pushRecord(recordsToSync);
+    } else {
+      return recordsToSync;
     }
   } catch (error) {
     if (isManagingTransaction) {
@@ -350,29 +406,62 @@ const addTrainingPlan = async (
 const addSession = async (
   session: Session,
   planId: string,
-  db: any
-): Promise<void> => {
-  const sessionId = session.id || uuidv4();
-  const now = new Date().toISOString();
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
+  externalDb?: any
+): Promise<PendingRecord[]> => {
+  try {
+    const db =
+      externalDb || (await (Database as any).load("sqlite:ergolab.db"));
+    const recordsToSync: PendingRecord[] = [];
 
-  await db.execute(
-    `INSERT INTO sessions (id, plan_id, name, created_at, last_changed) VALUES (?, ?, ?, ?, ?)`,
-    [sessionId, planId, session.name, now, now]
-  );
+    const sessionId = session.id || uuidv4();
+    const now = new Date().toISOString();
 
-  for (const day of session.days) {
     await db.execute(
-      `INSERT INTO session_days (id, session_id, day_name, created_at, last_changed) VALUES (?, ?, ?, ?, ?)`,
-      [uuidv4(), sessionId, day, now, now]
+      `INSERT INTO sessions (id, plan_id, name, created_at, last_changed) VALUES (?, ?, ?, ?, ?)`,
+      [sessionId, planId, session.name, now, now]
     );
-  }
+    recordsToSync.push({ tableName: "sessions", id: sessionId });
 
-  for (const exercise of session.exercises) {
-    if (exercise.type === "selectedExercise") {
-      await addSelectedExercise(exercise, sessionId, null, db);
-    } else if (exercise.type === "trainingBlock") {
-      await addTrainingBlock(exercise, sessionId, db);
+    for (const day of session.days) {
+      const dayId = uuidv4();
+      await db.execute(
+        `INSERT INTO session_days (id, session_id, day_name, created_at, last_changed) VALUES (?, ?, ?, ?, ?)`,
+        [dayId, sessionId, day, now, now]
+      );
+      recordsToSync.push({ tableName: "session_days", id: dayId });
     }
+    for (const exercise of session.exercises) {
+      if (exercise.type === "selectedExercise") {
+        const result = await addSelectedExercise(
+          exercise,
+          sessionId,
+          null,
+          pushRecord,
+          db
+        );
+        if (Array.isArray(result)) {
+          recordsToSync.push(...result);
+        }
+      } else if (exercise.type === "trainingBlock") {
+        const result = await addTrainingBlock(
+          exercise,
+          sessionId,
+          pushRecord,
+          db
+        );
+        if (Array.isArray(result)) {
+          recordsToSync.push(...result);
+        }
+      }
+    }
+    if (externalDb) {
+      return recordsToSync;
+    }
+    await pushRecord(recordsToSync);
+  } catch (error) {
+    console.error("Error adding session:", error);
+    throw error;
   }
 };
 
@@ -380,192 +469,274 @@ const addSelectedExercise = async (
   exercise: SelectedExercise,
   sessionId: string,
   blockId: string | null,
-  db: any
-): Promise<void> => {
-  const exerciseId = exercise.id || uuidv4();
-  const now = new Date().toISOString();
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
+  externalDb?: any
+): Promise<string | PendingRecord[]> => {
+  try {
+    const recordsToSync: PendingRecord[] = [];
+    const exerciseId = exercise.id || uuidv4();
+    const now = new Date().toISOString();
 
-  await db.execute(
-    `INSERT INTO selected_exercises (id, session_id, exercise_id, block_id, series, repetitions, effort, rest_time, comments, created_at, last_changed)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      exerciseId,
-      sessionId,
-      exercise.exerciseId,
-      blockId,
-      exercise.series,
-      exercise.repetitions,
-      exercise.effort,
-      exercise.restTime,
-      exercise.comments,
-      now,
-      now,
-    ]
-  );
+    const db =
+      externalDb || (await (Database as any).load("sqlite:ergolab.db"));
 
-  for (let i = 0; i < exercise.progression.length; i++) {
-    const progression = exercise.progression[i];
     await db.execute(
-      `INSERT INTO progressions (id, selected_exercise_id, series, repetitions, effort, week_number, created_at, last_changed)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO selected_exercises (id, session_id, exercise_id, block_id, series, repetitions, effort, rest_time, comments, created_at, last_changed)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        uuidv4(),
         exerciseId,
-        progression.series,
-        progression.repetitions,
-        progression.effort,
-        i + 1,
+        sessionId,
+        exercise.exerciseId,
+        blockId,
+        exercise.series,
+        exercise.repetitions,
+        exercise.effort,
+        exercise.restTime,
+        exercise.comments,
         now,
         now,
       ]
     );
-  }
+    recordsToSync.push({ tableName: "selected_exercises", id: exerciseId });
 
-  if (exercise.reduceVolume) {
-    for (const [fatigueLevel, percentage] of Object.entries(
-      exercise.reduceVolume
-    )) {
+    for (let i = 0; i < exercise.progression.length; i++) {
+      const progression = exercise.progression[i];
+      const progressionId = uuidv4();
       await db.execute(
-        `INSERT INTO volume_reductions (id, selected_exercise_id, fatigue_level, reduction_percentage, created_at, last_changed)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [uuidv4(), exerciseId, fatigueLevel, percentage, now, now]
+        `INSERT INTO progressions (id, selected_exercise_id, series, repetitions, effort, week_number, created_at, last_changed)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          progressionId,
+          exerciseId,
+          progression.series,
+          progression.repetitions,
+          progression.effort,
+          i + 1,
+          now,
+          now,
+        ]
       );
+      recordsToSync.push({ tableName: "progressions", id: progressionId });
     }
-  }
 
-  if (exercise.reduceEffort) {
-    for (const [effortLevel, amount] of Object.entries(exercise.reduceEffort)) {
-      await db.execute(
-        `INSERT INTO effort_reductions (id, selected_exercise_id, effort_level, reduction_amount, created_at, last_changed)
+    if (exercise.reduceVolume) {
+      for (const [fatigueLevel, percentage] of Object.entries(
+        exercise.reduceVolume
+      )) {
+        const volumeReductionId = uuidv4();
+        await db.execute(
+          `INSERT INTO volume_reductions (id, selected_exercise_id, fatigue_level, reduction_percentage, created_at, last_changed)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [uuidv4(), exerciseId, effortLevel, amount, now, now]
-      );
+          [volumeReductionId, exerciseId, fatigueLevel, percentage, now, now]
+        );
+        recordsToSync.push({
+          tableName: "volume_reductions",
+          id: volumeReductionId,
+        });
+      }
     }
+
+    if (exercise.reduceEffort) {
+      for (const [effortLevel, amount] of Object.entries(
+        exercise.reduceEffort
+      )) {
+        const effortReductionId = uuidv4();
+        await db.execute(
+          `INSERT INTO effort_reductions (id, selected_exercise_id, effort_level, reduction_amount, created_at, last_changed)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+          [effortReductionId, exerciseId, effortLevel, amount, now, now]
+        );
+        recordsToSync.push({
+          tableName: "effort_reductions",
+          id: effortReductionId,
+        });
+      }
+    }
+    if (externalDb) {
+      return recordsToSync;
+    }
+    await pushRecord(recordsToSync);
+    return exerciseId;
+  } catch (error) {
+    console.error("Error adding selected exercise:", error);
+    throw error;
   }
 };
 
 const addTrainingBlock = async (
   block: TrainingBlock,
   sessionId: string,
-  db: any
-): Promise<void> => {
-  const blockId = block.id || uuidv4();
-  const now = new Date().toISOString();
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
+  externalDb?: any
+): Promise<PendingRecord[]> => {
+  try {
+    const db =
+      externalDb || (await (Database as any).load("sqlite:ergolab.db"));
+    const recordsToSync: PendingRecord[] = [];
+    const blockId = block.id || uuidv4();
+    const now = new Date().toISOString();
 
-  await db.execute(
-    `INSERT INTO training_blocks (id, session_id, name, series, repetitions, effort, block_model, comments, rest_time, created_at, last_changed)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      blockId,
-      sessionId,
-      block.name,
-      block.series,
-      block.repetitions,
-      block.effort,
-      block.blockModel,
-      block.comments,
-      block.restTime,
-      now,
-      now,
-    ]
-  );
-
-  for (let i = 0; i < block.progression.length; i++) {
-    const progression = block.progression[i];
     await db.execute(
-      `INSERT INTO progressions (id, training_block_id, series, repetitions, effort, week_number, created_at, last_changed)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO training_blocks (id, session_id, name, series, repetitions, effort, block_model, comments, rest_time, created_at, last_changed)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        uuidv4(),
         blockId,
-        progression.series,
-        progression.repetitions,
-        progression.effort,
-        i + 1,
+        sessionId,
+        block.name,
+        block.series,
+        block.repetitions,
+        block.effort,
+        block.blockModel,
+        block.comments,
+        block.restTime,
         now,
         now,
       ]
     );
-  }
+    recordsToSync.push({ tableName: "training_blocks", id: blockId });
 
-  if (block.reduceVolume) {
-    for (const [fatigueLevel, percentage] of Object.entries(
-      block.reduceVolume
-    )) {
+    for (let i = 0; i < block.progression.length; i++) {
+      const progression = block.progression[i];
+      const progressionId = uuidv4();
       await db.execute(
-        `INSERT INTO volume_reductions (id, training_block_id, fatigue_level, reduction_percentage, created_at, last_changed)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [uuidv4(), blockId, fatigueLevel, percentage, now, now]
+        `INSERT INTO progressions (id, training_block_id, series, repetitions, effort, week_number, created_at, last_changed)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          progressionId,
+          blockId,
+          progression.series,
+          progression.repetitions,
+          progression.effort,
+          i + 1,
+          now,
+          now,
+        ]
       );
+      recordsToSync.push({ tableName: "progressions", id: progressionId });
     }
-  }
 
-  if (block.reduceEffort) {
-    for (const [effortLevel, amount] of Object.entries(block.reduceEffort)) {
-      await db.execute(
-        `INSERT INTO effort_reductions (id, training_block_id, effort_level, reduction_amount, created_at, last_changed)
+    if (block.reduceVolume) {
+      for (const [fatigueLevel, percentage] of Object.entries(
+        block.reduceVolume
+      )) {
+        const volumeReductionId = uuidv4();
+        await db.execute(
+          `INSERT INTO volume_reductions (id, training_block_id, fatigue_level, reduction_percentage, created_at, last_changed)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [uuidv4(), blockId, effortLevel, amount, now, now]
-      );
+          [volumeReductionId, blockId, fatigueLevel, percentage, now, now]
+        );
+        recordsToSync.push({
+          tableName: "volume_reductions",
+          id: volumeReductionId,
+        });
+      }
     }
-  }
 
-  for (const exercise of block.selectedExercises) {
-    await addSelectedExercise(exercise, sessionId, blockId, db);
-  }
-};
+    if (block.reduceEffort) {
+      for (const [effortLevel, amount] of Object.entries(block.reduceEffort)) {
+        const effortReductionId = uuidv4();
+        await db.execute(
+          `INSERT INTO effort_reductions (id, training_block_id, effort_level, reduction_amount, created_at, last_changed)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+          [effortReductionId, blockId, effortLevel, amount, now, now]
+        );
+        recordsToSync.push({
+          tableName: "effort_reductions",
+          id: effortReductionId,
+        });
+      }
+    }
 
-const deleteSessionsForPlan = async (
-  planId: string,
-  db: any
-): Promise<void> => {
-  const sessions = await db.select(
-    "SELECT id FROM sessions WHERE plan_id = ? AND deleted_at IS NULL",
-    [planId]
-  );
-
-  for (const session of sessions) {
-    await deleteSession(session.id, db);
+    for (const exercise of block.selectedExercises) {
+      const result = await addSelectedExercise(
+        exercise,
+        sessionId,
+        blockId,
+        pushRecord,
+        db
+      );
+      if (Array.isArray(result)) {
+        recordsToSync.push(...result);
+      }
+    }
+    if (externalDb) {
+      return recordsToSync;
+    }
+    await pushRecord(recordsToSync);
+  } catch (error) {
+    console.error("Error adding training block:", error);
+    throw error;
   }
 };
 
 // Helper function to delete a session
-const deleteSession = async (sessionId: string, db: any): Promise<void> => {
-  const now = new Date().toISOString();
+const deleteSession = async (
+  sessionId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
+  externalDb?: any
+): Promise<void> => {
+  try {
+    const now = new Date().toISOString();
+    const db =
+      externalDb || (await (Database as any).load("sqlite:ergolab.db"));
 
-  await db.execute(
-    "UPDATE sessions SET deleted_at = ?, last_changed = ? WHERE id = ?",
-    [now, now, sessionId]
-  );
+    await db.execute(
+      "UPDATE sessions SET deleted_at = ?, last_changed = ? WHERE id = ?",
+      [now, now, sessionId]
+    );
+    await pushRecord([{ tableName: "sessions", id: sessionId }]);
+  } catch (error) {
+    console.error("Error deleting session:", error);
+    throw error;
+  }
 };
 
 // Helper function to delete a training block
-const deleteTrainingBlock = async (blockId: string, db: any): Promise<void> => {
+const deleteTrainingBlock = async (
+  blockId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
+  externalDb?: any
+): Promise<void> => {
   const now = new Date().toISOString();
+  const db = externalDb || (await (Database as any).load("sqlite:ergolab.db"));
 
-  await db.execute(
-    "UPDATE training_blocks SET deleted_at = ?, last_changed = ? WHERE id = ?",
-    [now, now, blockId]
-  );
+  try {
+    await db.execute(
+      "UPDATE training_blocks SET deleted_at = ?, last_changed = ? WHERE id = ?",
+      [now, now, blockId]
+    );
+    await pushRecord([{ tableName: "training_blocks", id: blockId }]);
+  } catch (error) {
+    console.error("Error deleting training block:", error);
+    throw error;
+  }
 };
 
 // Helper function to delete a selected exercise
 const deleteSelectedExercise = async (
   exerciseId: string,
-  db: any
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
+  externalDb?: any
 ): Promise<void> => {
   const now = new Date().toISOString();
+  const db = externalDb || (await (Database as any).load("sqlite:ergolab.db"));
 
   await db.execute(
     "UPDATE selected_exercises SET deleted_at = ?, last_changed = ? WHERE id = ?",
     [now, now, exerciseId]
   );
+
+  if (externalDb) {
+    return;
+  }
+  await pushRecord([{ tableName: "selected_exercises", id: exerciseId }]);
 };
 
 const deleteTrainingPlan = async (
   planId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
-): Promise<void> => {
+): Promise<PendingRecord[]> => {
   const dbToUse =
     externalDb || (await (Database as any).load("sqlite:ergolab.db"));
   const isManagingTransaction = !externalDb;
@@ -583,6 +754,9 @@ const deleteTrainingPlan = async (
 
     if (isManagingTransaction) {
       await dbToUse.execute("COMMIT");
+      await pushRecord([{ tableName: "training_plans", id: planId }]);
+    } else {
+      return [{ tableName: "training_plans", id: planId }];
     }
   } catch (error) {
     if (isManagingTransaction) {
@@ -593,7 +767,7 @@ const deleteTrainingPlan = async (
   }
 };
 
-const getTrainingModels = async (): Promise<TrainingModel[]> => {
+const getTrainingModels = async (userId: string): Promise<TrainingModel[]> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
 
@@ -602,8 +776,9 @@ const getTrainingModels = async (): Promise<TrainingModel[]> => {
       `SELECT tm.id, tm.name, tm.description, tm.training_plan_id, tm.created_at, tp.user_id
        FROM training_models tm 
        JOIN training_plans tp ON tm.training_plan_id = tp.id 
-       WHERE tm.deleted_at IS NULL AND tp.deleted_at IS NULL 
-       ORDER BY tm.created_at DESC`
+       WHERE tm.deleted_at IS NULL AND tp.deleted_at IS NULL AND tp.user_id = ?
+       ORDER BY tm.created_at DESC`,
+      [userId]
     );
 
     const models: TrainingModel[] = [];
@@ -647,25 +822,45 @@ const getTrainingModels = async (): Promise<TrainingModel[]> => {
 
 const addTrainingModel = async (
   model: TrainingModel,
-  userId: string
+  userId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>
 ): Promise<void> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
-
+    const recordsToSync: PendingRecord[] = [];
     await db.execute("BEGIN TRANSACTION");
 
     try {
-      await addTrainingPlan(model, userId, db);
+      const planState: PlanState = {
+        id: model.trainingPlanId,
+        nOfWeeks: model.nOfWeeks,
+        nOfSessions: model.nOfSessions,
+        sessions: model.sessions,
+      };
+      const planRecords = await addTrainingPlan(
+        planState,
+        userId,
+        pushRecord,
+        db
+      );
+      recordsToSync.push(...planRecords);
 
-      const modelId = uuidv4();
       const now = new Date().toISOString();
       await db.execute(
         `INSERT INTO training_models (id, name, description, training_plan_id, created_at, last_changed)
            VALUES (?, ?, ?, ?, ?, ?)`,
-        [modelId, model.name, model.description, model.id, now, now]
+        [
+          model.id,
+          model.name,
+          model.description,
+          model.trainingPlanId,
+          now,
+          now,
+        ]
       );
-
       await db.execute("COMMIT");
+      recordsToSync.push({ tableName: "training_models", id: model.id });
+      await pushRecord(recordsToSync);
     } catch (innerError) {
       console.error("Error saving training model, rolling back:", innerError);
       await db.execute("ROLLBACK");
@@ -677,26 +872,25 @@ const addTrainingModel = async (
   }
 };
 
-const deleteTrainingModel = async (modelId: string): Promise<void> => {
+const deleteTrainingModel = async (
+  modelId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>
+): Promise<void> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
-
-    await db.execute("BEGIN TRANSACTION");
+    const now = new Date().toISOString();
 
     try {
-      const model = await db.select(
-        "SELECT training_plan_id FROM training_models WHERE id = ? AND deleted_at IS NULL",
-        [modelId]
+      console.log("deleting model", modelId);
+      await db.execute(
+        "UPDATE training_models SET deleted_at = ?, last_changed = ? WHERE id = ?",
+        [now, now, modelId]
       );
+      console.log("model deleted");
 
-      if (model.length > 0) {
-        await deleteTrainingPlan(model[0].training_plan_id, db);
-      }
-
-      await db.execute("COMMIT");
+      await pushRecord([{ tableName: "training_models", id: modelId }]);
     } catch (innerError) {
       console.error("Error deleting training model, rolling back:", innerError);
-      await db.execute("ROLLBACK");
       throw innerError;
     }
   } catch (error) {
@@ -723,7 +917,10 @@ const addExercise = async (exercise: Exercise): Promise<void> => {
   }
 };
 
-const updateTrainingPlan = async (planState: PlanState): Promise<void> => {
+const updateTrainingPlan = async (
+  planState: PlanState,
+  pushRecord: (records: PendingRecord[]) => Promise<void>
+): Promise<void> => {
   const db = await (Database as any).load("sqlite:ergolab.db");
 
   try {
@@ -748,6 +945,7 @@ const updateTrainingPlan = async (planState: PlanState): Promise<void> => {
     );
 
     await db.execute("COMMIT");
+    await pushRecord([{ tableName: "training_plans", id: planState.id }]);
   } catch (error) {
     console.error("Error updating training plan, rolling back:", error);
     await db.execute("ROLLBACK");
@@ -755,8 +953,12 @@ const updateTrainingPlan = async (planState: PlanState): Promise<void> => {
   }
 };
 
-const updateTrainingModel = async (model: TrainingModel): Promise<void> => {
+const updateTrainingModel = async (
+  model: TrainingModel,
+  pushRecord: (records: PendingRecord[]) => Promise<void>
+): Promise<void> => {
   const db = await (Database as any).load("sqlite:ergolab.db");
+  const recordsToSync: PendingRecord[] = [];
 
   try {
     await db.execute("BEGIN TRANSACTION");
@@ -764,7 +966,7 @@ const updateTrainingModel = async (model: TrainingModel): Promise<void> => {
     const now = new Date().toISOString();
 
     const existingModel = await db.select(
-      "SELECT id FROM training_models WHERE training_plan_id = ? AND deleted_at IS NULL",
+      "SELECT id FROM training_models WHERE id = ? AND deleted_at IS NULL",
       [model.id]
     );
 
@@ -775,9 +977,11 @@ const updateTrainingModel = async (model: TrainingModel): Promise<void> => {
     await db.execute(
       `UPDATE training_models 
        SET name = ?, description = ?, last_changed = ?
-       WHERE training_plan_id = ?`,
+       WHERE id = ?`,
       [model.name, model.description, now, model.id]
     );
+    recordsToSync.push({ tableName: "training_models", id: model.id });
+    await pushRecord(recordsToSync);
   } catch (error) {
     console.error("Error updating training model:", error);
     throw error;
@@ -786,6 +990,7 @@ const updateTrainingModel = async (model: TrainingModel): Promise<void> => {
 
 const updateSession = async (
   session: Session,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
 ): Promise<void> => {
   const dbToUse =
@@ -815,6 +1020,7 @@ const updateSession = async (
 
     if (isManagingTransaction) {
       await dbToUse.execute("COMMIT");
+      await pushRecord([{ tableName: "sessions", id: session.id }]);
     }
   } catch (error) {
     if (isManagingTransaction) {
@@ -827,6 +1033,7 @@ const updateSession = async (
 
 const updateSelectedExercise = async (
   exercise: SelectedExercise,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
 ): Promise<void> => {
   const dbToUse =
@@ -867,6 +1074,7 @@ const updateSelectedExercise = async (
 
     if (isManagingTransaction) {
       await dbToUse.execute("COMMIT");
+      await pushRecord([{ tableName: "selected_exercises", id: exercise.id }]);
     }
   } catch (error) {
     if (isManagingTransaction) {
@@ -879,6 +1087,7 @@ const updateSelectedExercise = async (
 
 const updateTrainingBlock = async (
   block: TrainingBlock,
+  pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
 ): Promise<void> => {
   const dbToUse =
@@ -917,6 +1126,10 @@ const updateTrainingBlock = async (
         block.id,
       ]
     );
+    if (isManagingTransaction) {
+      await dbToUse.execute("COMMIT");
+      await pushRecord([{ tableName: "training_blocks", id: block.id }]);
+    }
   } catch (error) {
     console.error("Error updating training block:", error);
     throw error;
@@ -967,33 +1180,28 @@ const deleteExercise = async (exerciseId: string): Promise<void> => {
 
 const updateProgression = async (
   progression: Progression,
-  selectedExerciseId: string,
-  index: number
+  pushRecord: (records: PendingRecord[]) => Promise<void>
 ): Promise<void> => {
-  const db = await (Database as any).load("sqlite:ergolab.db");
-  const now = new Date().toISOString();
+  try {
+    console.log("updating progression", progression);
+    const db = await (Database as any).load("sqlite:ergolab.db");
+    const now = new Date().toISOString();
 
-  const progressionId = await db.select(
-    "SELECT id FROM progressions WHERE selected_exercise_id = ? AND week_number = ? AND deleted_at IS NULL",
-    [selectedExerciseId, index]
-  );
-
-  if (progressionId.length === 0) {
-    throw new Error(
-      `Progression with selected exercise ID ${selectedExerciseId} and week number ${index} not found`
+    await db.execute(
+      "UPDATE progressions SET series = ?, repetitions = ?, effort = ?, last_changed = ? WHERE id = ?",
+      [
+        progression.series,
+        progression.repetitions,
+        progression.effort,
+        now,
+        progression.id,
+      ]
     );
+    await pushRecord([{ tableName: "progressions", id: progression.id }]);
+  } catch (error) {
+    console.error("Error updating progression:", error);
+    throw error;
   }
-
-  await db.execute(
-    "UPDATE progressions SET series = ?, repetitions = ?, effort = ?, last_changed = ? WHERE id = ?",
-    [
-      progression.series,
-      progression.repetitions,
-      progression.effort,
-      now,
-      progressionId,
-    ]
-  );
 };
 
 export {
@@ -1017,4 +1225,6 @@ export {
   updateTrainingBlock,
   updateExercise,
   deleteExercise,
+  updateProgression,
+  getExercises,
 };

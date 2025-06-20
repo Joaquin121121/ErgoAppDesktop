@@ -32,17 +32,44 @@ function SessionInfoStage({
     updateSession,
     saveNewTrainingModel,
     saveNewTrainingPlan,
+    setModel,
+    setPlanState,
   } = useNewPlan();
   const currentPlan = isModel ? model : planState;
+  const currentSetter = isModel ? setModel : setPlanState;
   const [localAnimation, setLocalAnimation] = useState(animation);
   const [sessionN, setSessionN] = useState(0);
-
+  const [loading, setLoading] = useState(false);
   const [formState, setFormState] = useState({
     name: { value: "Sesion 1", error: "" },
     days: { value: [], error: "" },
   });
   const [validationAttempted, setValidationAttempted] = useState(false);
   const { isNewModel, isNewTrainingPlan } = useNewPlan();
+
+  const validateForm = () => {
+    let isValid = true;
+    const newFormState = { ...formState };
+
+    if (formState.name.value.length === 0) {
+      newFormState.name = { value: "", error: "El nombre es requerido" };
+      isValid = false;
+    }
+
+    if (formState.days.value.length === 0) {
+      newFormState.days = {
+        value: [],
+        error: "Debe seleccionar al menos un dia",
+      };
+      isValid = false;
+    }
+
+    if (!isValid) {
+      setFormState(newFormState);
+    }
+
+    return isValid;
+  };
 
   const handleDayClick = (dayValue: string) => {
     setFormState((prevState) => {
@@ -65,11 +92,11 @@ function SessionInfoStage({
     };
 
     if (currentPlan.sessions[sessionN]) {
-      console.log("Updating session");
-      updateSession(sessionN, newSession, isModel);
+      updateSession(currentPlan.sessions[sessionN], isModel);
     } else {
       addSession(newSession, isModel);
     }
+
     setLocalAnimation(navAnimations.fadeOutRight);
     setTimeout(() => {
       const newSessionN = sessionN - 1;
@@ -86,20 +113,11 @@ function SessionInfoStage({
 
   const nextSession = async () => {
     setValidationAttempted(true);
-    if (formState.name.value.length === 0) {
-      setFormState((prevState) => ({
-        ...prevState,
-        name: { value: "", error: "El nombre es requerido" },
-      }));
+
+    if (!validateForm()) {
       return;
     }
-    if (formState.days.value.length === 0) {
-      setFormState((prevState) => ({
-        ...prevState,
-        days: { value: [], error: "Debe seleccionar al menos un dia" },
-      }));
-      return;
-    }
+
     const newSession: Omit<Session, "id" | "planId"> = {
       name: formState.name.value,
       days: formState.days.value,
@@ -109,20 +127,25 @@ function SessionInfoStage({
     let updatedPlan;
     if (currentPlan.sessions[sessionN]) {
       console.log("Updating session");
-      updatedPlan = await updateSession(sessionN, newSession, isModel);
+      updatedPlan = await updateSession(
+        currentPlan.sessions[sessionN],
+        isModel
+      );
     } else {
       console.log("Adding session");
       updatedPlan = await addSession(newSession, isModel);
     }
 
     if (sessionN === currentPlan.nOfSessions - 1) {
-      setLocalAnimation(navAnimations.fadeOutLeft);
-      if (isNewModel) {
+      setLoading(true);
+      if (isModel && isNewModel) {
         await saveNewTrainingModel(updatedPlan);
       }
-      if (isNewTrainingPlan) {
+      if (!isModel && isNewTrainingPlan) {
         await saveNewTrainingPlan(updatedPlan);
       }
+      setLocalAnimation(navAnimations.fadeOutLeft);
+      setLoading(false);
       onNext();
       return;
     }
@@ -213,6 +236,7 @@ function SessionInfoStage({
               onClick={previousSession}
             />
           )}
+
           {sessionN < currentPlan.nOfSessions && (
             <TonalButton
               title={

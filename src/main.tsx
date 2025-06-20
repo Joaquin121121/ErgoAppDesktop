@@ -5,13 +5,10 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { StudyProvider } from "./contexts/StudyContext";
 import "./i18n";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <StudyProvider>
-      <App />
-    </StudyProvider>
+    <App />
   </StrictMode>
 );
