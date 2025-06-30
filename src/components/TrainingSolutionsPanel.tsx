@@ -18,10 +18,7 @@ const TrainingSolutionsPanel: React.FC<TrainingSolutionsPanelProps> = ({
   goToTests,
 }) => {
   return (
-    <div
-      className="bg-white rounded-2xl shadow-sm flex flex-col items-start h-full transition-[width] duration-500 ease-in-out"
-      style={{ width: isCreatingPlan ? "30%" : "60%" }}
-    >
+    <div className="bg-white w-full rounded-2xl shadow-sm flex flex-col items-start  transition-[width] duration-500 ease-in-out mr-4">
       <div className="flex items-center justify-center gap-x-8 py-4 mb-4 bg-lightRed w-full rounded-t-2xl ">
         <p className="text-secondary text-2xl text-center">
           Soluciones de Entrenamiento

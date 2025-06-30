@@ -42,6 +42,7 @@ import { useDatabaseSync } from "../hooks/useDatabaseSync";
 import Database from "@tauri-apps/plugin-sql";
 import { useTrainingModels } from "./TrainingModelsContext";
 import { useStudyContext } from "./StudyContext";
+import { useAthletes } from "./AthletesContext";
 
 // Create context
 const NewPlanContext = createContext<NewPlanContextType | undefined>(undefined);
@@ -73,8 +74,8 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
   const [currentSelectedExercise, setCurrentSelectedExercise] =
     useState<SelectedExercise | null>(null);
 
-  const { athlete } = useStudyContext();
-
+  const { athlete, setAthlete } = useStudyContext();
+  const { syncSpecificAthlete } = useAthletes();
   const saveSelectedExercise = async (
     sessionIndex: number,
     currentSelectedExercise: SelectedExercise,
@@ -392,7 +393,6 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
     setModel(modelToSave);
     setIsNewModel(false);
   };
-
   const resetIds = (plan: PlanState) => {
     return {
       ...plan,
@@ -403,11 +403,25 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
         exercises: session.exercises.map((exercise) => ({
           ...exercise,
           id: uuidv4(),
+          progression: exercise.progression.map((progression) => ({
+            ...progression,
+            id: uuidv4(),
+          })),
+          reduceVolume: exercise.reduceVolume,
+          reduceEffort: exercise.reduceEffort,
           ...(exercise.type === "trainingBlock" && {
             selectedExercises: exercise.selectedExercises.map(
               (selectedExercise) => ({
                 ...selectedExercise,
                 id: uuidv4(),
+                progression: selectedExercise.progression.map(
+                  (progression) => ({
+                    ...progression,
+                    id: uuidv4(),
+                  })
+                ),
+                reduceVolume: selectedExercise.reduceVolume,
+                reduceEffort: selectedExercise.reduceEffort,
               })
             ),
           }),
@@ -416,10 +430,16 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
     };
   };
 
-  const createTrainingPlanFromModel = async () => {
+  const createTrainingPlanFromModel = async (planState: PlanState) => {
+    const currentAthlete = { ...athlete };
     const planToSave = resetIds(planState);
-    planToSave.athleteId = athlete?.id;
+    planToSave.athleteId = currentAthlete?.id;
+    console.log("saving plan", planToSave);
     await addTrainingPlan(planToSave, user.id, pushRecord);
+    const newAthlete = { ...currentAthlete, currentTrainingPlan: planToSave };
+    syncSpecificAthlete(newAthlete);
+    setAthlete(newAthlete);
+    setPlanState(planToSave);
   };
 
   const deleteTrainingModel = async (modelId: string) => {

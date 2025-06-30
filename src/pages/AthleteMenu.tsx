@@ -18,7 +18,7 @@ function AthleteMenu({
     nextPage: string
   ) => void;
 }) {
-  const { isBlurred } = useBlur();
+  const { isBlurred, setHideNav } = useBlur();
   const { athlete, setAthlete } = useStudyContext();
 
   const navigate = useNavigate();
@@ -28,6 +28,11 @@ function AthleteMenu({
     setTimeout(() => {
       navigate(`/${target}${param ? `?${param}` : ""}`);
     }, 300);
+  };
+
+  const openTrainingMenu = () => {
+    setHideNav(true);
+    goTo("trainingMenu");
   };
 
   const option = [
@@ -52,7 +57,7 @@ function AthleteMenu({
       title: "Entrenamiento",
       subtitle: "Visualiza/Modifica el entrenamiento del atleta",
       callToAction: "Ver Entrenamiento",
-      onClick: () => goTo("trainingMenu"),
+      onClick: () => openTrainingMenu(),
       icon: "trainingRed",
     },
   ];

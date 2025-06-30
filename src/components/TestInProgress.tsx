@@ -40,7 +40,8 @@ import { ComposedChart } from "recharts";
 import { useBlur } from "../contexts/BlurContext";
 import { addResult, addMultipleResults } from "../parsers/testDataParser";
 import { useDatabaseSync } from "../hooks/useDatabaseSync";
-import { Athlete } from "@/types/Athletes";
+import { Athlete } from "../types/Athletes";
+import { useAthletes } from "../contexts/AthletesContext";
 interface MultipleAthletesTest {
   athleteName: string;
   test: CompletedStudy;
@@ -163,6 +164,7 @@ function TestInProgress({
   const [currentJumpElapsedTime, setCurrentJumpElapsedTime] = useState(0);
   const [growthTimerInterval, setGrowthTimerInterval] =
     useState<NodeJS.Timeout | null>(null);
+  const { loadAthletes } = useAthletes();
 
   const tableJSX = (
     <table className="w-full mt-8">
@@ -959,6 +961,7 @@ function TestInProgress({
 
     try {
       const resultId = await addResult(studyToSave, athlete.id, pushRecord);
+      await loadAthletes();
       if (Array.isArray(resultId)) return;
       const newAthleteState = {
         ...athlete,

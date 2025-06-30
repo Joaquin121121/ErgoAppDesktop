@@ -84,8 +84,14 @@ const TrainingModel = ({
           <div className="w-[122px]" />
 
           <p className="text-3xl">
-            Modelo de Entrenamiento:{" "}
-            <span className="text-secondary">{model.name}</span>
+            {model.name ? (
+              <>
+                Modelo de Entrenamiento:{" "}
+                <span className="text-secondary">{model.name}</span>
+              </>
+            ) : (
+              "Nuevo Modelo de Entrenamiento"
+            )}
           </p>
 
           <TonalButton

@@ -1,7 +1,6 @@
 // Import necessary modules and types
 import React, { createContext, useContext, useState } from "react";
-import { Study, Studies } from "../types/Studies";
-import availableStudies from "../types/Studies";
+import { CompletedStudy, Study, Studies } from "../types/Studies";
 import { Athlete } from "../types/Athletes";
 
 // Type for the selected study
@@ -65,7 +64,6 @@ export const StudyProvider: React.FC<{ children: React.ReactNode }> = ({
   const [study, setStudy] = useState<SelectedStudy>(null);
   const [athlete, setAthlete] = useState<Athlete>(initialAthlete);
   const [selectedAthletes, setSelectedAthletes] = useState<Athlete[]>([]);
-
   // Function to set the study with type checking
   const setStudyWithTypeCheck = (newStudy: SelectedStudy) => {
     if (newStudy === null) {

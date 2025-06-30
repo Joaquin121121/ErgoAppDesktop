@@ -15,6 +15,10 @@ export default {
         green: "#00A859",
         blue: "#0989FF",
       },
+      gridTemplateColumns: {
+        13: "repeat(13, minmax(0, 1fr))",
+        14: "repeat(14, minmax(0, 1fr))",
+      },
     },
   },
   plugins: [],

@@ -10,11 +10,15 @@ import { getAthletes } from "../parsers/athleteDataParser";
 import { useUser } from "./UserContext";
 import { getTrainingPlans } from "../parsers/trainingDataParser";
 import { PlanState } from "../types/trainingPlan";
+import { useSyncContext } from "./SyncContext";
+import { useStudyContext } from "./StudyContext";
 
 interface AthletesContextType {
   athletes: Athlete[];
   loading: boolean;
   setAthletes: (athletes: Athlete[]) => void;
+  loadAthletes: () => Promise<void>;
+  syncSpecificAthlete: (newAthlete: Athlete) => void;
 }
 
 const AthletesContext = createContext<AthletesContextType | undefined>(
@@ -27,6 +31,8 @@ export const AthletesProvider: React.FC<{ children: ReactNode }> = ({
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useUser();
+  const { syncing } = useSyncContext();
+
   const loadAthletes = async () => {
     setLoading(true);
 
@@ -51,16 +57,25 @@ export const AthletesProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const syncSpecificAthlete = async (newAthlete: Athlete) => {
+    const newAthletes = athletes.map((athlete) =>
+      athlete.id === newAthlete.id ? newAthlete : athlete
+    );
+    setAthletes(newAthletes);
+  };
+
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !syncing) {
       loadAthletes();
     }
-  }, [user?.id]);
+  }, [user?.id, syncing]);
 
   const value: AthletesContextType = {
     athletes,
     loading,
     setAthletes,
+    loadAthletes,
+    syncSpecificAthlete,
   };
 
   return (

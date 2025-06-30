@@ -276,11 +276,7 @@ export function getReductionFromRangeEntries(
     const [min, max] = entry.range;
     const label = min === max ? `${min}` : `${min}-${max}`;
 
-    // For volume reductions, the key would be fatigue level
-    // For effort reductions, the key would be effort level
-    const key = type === "volume" ? `fatigue-${label}` : `effort-${label}`;
-
-    reductionObject[key] = entry.percentageDrop;
+    reductionObject[label] = entry.percentageDrop;
   });
 
   return reductionObject;

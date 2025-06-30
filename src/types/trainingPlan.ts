@@ -272,7 +272,7 @@ export interface NewPlanContextType {
   updateModelName: (name: string) => Promise<void>;
   updateModelDescription: (description: string) => Promise<void>;
   deleteTrainingModel: (modelId: string) => Promise<void>;
-  createTrainingPlanFromModel: () => Promise<void>;
+  createTrainingPlanFromModel: (planState: PlanState) => Promise<void>;
   updateSelectedExercise: (
     sessionIndex: number,
     exerciseId: string,

@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import { useUser } from "./UserContext";
 import { TrainingModel } from "../types/trainingPlan";
+import { useSyncContext } from "./SyncContext";
 interface TrainingModelsContextType {
   trainingModels: TrainingModel[];
   setTrainingModels: (models: TrainingModel[]) => void;
@@ -29,6 +30,7 @@ export const TrainingModelsProvider: React.FC<TrainingModelsProviderProps> = ({
   const [trainingModels, setTrainingModels] = useState<TrainingModel[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const { user } = useUser();
+  const { syncing } = useSyncContext();
   const value = {
     trainingModels,
     setTrainingModels,
@@ -48,10 +50,10 @@ export const TrainingModelsProvider: React.FC<TrainingModelsProviderProps> = ({
   };
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && !syncing) {
       loadTrainingModels();
     }
-  }, [user?.id]);
+  }, [user?.id, syncing]);
 
   return (
     <TrainingModelsContext.Provider value={value}>

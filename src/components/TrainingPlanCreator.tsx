@@ -5,6 +5,7 @@ import { useState } from "react";
 import inputStyles from "../styles/inputStyles.module.css";
 import OutlinedButton from "./OutlinedButton";
 import { useNewPlan } from "../contexts/NewPlanContext";
+import { useSyncContext } from "../contexts/SyncContext";
 
 interface TrainingPlanCreatorProps {
   isCreatingPlan: boolean;
@@ -40,6 +41,7 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
     model,
     createTrainingPlanFromModel,
   } = useNewPlan();
+  const { enqueueOperation } = useSyncContext();
 
   const validateForm = () => {
     const newFormState = { ...formState };
@@ -50,13 +52,6 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
         newFormState.modelName = {
           value: "",
           error: "El nombre del modelo no puede estar vacío",
-        };
-        hasErrors = true;
-      }
-      if (formState.modelDescription.value === "") {
-        newFormState.modelDescription = {
-          value: "",
-          error: "La descripcion del modelo no puede estar vacía",
         };
         hasErrors = true;
       }
@@ -116,7 +111,11 @@ const TrainingPlanCreator: React.FC<TrainingPlanCreatorProps> = ({
       });
     } else {
       if (useModel) {
-        await createTrainingPlanFromModel();
+        enqueueOperation({
+          name: "createTrainingPlanFromModel",
+          execute: async () => await createTrainingPlanFromModel(planState),
+          status: "pending",
+        });
       } else {
         setPlanState({
           ...planState,

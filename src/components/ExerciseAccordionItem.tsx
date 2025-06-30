@@ -182,33 +182,21 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     setInterimRestTime(restTime);
   }, [restTime]);
 
-  useEffect(() => {
-    console.log(
-      "Session:",
-      currentPlan.sessions[sessionIndex].exercises.find(
-        (e) => e.id === blockId
-      ) as TrainingBlock
-    );
-  }, [
-    currentPlan.sessions[sessionIndex].exercises.find(
-      (e) => e.id === blockId
-    ) as TrainingBlock,
-  ]);
   return (
     <>
       {/* Header - Always visible */}
       <div
-        className={`mx-auto grid grid-cols-8 gap-x-4   ${
+        className={` grid grid-cols-13 gap-x-4   ${
           blockId
             ? `w-full ${!last && "border-b border-gray"}`
-            : "mt-4 border border-lightRed w-[90%] rounded-2xl"
+            : "mt-4 border border-lightRed w-full rounded-2xl"
         }`}
       >
-        <p className="col-span-2 text-xl text-center my-auto py-2 rounded-2xl mx-auto">
+        <p className="col-span-3 text-xl text-center my-auto py-2 rounded-2xl mx-auto">
           {name}
         </p>
         <input
-          className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${inputStyles.input}`}
+          className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${inputStyles.input} col-span-2`}
           value={displayProgression[currentWeek]?.series || series}
           onChange={(e) =>
             handleProgressionChange(currentWeek, "series", e.target.value)
@@ -219,7 +207,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           type="number"
         />
         <input
-          className={`text-xl text-center my-auto rounded-2xl w-32 mx-auto ${inputStyles.input}`}
+          className={`text-xl text-center my-auto rounded-2xl w-32 mx-auto ${inputStyles.input} col-span-2`}
           value={displayProgression[currentWeek]?.repetitions || repetitions}
           onChange={(e) =>
             handleProgressionChange(currentWeek, "repetitions", e.target.value)
@@ -229,7 +217,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           }
         />
         <input
-          className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${inputStyles.input}`}
+          className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${inputStyles.input} col-span-2`}
           value={displayProgression[currentWeek]?.effort || effort}
           onChange={(e) =>
             handleProgressionChange(currentWeek, "effort", e.target.value)
@@ -242,7 +230,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           max={10}
         />
         <input
-          className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${inputStyles.input}`}
+          className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${inputStyles.input} col-span-2`}
           value={interimRestTime}
           onChange={handleInputChange}
           onBlur={onInputBlur}
@@ -284,24 +272,24 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           height: height !== undefined ? `${height}px` : "auto",
           overflow: "hidden",
           transition: "height 0.3s ease-in-out",
-          width: blockId ? "100%" : "90%",
+          width: "100%",
           margin: "0 auto",
         }}
       >
         <div className="py-4 border-l border-r border-b border-lightRed rounded-b-2xl">
           {/* Progress data in grid format */}
-          <div className="grid grid-cols-8 gap-x-4 gap-y-4">
+          <div className="grid grid-cols-13 gap-x-4 gap-y-4">
             {displayProgression.map((week, index) => (
               <React.Fragment key={index}>
                 <p
-                  className={`text-center col-span-2 my-auto text-lg ${
+                  className={`text-center col-span-3 my-auto text-lg ${
                     currentWeek === index ? "text-secondary" : "text-darkGray"
                   }`}
                 >
                   Semana {index + 1}
                 </p>
                 <input
-                  className={`text-lg text-center rounded-2xl w-16 mx-auto border border-transparent ${inputStyles.input}`}
+                  className={`text-lg text-center rounded-2xl w-16 mx-auto border border-transparent ${inputStyles.input} col-span-2`}
                   type="number"
                   value={week.series}
                   onChange={(e) =>
@@ -312,7 +300,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
                   }
                 />
                 <input
-                  className={`text-lg text-center rounded-2xl w-32 mx-auto border border-transparent ${inputStyles.input}`}
+                  className={`text-lg text-center rounded-2xl w-32 mx-auto border border-transparent ${inputStyles.input} col-span-2`}
                   value={week.repetitions}
                   onChange={(e) =>
                     handleProgressionChange(
@@ -326,7 +314,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
                   }
                 />
                 <input
-                  className={`text-lg text-center rounded-2xl w-16 mx-auto border border-transparent ${inputStyles.input}`}
+                  className={`text-lg text-center rounded-2xl w-16 mx-auto border border-transparent ${inputStyles.input} col-span-2`}
                   type="number"
                   value={week.effort}
                   onChange={(e) =>
@@ -339,7 +327,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
                   max={10}
                 />
                 <input
-                  className={`text-lg text-center rounded-2xl w-16 mx-auto border border-transparent ${inputStyles.input}`}
+                  className={`text-lg text-center rounded-2xl w-16 mx-auto border border-transparent ${inputStyles.input} col-span-2`}
                   type="number"
                   value={interimRestTime}
                   name="restTime"

@@ -3,6 +3,7 @@ import styles from "../styles/updatePopupStyles.module.css";
 import { useCalendar } from "../contexts/CalendarContext";
 import { useDatabaseSync } from "../hooks/useDatabaseSync";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import { useSyncContext } from "../contexts/SyncContext";
 
 interface ConnectionStatusProps {
   showUpdate: boolean;
@@ -10,7 +11,8 @@ interface ConnectionStatusProps {
 
 const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
   const { resetSyncMetadata, fullScaleSync, syncStatus } = useDatabaseSync();
-
+  const [displaySyncStatus, setDisplaySyncStatus] = useState(syncStatus);
+  const { pendingOperations } = useSyncContext();
   const { isOnline } = useOnlineStatus();
   const [visible, setVisible] = useState(false);
   const [animation, setAnimation] = useState(styles.fadeInRight);
@@ -112,6 +114,15 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
       }
     };
   }, [isOnline, syncStatus, showUpdate]);
+
+  useEffect(() => {
+    if (pendingOperations.length > 0) {
+      showNotification();
+      setDisplaySyncStatus("syncing");
+    } else {
+      setDisplaySyncStatus(syncStatus);
+    }
+  }, [pendingOperations]);
 
   if (!visible || showUpdate) return null;
 

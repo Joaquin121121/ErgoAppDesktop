@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import Studies from "./pages/Studies";
@@ -41,6 +41,8 @@ import ContentLibrary from "./pages/ContentLibrary";
 import TrainingModelLibrary from "./pages/TrainingModelLibrary";
 import TrainingModel from "./pages/TrainingModel";
 import { TrainingModelsProvider } from "./contexts/TrainingModelsContext";
+import navAnimations from "./styles/animations.module.css";
+import { SyncProvider } from "./contexts/SyncContext";
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
@@ -53,9 +55,10 @@ const WithLayout = ({
   const options = ["dashboard", "studies", "athletes", "library", "about"];
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { isBlurred, setIsBlurred } = useBlur();
+  const { isBlurred, setIsBlurred, hideNav, setHideNav } = useBlur();
+  const [showNav, setShowNav] = useState(true);
+  const [animation, setAnimation] = useState("");
   const { user, logout } = useUser();
-
   const window = getCurrentWindow();
   const handleLogout = async () => {
     resetAnimations();
@@ -63,67 +66,91 @@ const WithLayout = ({
     logout();
   };
 
+  const hideNavBar = () => {
+    setAnimation(navAnimations.fadeOutLeft);
+    setTimeout(() => {
+      setShowNav(false);
+    }, 300);
+  };
+
+  const showNavBar = () => {
+    setAnimation(navAnimations.fadeInLeft);
+    setTimeout(() => {
+      setShowNav(true);
+    }, 300);
+  };
+
+  useEffect(() => {
+    if (hideNav) {
+      hideNavBar();
+    } else {
+      showNavBar();
+    }
+  }, [hideNav]);
+
   return (
     <div className="flex w-screen h-screen bg-offWhite">
-      <nav
-        className={`h-full fixed z-10 pt-12 px-8 bg-white ${
-          isExpanded ? "w-56" : "w-32"
-        } ${
-          isBlurred ? "blur-md pointer-events-none" : ""
-        } flex flex-col shadow-sm transition-all duration-300 ease-in-out`}
-        onMouseEnter={() => setIsExpanded(true)}
-        onMouseLeave={() => setIsExpanded(false)}
-      >
-        <img
-          src="/logo.png"
-          className={`h-16 w-16 flex-shrink-0 mb-16 self-center`}
-        />
-        {options.map((option) => (
+      {showNav && (
+        <nav
+          className={`h-full fixed z-10 pt-12 px-8 bg-white ${
+            isExpanded ? "w-56" : "w-32"
+          } ${
+            isBlurred ? "blur-md pointer-events-none" : ""
+          } flex flex-col shadow-sm transition-all duration-300 ease-in-out ${animation}`}
+          onMouseEnter={() => setIsExpanded(true)}
+          onMouseLeave={() => setIsExpanded(false)}
+        >
+          <img
+            src="/logo.png"
+            className={`h-16 w-16 flex-shrink-0 mb-16 self-center`}
+          />
+          {options.map((option) => (
+            <div
+              key={option}
+              className={`h-16 rounded-2xl cursor-pointer flex items-center mt-8 ${
+                option === selectedOption && "bg-secondary text-white"
+              } hover:bg-lightRed hover:text-secondary transition-colors duration-800 ease-in-out`}
+              onClick={() => {
+                resetAnimations();
+                setSelectedOption(option);
+                navigate("/" + option);
+              }}
+            >
+              <img
+                src={`/${option}${selectedOption !== option ? "Red" : ""}.png`}
+                alt={option}
+                className={`h-8 w-8 flex-shrink-0 ml-[16px] `}
+              />
+              {isExpanded && (
+                <p
+                  className={`ml-4 text-lg text-secondary font-semibold whitespace-nowrap transition-opacity duration-800 ease-in-out ${
+                    option === selectedOption && "text-white"
+                  }`}
+                >
+                  {camelToNatural(t(option))}
+                </p>
+              )}
+            </div>
+          ))}
           <div
-            key={option}
-            className={`h-16 rounded-2xl cursor-pointer flex items-center mt-8 ${
-              option === selectedOption && "bg-secondary text-white"
-            } hover:bg-lightRed hover:text-secondary transition-colors duration-800 ease-in-out`}
-            onClick={() => {
-              resetAnimations();
-              setSelectedOption(option);
-              navigate("/" + option);
-            }}
+            className={`h-16 absolute bottom-16  rounded-2xl cursor-pointer flex items-center mt-8  hover:bg-lightRed hover:text-secondary transition-colors duration-800 ease-in-out w-40`}
+            onClick={handleLogout}
           >
             <img
-              src={`/${option}${selectedOption !== option ? "Red" : ""}.png`}
-              alt={option}
-              className={`h-8 w-8 flex-shrink-0 ml-[16px] `}
+              src={`/logout.png`}
+              alt="logout"
+              className={`h-8 w-8 flex-shrink-0 ml-4 `}
             />
             {isExpanded && (
               <p
-                className={`ml-4 text-lg text-secondary font-semibold whitespace-nowrap transition-opacity duration-800 ease-in-out ${
-                  option === selectedOption && "text-white"
-                }`}
+                className={`ml-4 text-lg text-secondary font-semibold whitespace-nowrap transition-opacity duration-800 ease-in-out`}
               >
-                {camelToNatural(t(option))}
+                Salir
               </p>
             )}
           </div>
-        ))}
-        <div
-          className={`h-16 absolute bottom-16  rounded-2xl cursor-pointer flex items-center mt-8  hover:bg-lightRed hover:text-secondary transition-colors duration-800 ease-in-out w-40`}
-          onClick={handleLogout}
-        >
-          <img
-            src={`/logout.png`}
-            alt="logout"
-            className={`h-8 w-8 flex-shrink-0 ml-4 `}
-          />
-          {isExpanded && (
-            <p
-              className={`ml-4 text-lg text-secondary font-semibold whitespace-nowrap transition-opacity duration-800 ease-in-out`}
-            >
-              Salir
-            </p>
-          )}
-        </div>
-      </nav>
+        </nav>
+      )}
       <main className="flex-1 h-full">{children}</main>
     </div>
   );
@@ -422,35 +449,37 @@ function App() {
 
   return (
     <UserProvider>
-      <AthletesProvider>
+      <SyncProvider>
         <StudyProvider>
-          <TrainingModelsProvider>
-            <AthleteComparisonProvider>
-              <NewEventProvider>
-                <NewPlanProvider>
-                  <BlurProvider>
-                    <CalendarProvider>
-                      <HashRouter>
-                        <AuthGate
-                          WithLayout={WithLayout}
-                          layoutProps={{
-                            isExpanded,
-                            setIsExpanded,
-                            selectedOption,
-                            setSelectedOption,
-                          }}
-                        >
-                          <RouteContentWrapper />
-                        </AuthGate>
-                      </HashRouter>
-                    </CalendarProvider>
-                  </BlurProvider>
-                </NewPlanProvider>
-              </NewEventProvider>
-            </AthleteComparisonProvider>
-          </TrainingModelsProvider>
+          <AthletesProvider>
+            <TrainingModelsProvider>
+              <AthleteComparisonProvider>
+                <NewEventProvider>
+                  <NewPlanProvider>
+                    <BlurProvider>
+                      <CalendarProvider>
+                        <HashRouter>
+                          <AuthGate
+                            WithLayout={WithLayout}
+                            layoutProps={{
+                              isExpanded,
+                              setIsExpanded,
+                              selectedOption,
+                              setSelectedOption,
+                            }}
+                          >
+                            <RouteContentWrapper />
+                          </AuthGate>
+                        </HashRouter>
+                      </CalendarProvider>
+                    </BlurProvider>
+                  </NewPlanProvider>
+                </NewEventProvider>
+              </AthleteComparisonProvider>
+            </TrainingModelsProvider>
+          </AthletesProvider>
         </StudyProvider>
-      </AthletesProvider>
+      </SyncProvider>
     </UserProvider>
   );
 }

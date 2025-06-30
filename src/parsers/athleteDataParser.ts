@@ -435,6 +435,8 @@ export const getAthletes = async (coachId: string): Promise<Athlete[]> => {
     let query =
       "SELECT * FROM athlete WHERE deleted_at IS NULL AND coach_id = ?";
     const athletes = await db.select(query, [coachId]);
+    console.log("athletes", athletes);
+    console.log("coachId", coachId);
     if (athletes.length === 0) {
       return [];
     }

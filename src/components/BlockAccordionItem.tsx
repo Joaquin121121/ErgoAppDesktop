@@ -26,7 +26,7 @@ function BlockAccordionItem({
 
   return (
     <>
-      <div className="flex items-center relative justify-center mt-8  w-[90%]">
+      <div className="flex items-center relative justify-center mt-8  w-full">
         <p className="absolute left-16 top-1/2 transform -translate-y-1/2">
           Modelo:{" "}
           <span className="text-secondary font-medium">
@@ -42,7 +42,7 @@ function BlockAccordionItem({
           <img src="/pencil.png" alt="Editar bloque" className="h-5 w-5" />
         </div>
       </div>
-      <div className="grid grid-cols-1 rounded-2xl border border-lightRed  w-[90%]">
+      <div className="grid grid-cols-1 rounded-2xl border border-lightRed  w-full">
         {trainingBlock.selectedExercises.map((exercise, index) => (
           <ExerciseAccordionItem
             key={exercise.id}

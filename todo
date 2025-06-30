@@ -1,7 +1,6 @@
 MVP
 Con Alfombra
     Maximo de tamaño para tablas/habilitar overflow (checkear si no esta resuelto ya)
-    CMJ SJ Abalakov un solo salto
     Saltos multiples arreglar limite
     Implementar modelos de planes
     Implementar trainingCRUD en TrainingModel (usar condicionalmente planState o model en base a un boolean)
@@ -9,6 +8,10 @@ Con Alfombra
     Clonar todos los cambios en parsedMigrations (acordarse de funciones de auto-actualizacion de last changed)
     Implementar biblioteca (pendiente de armar estructura y contenido de BDD)
     Implementar pantalla rendimiento
+    Fijar menu de sesiones
+    Ver validacion repeticiones
+    Ver de cambiar colores en accordions
+    Permitir mover ejercicios sessionoverviewstage
     Boton de ver papers
     RLS
     Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
@@ -25,8 +28,10 @@ Si hay tiempo:
     Notificaciones de eventos
     Hacer placeholders de ui de plan para mantener tamaño de display de sesiones consistente
     Boton de deshacer
+    Mejorar las cartas de preview de tests (ver VALD)
     Bosco muestra una solucion de entrenamiento de drop jump
     Mostrar de que comparacion sale cada sugerencia
+    Volumen ver y solucionar con muchas semanas
     Arreglar que no se achica automaticamente la pantalla en logout
     Exportar datos Excel
     Perfil Fuerza Velocidad
@@ -38,4 +43,9 @@ Si hay tiempo:
     Decidir que se auto añada vs que se sobreescriba un atleta al ser seleccionado con otro ya seleccionado en seleccion multiple
     Animacion de preview de plan en primera pantalla de crear plan que vaya variando de acuerdo a semanas, sesiones
     Fijar posicion de boton volver
+    Permitir comparar grupos, mostrando graficos con muchas barras una por atleta
+    Ver de permitir comparar con estandares 
     Considerar boton 'Reiniciar seleccion' en la lista de atletas
+    Reemplazar logica de refrescar todos los atletas al crear un test por crear el test con ids en study context, y usar esos ids en el parser, actualizando el contexto de atletas para añadir le test recien creado
+    Optimizar tabs en forms
+    Optimizar rangos de reduccion de volumen y esfuerzo con tablas pre-creadas

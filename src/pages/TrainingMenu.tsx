@@ -30,7 +30,7 @@ const TrainingMenu = ({
   const navigate = useNavigate();
   const [closePopup, setClosePopup] = useState(false);
   const { setPlanState, resetPlan } = useNewPlan();
-
+  const { setHideNav } = useBlur();
   const trainingSolutions = parseAllTrainingSolutions() || [];
 
   // Format the accordion items
@@ -89,6 +89,7 @@ const TrainingMenu = ({
   };
 
   const onClose = async () => {
+    setHideNav(false);
     customNavigate("back", "trainingMenu", "athleteMenu");
     setTimeout(() => {
       navigate("/athleteMenu");
@@ -139,39 +140,14 @@ const TrainingMenu = ({
         className={`flex-1 relative flex flex-col items-center  transition-all duration-300 ease-in-out ${animation} ${
           displayVolumePopup ? "blur-md pointer-events-none" : ""
         }`}
-        style={{
-          paddingLeft: isExpanded ? "100px" : "32px",
-        }}
       >
         <div
-          className={`my-10 w-4/5 flex justify-around items-center${
-            isBlurred && "blur-md pointer-events-none"
-          }`}
-        >
-          <div className="w-[122px]" />
-          <div className="w-[122px]" />
-          <p className="text-3xl">
-            Entrenamiento:{" "}
-            <span className="text-secondary">{athlete.name}</span>
-          </p>
-          <OutlinedButton
-            title="Ver Rendimiento"
-            onClick={showVolumePopup}
-            icon="performance"
-          />
-          <TonalButton
-            inverse
-            title="Volver"
-            icon="backWhite"
-            onClick={onClose}
-          />
-        </div>
-        <div
-          className={`self-end w-[90%] flex justify-between items-start transition-all duration-300 ease-in-out pr-8 
+          className={`w-full flex justify-between  transition-all duration-300 ease-in-out
             mb-4`}
+          style={{ paddingTop: !athlete.currentTrainingPlan ? "2vh" : "0" }}
         >
           <div
-            className={`bg-white rounded-2xl overflow-hidden relative shadow-sm transition-[width,opacity] duration-500 ease-in-out -ml-8 mr-16 ${
+            className={`bg-white rounded-2xl ml-4 mt-8 overflow-hidden relative shadow-sm transition-[width,opacity] duration-500 ease-in-out mr-8 ${
               isBlurred && "blur-md pointer-events-none"
             }`}
             style={{ width: creatingPlan ? "70%" : "40%" }}
@@ -188,12 +164,9 @@ const TrainingMenu = ({
               />
             ) : (
               <div className="flex flex-col items-center">
-                <div className="flex items-center justify-center gap-x-8 mt-8">
-                  <p className="text-secondary text-2xl">
-                    Plan de Entrenamiento
-                  </p>
-                  <img src="/trainingRed.png" alt="" className="h-8 w-8" />
-                </div>
+                <p className="text-secondary text-3xl my-4">{athlete.name}</p>
+                <p className="text-2xl">Plan de Entrenamiento</p>
+
                 <SeamlessLoopPlayer
                   src="/studying.mov"
                   height={400}
@@ -221,20 +194,32 @@ const TrainingMenu = ({
               sessionIndex={sessionIndex}
             />
           )}
-
-          <TrainingSolutionsPanel
-            isCreatingPlan={creatingPlan}
-            accordionItems={accordionItems}
-            collapseAccordion={collapseAccordion}
-            onCollapseComplete={() => setCollapseAccordion(false)}
-            goToTests={() => {
-              customNavigate("forward", "trainingMenu", "studies");
-              setClosePopup(true);
-              setTimeout(() => {
-                navigate("/studies");
-              }, 300);
-            }}
-          />
+          <div
+            className="flex flex-col items-center relative  pr-4"
+            style={{ width: creatingPlan ? "30%" : "60%" }}
+          >
+            <TonalButton
+              inverse
+              title="Volver"
+              icon="backWhite"
+              onClick={onClose}
+              containerStyles="self-end my-8"
+            />
+            <TrainingSolutionsPanel
+              isCreatingPlan={creatingPlan}
+              accordionItems={accordionItems}
+              collapseAccordion={collapseAccordion}
+              onCollapseComplete={() => setCollapseAccordion(false)}
+              goToTests={() => {
+                customNavigate("forward", "trainingMenu", "studies");
+                setHideNav(false);
+                setClosePopup(true);
+                setTimeout(() => {
+                  navigate("/studies");
+                }, 300);
+              }}
+            />
+          </div>
         </div>
       </div>
       {displayPopup && (

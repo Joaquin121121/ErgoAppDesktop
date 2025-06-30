@@ -197,7 +197,6 @@ const getTrainingPlans = async (
 
       plans.push(plan);
     }
-    console.log("plans", plans);
 
     return plans;
   } catch (error) {
@@ -520,6 +519,8 @@ const addSelectedExercise = async (
     }
 
     if (exercise.reduceVolume) {
+      delete exercise.reduceVolume.id;
+      console.log("exercise.reduceVolume", exercise.reduceVolume);
       for (const [fatigueLevel, percentage] of Object.entries(
         exercise.reduceVolume
       )) {
@@ -536,7 +537,12 @@ const addSelectedExercise = async (
       }
     }
 
-    if (exercise.reduceEffort) {
+    if (
+      exercise.reduceEffort &&
+      exercise.reduceEffort.id &&
+      exercise.reduceEffort.id.length > 0
+    ) {
+      delete exercise.reduceEffort.id;
       for (const [effortLevel, amount] of Object.entries(
         exercise.reduceEffort
       )) {
@@ -616,6 +622,8 @@ const addTrainingBlock = async (
     }
 
     if (block.reduceVolume) {
+      console.log("block.reduceVolume", block.reduceVolume);
+      delete block.reduceVolume.id;
       for (const [fatigueLevel, percentage] of Object.entries(
         block.reduceVolume
       )) {
@@ -633,6 +641,7 @@ const addTrainingBlock = async (
     }
 
     if (block.reduceEffort) {
+      delete block.reduceEffort.id;
       for (const [effortLevel, amount] of Object.entries(block.reduceEffort)) {
         const effortReductionId = uuidv4();
         await db.execute(
@@ -881,12 +890,10 @@ const deleteTrainingModel = async (
     const now = new Date().toISOString();
 
     try {
-      console.log("deleting model", modelId);
       await db.execute(
         "UPDATE training_models SET deleted_at = ?, last_changed = ? WHERE id = ?",
         [now, now, modelId]
       );
-      console.log("model deleted");
 
       await pushRecord([{ tableName: "training_models", id: modelId }]);
     } catch (innerError) {
@@ -1183,7 +1190,6 @@ const updateProgression = async (
   pushRecord: (records: PendingRecord[]) => Promise<void>
 ): Promise<void> => {
   try {
-    console.log("updating progression", progression);
     const db = await (Database as any).load("sqlite:ergolab.db");
     const now = new Date().toISOString();
 

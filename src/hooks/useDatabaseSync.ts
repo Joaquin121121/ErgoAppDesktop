@@ -3,13 +3,14 @@ import { tablesInfo } from "../constants/dbMetadata";
 import { supabase } from "../supabase";
 import { useState } from "react";
 import { SyncMetadata, PendingRecord } from "../types/Sync";
+import { useSyncContext } from "../contexts/SyncContext";
 
 export const useDatabaseSync = () => {
   const SYNC_METADATA_KEY = "syncMetadata";
   const [syncStatus, setSyncStatus] = useState<
     "idle" | "syncing" | "complete" | "error"
   >("idle");
-
+  const { setSyncing } = useSyncContext();
   const getInitialSyncMetadata = (): SyncMetadata => {
     const storedMetadata = localStorage.getItem(SYNC_METADATA_KEY);
     if (storedMetadata) {
@@ -117,6 +118,7 @@ export const useDatabaseSync = () => {
   const fullScaleSync = async () => {
     try {
       setSyncStatus("syncing");
+      setSyncing(true);
       const db = await (Database as any).load("sqlite:ergolab.db");
       const metadata = getInitialSyncMetadata();
       const lastSync = metadata.lastSync;
@@ -218,6 +220,7 @@ export const useDatabaseSync = () => {
       console.error("Error syncing database:", error);
     } finally {
       setSyncStatus("complete");
+      setSyncing(false);
     }
   };
 

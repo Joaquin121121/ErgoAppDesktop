@@ -99,19 +99,7 @@ const TrainingPlanCRUD: React.FC<TrainingPlanCRUDProps> = ({
     ),
   };
 
-  return (
-    <>
-      {!isModel && (
-        <div
-          className="absolute hover:opacity-70 z-50 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
-          onClick={handleToggleCreatingPlan}
-        >
-          <img src="/close.png" className="h-6 w-6" alt="" />
-        </div>
-      )}
-      {creationStages[currentStage]}
-    </>
-  );
+  return <>{creationStages[currentStage]}</>;
 };
 
 export default TrainingPlanCRUD;
