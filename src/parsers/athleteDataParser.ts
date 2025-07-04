@@ -428,6 +428,60 @@ const processBoscoResults = async (
   return athletesMap;
 };
 
+const processWellnessData = async (
+  db: any,
+  athletesMap: Map<string, Athlete>
+) => {
+  const athleteIds = Array.from(athletesMap.keys());
+  const placeholders = athleteIds.map(() => "?").join(", ");
+
+  const wellnessData = await db.select(
+    `
+    SELECT * FROM athlete_weekly_stats WHERE athlete_id IN (${placeholders}) AND deleted_at IS NULL
+  `,
+    [...athleteIds]
+  );
+
+  wellnessData.forEach((wd: any) => {
+    const athlete = athletesMap.get(wd.athlete_id);
+    if (athlete) {
+      athlete.wellnessData?.push({
+        week: wd.week_start_date,
+        sleep: wd.sleep,
+        nutrition: wd.nutrition,
+        fatigue: wd.fatigue,
+      });
+    }
+  });
+  return athletesMap;
+};
+
+const processPerformanceData = async (
+  db: any,
+  athletesMap: Map<string, Athlete>
+) => {
+  const athleteIds = Array.from(athletesMap.keys());
+  const placeholders = athleteIds.map(() => "?").join(", ");
+
+  const performanceData = await db.select(
+    `SELECT * FROM athlete_session_performance WHERE athlete_id IN (${placeholders}) AND deleted_at IS NULL`,
+    [...athleteIds]
+  );
+
+  performanceData.forEach((pd: any) => {
+    const athlete = athletesMap.get(pd.athlete_id);
+    if (athlete) {
+      athlete.sessionPerformanceData?.push({
+        sessionId: pd.session_id,
+        week: pd.week_start_date,
+        performance: pd.performance,
+        completedExercises: pd.completed_exercises,
+      });
+    }
+  });
+  return athletesMap;
+};
+
 export const getAthletes = async (coachId: string): Promise<Athlete[]> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
@@ -518,6 +572,9 @@ export const getAthletes = async (coachId: string): Promise<Athlete[]> => {
       jumpTimeMap,
       athletesMap
     );
+
+    athletesMap = await processWellnessData(db, athletesMap);
+    athletesMap = await processPerformanceData(db, athletesMap);
     return Array.from(athletesMap.values());
   } catch (error) {
     console.error(error);

@@ -30,6 +30,8 @@ function AthleteMenu({
     }, 300);
   };
 
+  console.log(athlete);
+
   const openTrainingMenu = () => {
     setHideNav(true);
     goTo("trainingMenu");

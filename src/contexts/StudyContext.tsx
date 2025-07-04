@@ -1,7 +1,8 @@
 // Import necessary modules and types
 import React, { createContext, useContext, useState } from "react";
 import { CompletedStudy, Study, Studies } from "../types/Studies";
-import { Athlete } from "../types/Athletes";
+import { Athlete, PerformanceData } from "../types/Athletes";
+import { countTotalExercises } from "../utils/utils";
 
 // Type for the selected study
 type SelectedStudy = Study | null;
@@ -33,7 +34,8 @@ interface StudyContextType {
   setStudy: (study: SelectedStudy) => void;
   athlete: SelectedAthlete;
   setAthlete: (athlete: SelectedAthlete) => void;
-  resetAthlete: () => void; // Added reset function
+  resetAthlete: () => void;
+  fillOutPerformanceData: () => void;
   selectedAthletes: Athlete[];
   setSelectedAthletes: (athletes: Athlete[]) => void;
 }
@@ -44,7 +46,8 @@ const StudyContext = createContext<StudyContextType>({
   setStudy: () => {},
   athlete: null,
   setAthlete: () => {},
-  resetAthlete: () => {}, // Added reset function
+  resetAthlete: () => {},
+  fillOutPerformanceData: () => {},
   selectedAthletes: [],
   setSelectedAthletes: () => {},
 });
@@ -78,6 +81,51 @@ export const StudyProvider: React.FC<{ children: React.ReactNode }> = ({
     setAthlete(initialAthlete);
   };
 
+  const fillOutPerformanceData = () => {
+    if (!athlete.currentTrainingPlan) return;
+
+    const trainingPlan = athlete.currentTrainingPlan;
+    const processedAthlete = { ...athlete };
+
+    const weeks = Array.from(
+      new Set(athlete.sessionPerformanceData?.map((spd) => spd.week) || [])
+    );
+
+    weeks.forEach((week) => {
+      const weekSessions = athlete.sessionPerformanceData?.filter(
+        (spd) => spd.week.toISOString() === week.toISOString()
+      );
+      const completedExercises = weekSessions?.reduce(
+        (acc, spd) => acc + spd.completedExercises,
+        0
+      );
+      const performance = weekSessions?.reduce(
+        (acc, spd) => acc + spd.performance,
+        0
+      );
+      const totalExercises = trainingPlan.sessions.reduce(
+        (acc, s) => acc + countTotalExercises(s),
+        0
+      );
+      const attendance = `${weekSessions?.length} / ${trainingPlan.sessions.length}`;
+      const processedPerformance = performance
+        ? `${performance}/${completedExercises}`
+        : "N/A";
+      const processedCompletedExercises = completedExercises
+        ? `${completedExercises}/${totalExercises}`
+        : "N/A";
+
+      processedAthlete.performanceData?.push({
+        week,
+        attendance,
+        completedExercises: processedCompletedExercises,
+        performance: processedPerformance,
+      });
+    });
+
+    setAthlete({ ...processedAthlete });
+  };
+
   return (
     <StudyContext.Provider
       value={{
@@ -85,7 +133,8 @@ export const StudyProvider: React.FC<{ children: React.ReactNode }> = ({
         setStudy: setStudyWithTypeCheck,
         athlete,
         setAthlete,
-        resetAthlete, // Added reset function to provider value
+        resetAthlete,
+        fillOutPerformanceData,
         selectedAthletes,
         setSelectedAthletes,
       }}

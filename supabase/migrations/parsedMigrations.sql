@@ -648,4 +648,106 @@ BEGIN
     UPDATE "progressions" SET deleted_at = NEW.deleted_at WHERE selected_exercise_id = NEW.id;
     UPDATE "volume_reductions" SET deleted_at = NEW.deleted_at WHERE selected_exercise_id = NEW.id;
     UPDATE "effort_reductions" SET deleted_at = NEW.deleted_at WHERE selected_exercise_id = NEW.id;
+END;
+
+-- ========================================
+-- ATHLETE WELLNESS AND PERFORMANCE TRACKING
+-- ========================================
+
+-- Athlete weekly stats table for wellness and performance tracking
+CREATE TABLE IF NOT EXISTS "athlete_weekly_stats" (
+    "athlete_id" TEXT NOT NULL,  -- Using TEXT for UUID in SQLite
+    "week_start_date" DATE NOT NULL,
+    -- Wellness metrics (with checks between 1-10)
+    "sleep" DECIMAL(3,1) CHECK (sleep >= 1 AND sleep <= 10),
+    "nutrition" DECIMAL(3,1) CHECK (nutrition >= 1 AND nutrition <= 10),
+    "fatigue" DECIMAL(3,1) CHECK (fatigue >= 1 AND fatigue <= 10),
+
+    -- Metadata
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "deleted_at" TIMESTAMP,
+    -- Constraints
+    PRIMARY KEY ("athlete_id", "week_start_date"),
+    -- Ensure week_start_date is always a Monday (SQLite uses strftime)
+    CONSTRAINT week_starts_monday CHECK (strftime('%w', week_start_date) = '1'),
+    FOREIGN KEY ("athlete_id") REFERENCES "athlete"("id") ON DELETE CASCADE
+);
+
+-- Index for date-based queries
+CREATE INDEX IF NOT EXISTS idx_athlete_weekly_stats_date ON "athlete_weekly_stats"("week_start_date");
+
+-- Indexes for sync performance
+CREATE INDEX IF NOT EXISTS idx_athlete_weekly_stats_last_changed ON "athlete_weekly_stats"("last_changed");
+CREATE INDEX IF NOT EXISTS idx_athlete_weekly_stats_deleted_at ON "athlete_weekly_stats"("deleted_at");
+CREATE INDEX IF NOT EXISTS idx_athlete_weekly_stats_deleted_last_changed ON "athlete_weekly_stats"("deleted_at", "last_changed");
+
+-- Composite index for athlete-specific queries
+CREATE INDEX IF NOT EXISTS idx_athlete_weekly_stats_athlete_date ON "athlete_weekly_stats"("athlete_id", "week_start_date");
+
+-- Trigger for last_changed timestamp
+CREATE TRIGGER IF NOT EXISTS set_last_changed_athlete_weekly_stats
+AFTER UPDATE ON "athlete_weekly_stats"
+FOR EACH ROW
+BEGIN
+    UPDATE "athlete_weekly_stats" 
+    SET last_changed = CURRENT_TIMESTAMP
+    WHERE athlete_id = NEW.athlete_id 
+    AND week_start_date = NEW.week_start_date;
+END;
+
+-- Cascading soft delete trigger for athlete_weekly_stats
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_athlete_weekly_stats
+AFTER UPDATE OF deleted_at ON "athlete"
+FOR EACH ROW
+BEGIN
+    UPDATE "athlete_weekly_stats" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
+END;
+
+-- Athlete session performance table for tracking training session performance
+CREATE TABLE IF NOT EXISTS "athlete_session_performance" (
+    "week_start_date" DATE NOT NULL,
+    -- Performance metrics
+    "performance" INTEGER NOT NULL CHECK (performance >= 0),
+    "completed_exercises" INTEGER NOT NULL CHECK (completed_exercises >= 0),
+    "athlete_id" TEXT NOT NULL,
+    -- Metadata
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "deleted_at" TIMESTAMP,
+    -- Constraints
+    PRIMARY KEY ("athlete_id", "week_start_date"),
+    -- Ensure week_start_date is always a Monday (SQLite uses strftime)
+    CONSTRAINT session_week_starts_monday CHECK (strftime('%w', week_start_date) = '1'),
+    FOREIGN KEY ("athlete_id") REFERENCES "athlete"("id") ON DELETE CASCADE
+);
+
+-- Index for date-based queries
+CREATE INDEX IF NOT EXISTS idx_athlete_session_performance_date ON "athlete_session_performance"("week_start_date");
+
+-- Indexes for sync performance
+CREATE INDEX IF NOT EXISTS idx_athlete_session_performance_last_changed ON "athlete_session_performance"("last_changed");
+CREATE INDEX IF NOT EXISTS idx_athlete_session_performance_deleted_at ON "athlete_session_performance"("deleted_at");
+CREATE INDEX IF NOT EXISTS idx_athlete_session_performance_deleted_last_changed ON "athlete_session_performance"("deleted_at", "last_changed");
+
+-- Composite index for athlete-specific queries
+CREATE INDEX IF NOT EXISTS idx_athlete_session_performance_athlete_date ON "athlete_session_performance"("athlete_id", "week_start_date");
+
+-- Trigger for last_changed timestamp
+CREATE TRIGGER IF NOT EXISTS set_last_changed_athlete_session_performance
+AFTER UPDATE ON "athlete_session_performance"
+FOR EACH ROW
+BEGIN
+    UPDATE "athlete_session_performance" 
+    SET last_changed = CURRENT_TIMESTAMP
+    WHERE athlete_id = NEW.athlete_id 
+    AND week_start_date = NEW.week_start_date;
+END;
+
+-- Cascading soft delete trigger for athlete_session_performance
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_athlete_session_performance
+AFTER UPDATE OF deleted_at ON "athlete"
+FOR EACH ROW
+BEGIN
+    UPDATE "athlete_session_performance" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
 END; 

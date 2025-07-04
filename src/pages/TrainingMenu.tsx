@@ -26,7 +26,7 @@ const TrainingMenu = ({
     nextPage: string
   ) => void;
 }) => {
-  const { athlete } = useStudyContext();
+  const { athlete, fillOutPerformanceData } = useStudyContext();
   const navigate = useNavigate();
   const [closePopup, setClosePopup] = useState(false);
   const { setPlanState, resetPlan } = useNewPlan();
@@ -124,6 +124,10 @@ const TrainingMenu = ({
   useEffect(() => {
     setCollapseAccordion(true);
   }, [creatingPlan]);
+
+  useEffect(() => {
+    fillOutPerformanceData();
+  }, []);
 
   useEffect(() => {
     resetPlan();

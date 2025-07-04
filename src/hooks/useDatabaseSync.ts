@@ -1,5 +1,5 @@
 import Database from "@tauri-apps/plugin-sql";
-import { tablesInfo } from "../constants/dbMetadata";
+import { TableName, tablesInfo } from "../constants/dbMetadata";
 import { supabase } from "../supabase";
 import { useState } from "react";
 import { SyncMetadata, PendingRecord } from "../types/Sync";
@@ -79,10 +79,19 @@ export const useDatabaseSync = () => {
 
   const resolveConflicts = (
     localRecords: any[],
-    remoteRecords: any[]
+    remoteRecords: any[],
+    tableName: TableName
   ): { localWins: any[]; remoteWins: any[] } => {
+    // Get the primary key(s) for this table
+    const primaryKeys = tablesInfo.get(tableName)?.split(",") || ["id"];
+
+    // Create a map key from the primary key fields
+    const createMapKey = (record: any): string => {
+      return primaryKeys.map((pk) => record[pk]).join("|");
+    };
+
     const remoteRecordMap = new Map(
-      remoteRecords.map((record) => [record.id, record])
+      remoteRecords.map((record) => [createMapKey(record), record])
     );
 
     const localWins: any[] = [];
@@ -90,14 +99,15 @@ export const useDatabaseSync = () => {
 
     // Process local records and check for conflicts
     for (const localRecord of localRecords) {
-      const remoteRecord = remoteRecordMap.get(localRecord.id);
+      const mapKey = createMapKey(localRecord);
+      const remoteRecord = remoteRecordMap.get(mapKey);
 
       if (remoteRecord) {
         const localRecordDate = new Date(localRecord.last_changed);
         const remoteRecordDate = new Date(remoteRecord.last_changed);
         if (localRecordDate.getTime() > remoteRecordDate.getTime()) {
           localWins.push(localRecord);
-          remoteRecordMap.delete(localRecord.id); // Remove from remote processing
+          remoteRecordMap.delete(mapKey); // Remove from remote processing
         } else {
           remoteWins.push(remoteRecord);
         }
@@ -162,7 +172,8 @@ export const useDatabaseSync = () => {
         ({ tableName, localRecords, remoteRecords }) => {
           const { localWins, remoteWins } = resolveConflicts(
             localRecords,
-            remoteRecords
+            remoteRecords,
+            tableName as TableName
           );
 
           return {
@@ -277,7 +288,8 @@ export const useDatabaseSync = () => {
           console.log("passing in", [recordData], remoteRecords || []);
           const { localWins, remoteWins } = resolveConflicts(
             [recordData],
-            remoteRecords || []
+            remoteRecords || [],
+            tableName
           );
           console.log("Local wins:", localWins);
 

@@ -7,6 +7,7 @@ import {
   DisplayProgressionCollection,
   TrainingBlock,
   SelectedExercise,
+  Session,
 } from "../types/trainingPlan";
 
 export function formatDateString(date: Date): string {
@@ -397,3 +398,50 @@ export const initializeDisplayProgressionForSelectedExercise = (
 ) => {
   return formatProgression(selectedExercise.progression);
 };
+
+export function isSameWeek(date1: Date, date2: Date): boolean {
+  const startOfWeek1 = new Date(date1);
+  const startOfWeek2 = new Date(date2);
+
+  // Set both dates to the start of their respective weeks (Monday)
+  startOfWeek1.setDate(
+    startOfWeek1.getDate() - ((startOfWeek1.getDay() + 6) % 7)
+  );
+  startOfWeek2.setDate(
+    startOfWeek2.getDate() - ((startOfWeek2.getDay() + 6) % 7)
+  );
+
+  // Compare the year and week number
+  const year1 = startOfWeek1.getFullYear();
+  const year2 = startOfWeek2.getFullYear();
+  const week1 = getWeekNumber(startOfWeek1);
+  const week2 = getWeekNumber(startOfWeek2);
+
+  return year1 === year2 && week1 === week2;
+}
+
+// Helper function to get the week number
+function getWeekNumber(date: Date): number {
+  const start = new Date(date.getFullYear(), 0, 1);
+  const days = Math.floor((date.valueOf() - start.valueOf()) / 86400000);
+  return Math.ceil((days + start.getDay() + 1) / 7);
+}
+
+export function countTotalExercises(session: Session): number {
+  let count = 0;
+  session.exercises.forEach((exercise) => {
+    if (exercise.type === "trainingBlock") {
+      count += exercise.selectedExercises.length;
+    } else {
+      count += 1;
+    }
+  });
+  return count;
+}
+
+export function ratioToPercentage(ratio: string): number {
+  const [firstNum, secondNum] = ratio.split("/");
+  const firstNumNum = Number(firstNum);
+  const secondNumNum = Number(secondNum);
+  return (firstNumNum / secondNumNum) * 100;
+}

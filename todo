@@ -2,11 +2,11 @@ MVP
 Con Alfombra
 Saltos multiples arreglar limite
 Implementar biblioteca (pendiente de armar estructura y contenido de BDD)
-Implementar pantalla rendimiento
 Ver validacion repeticiones
 Ver de cambiar colores en accordions
 Permitir mover ejercicios sessionoverviewstage
 Boton de ver papers
+Mejorar el mensaje de ConnectionStatus
 RLS
 Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
 Sacar licencia
@@ -44,3 +44,6 @@ Reemplazar logica de refrescar todos los atletas al crear un test por crear el t
 Optimizar tabs en forms
 Optimizar rangos de reduccion de volumen y esfuerzo con tablas pre-creadas
 Reemplazar iconos por svgs
+Analizar implementar listeners
+Ver logica de saltos eliminados, aparecen en preview de tests
+Quizas implementar auto borrado de test si borras todos los saltos

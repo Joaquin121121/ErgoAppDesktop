@@ -18,7 +18,31 @@ export interface Athlete {
   comments: string;
   completedStudies: CompletedStudy[];
   currentTrainingPlan?: PlanState;
+  wellnessData?: WellnessData[];
+  sessionPerformanceData?: SessionPerformanceData[];
+  performanceData?: PerformanceData[];
   deletedAt: Date;
+}
+
+export interface WellnessData {
+  week: Date;
+  sleep: number;
+  nutrition: number;
+  fatigue: number;
+}
+
+export interface SessionPerformanceData {
+  sessionId: string;
+  week: Date;
+  performance: number;
+  completedExercises: number;
+}
+
+export interface PerformanceData {
+  week: Date;
+  attendance: string;
+  completedExercises: string;
+  performance: string;
 }
 
 export function isAthlete(value: unknown): value is Athlete {
@@ -160,6 +184,12 @@ export function transformToAthlete(data: unknown): Athlete | null {
         input.deletedAt && input.deletedAt instanceof Date
           ? input.deletedAt
           : null,
+      wellnessData: input.wellnessData
+        ? (input.wellnessData as WellnessData[])
+        : [],
+      performanceData: input.performanceData
+        ? (input.performanceData as PerformanceData[])
+        : [],
     };
 
     return isAthlete(athlete) ? athlete : null;

@@ -173,7 +173,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
   }, [initialQuery]);
 
   return (
-    <div className={`relative w-[364px] ${className}`} ref={dropdownRef}>
+    <div className={`relative w-[364px] `} ref={dropdownRef}>
       <div className="relative flex flex-row items-center">
         <input
           type="text"
@@ -185,7 +185,7 @@ const AutocompleteDropdown = <T extends string | Record<string, any>>({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`w-80 p-2 rounded-2xl shadow-sm  text-tertiary border border-transparent bg-offWhite pr-10 ${
+          className={`w-80 p-2 rounded-2xl shadow-sm  text-tertiary border border-transparent bg-offWhite pr-10 ${className} ${
             inputStyles.input
           } ${error && inputStyles.focused}`}
           disabled={disabled}
