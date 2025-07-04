@@ -78,6 +78,7 @@ const TrainingModel = ({
         } transition-all duration-300 ease-in-out ${animation}`}
         style={{
           paddingLeft: isExpanded ? "100px" : "32px",
+          maxHeight: "100vh",
         }}
       >
         <div className="my-10 w-4/5 flex justify-around items-center">
@@ -101,7 +102,7 @@ const TrainingModel = ({
             onClick={onClose}
           />
         </div>
-        <div className="bg-white rounded-2xl shadow-sm flex flex-col w-4/5">
+        <div className="bg-white rounded-2xl shadow-sm flex flex-col w-4/5 h-4/5 overflow-y-hidden">
           <TrainingPlanCRUD
             sessionIndex={sessionIndex}
             setSessionIndex={setSessionIndex}

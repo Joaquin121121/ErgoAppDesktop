@@ -53,6 +53,15 @@ function AthleteMenu({
       icon: "test",
     },
     {
+      value: "wellness",
+      title: "Bienestar y Rendimiento",
+      subtitle:
+        "Visualiza la alimentacion, el sueño, la fatiga y el rendimiento del atleta",
+      callToAction: "Ver Bienestar",
+      onClick: () => goTo("athleteWellness"),
+      icon: "wellness",
+    },
+    {
       value: "training",
       title: "Entrenamiento",
       subtitle: "Visualiza/Modifica el entrenamiento del atleta",
@@ -114,7 +123,15 @@ function AthleteMenu({
         <OptionCard {...option[0]} />
         <OptionCard {...option[1]} />
       </div>
-      <OptionCard {...option[2]} className="mt-8" />
+      <div
+        className="self-end w-full flex items-center justify-center gap-x-16 m r-16 transition-all duration-300 ease-in-out pr-8 mt-16"
+        style={{
+          paddingLeft: isExpanded ? "160px" : "128px",
+        }}
+      >
+        <OptionCard {...option[2]} />
+        <OptionCard {...option[3]} />
+      </div>
     </div>
   );
 }

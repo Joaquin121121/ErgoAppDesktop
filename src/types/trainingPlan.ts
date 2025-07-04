@@ -261,7 +261,8 @@ export interface NewPlanContextType {
     exerciseId: string,
     progressionIndex: number,
     progression: Progression,
-    isModel?: boolean
+    isModel?: boolean,
+    blockId?: string
   ) => Promise<void>;
   saveNewTrainingPlan: (updatedPlan?: PlanState) => Promise<void>;
   saveNewTrainingModel: (updatedModel?: TrainingModel) => Promise<void>;

@@ -6,6 +6,7 @@ import {
   Progression,
   DisplayProgressionCollection,
   TrainingBlock,
+  SelectedExercise,
 } from "../types/trainingPlan";
 
 export function formatDateString(date: Date): string {
@@ -389,4 +390,10 @@ export const initializeDisplayProgressionCollection = (
     acc[exercise.id] = formatProgression(exercise.progression);
     return acc;
   }, {} as DisplayProgressionCollection);
+};
+
+export const initializeDisplayProgressionForSelectedExercise = (
+  selectedExercise: SelectedExercise
+) => {
+  return formatProgression(selectedExercise.progression);
 };

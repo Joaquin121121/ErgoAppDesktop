@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import navAnimations from "../styles/animations.module.css";
 import { useNewPlan } from "../contexts/NewPlanContext";
 import BlockVolumeDisplay from "./BlockVolumeDisplay";
+import SelectedExerciseVolumeDisplay from "./SelectedExerciseVolumeDisplay";
 
 function TrainingVolumePopup({
   closePopup,
@@ -40,7 +41,7 @@ function TrainingVolumePopup({
           Sesión {sessionIndex + 1}
         </p>
         <div
-          className="flex"
+          className="flex mb-8"
           style={{
             width: `calc(274px + ${currentPlan.nOfWeeks * 224}px)`,
           }}
@@ -65,9 +66,9 @@ function TrainingVolumePopup({
             </div>
           ))}
         </div>
-        {currentPlan.sessions[sessionIndex].exercises.map(
-          (exercise) =>
-            exercise.type === "trainingBlock" && (
+        {currentPlan.sessions[sessionIndex].exercises.map((exercise) => {
+          if (exercise.type === "trainingBlock") {
+            return (
               <BlockVolumeDisplay
                 key={exercise.id}
                 id={exercise.id}
@@ -75,8 +76,20 @@ function TrainingVolumePopup({
                 currentWeek={currentWeek}
                 isModel={isModel}
               />
-            )
-        )}
+            );
+          } else if (exercise.type === "selectedExercise") {
+            return (
+              <SelectedExerciseVolumeDisplay
+                key={exercise.id}
+                id={exercise.id}
+                sessionIndex={sessionIndex}
+                currentWeek={currentWeek}
+                isModel={isModel}
+              />
+            );
+          }
+          return null;
+        })}
       </div>
     </div>
   );

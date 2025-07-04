@@ -9,6 +9,7 @@ import Filter from "../components/Filter";
 import { useBlur } from "../contexts/BlurContext";
 import { Studies, Study, validComparisons } from "../types/Studies";
 import { deleteTest } from "../parsers/testDataParser";
+import { useDatabaseSync } from "../hooks/useDatabaseSync";
 function AthleteStudies({
   isExpanded,
   animation,
@@ -39,7 +40,7 @@ function AthleteStudies({
   >([]);
   const { isBlurred, setIsBlurred } = useBlur();
   const { saveJson } = useJsonFiles();
-
+  const { pushRecord } = useDatabaseSync();
   const onClose = async () => {
     customNavigate("back", "athleteStudies", "athleteMenu");
     setTimeout(() => {
@@ -84,7 +85,11 @@ function AthleteStudies({
       (study) => study.id === studyToDelete
     );
     try {
-      await deleteTest(resultToDelete.id, resultToDelete.results.type);
+      await deleteTest(
+        resultToDelete.id,
+        resultToDelete.results.type,
+        pushRecord
+      );
       setStudyToDelete(null);
     } catch (error) {
       console.log(error);

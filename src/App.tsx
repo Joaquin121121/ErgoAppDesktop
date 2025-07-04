@@ -43,6 +43,7 @@ import TrainingModel from "./pages/TrainingModel";
 import { TrainingModelsProvider } from "./contexts/TrainingModelsContext";
 import navAnimations from "./styles/animations.module.css";
 import { SyncProvider } from "./contexts/SyncContext";
+import AthleteWellness from "./pages/AthleteWellness";
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
@@ -371,6 +372,15 @@ const RouteContentWrapper = (props: any) => {
             {...otherProps}
           />
         );
+      case "athleteWellness":
+        return (
+          <AthleteWellness
+            isExpanded={isExpanded}
+            animation={animation}
+            customNavigate={customNavigate}
+            {...otherProps}
+          />
+        );
       default:
         return (
           <NotFound
@@ -437,7 +447,10 @@ const RouteContentWrapper = (props: any) => {
         path="/trainingModel"
         element={getPageComponent("trainingModel")}
       />
-
+      <Route
+        path="/athleteWellness"
+        element={getPageComponent("athleteWellness")}
+      />
       <Route path="*" element={getPageComponent("notFound")} />
     </Routes>
   );

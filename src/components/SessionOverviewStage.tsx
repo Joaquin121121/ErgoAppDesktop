@@ -4,6 +4,7 @@ import OutlinedButton from "./OutlinedButton";
 import TonalButton from "./TonalButton";
 import ExerciseAccordionItem from "./ExerciseAccordionItem";
 import BlockAccordionItem from "./BlockAccordionItem";
+import { useStudyContext } from "../contexts/StudyContext";
 
 function SessionOverviewStage({
   animation,
@@ -21,6 +22,7 @@ function SessionOverviewStage({
   isModel?: boolean;
 }) {
   const { planState, model, removeExercise } = useNewPlan();
+  const { athlete } = useStudyContext();
   const currentPlan = isModel ? model : planState;
   const [localAnimation, setLocalAnimation] = useState(animation);
 
@@ -38,9 +40,17 @@ function SessionOverviewStage({
   }, [currentPlan.sessions[sessionIndex]?.exercises]);
 
   return (
-    <div className={`flex flex-col items-center h-[94vh] ${localAnimation}`}>
+    <div
+      className={`flex flex-col items-center ${localAnimation}`}
+      style={{
+        height: isModel ? "85vh" : "90vh",
+      }}
+    >
       <p className="absolute left-4 top-4 text-secondary text-lg font-light">
         Semana {currentWeek + 1}
+        {athlete?.name.length > 0 && (
+          <span className="text-tertiary font-normal">: {athlete.name}</span>
+        )}
       </p>
       <p className="text-secondary text-3xl mt-4 self-center">
         {currentPlan.sessions[sessionIndex]?.name}

@@ -109,7 +109,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     const value = e.target.value;
     const intValue = parseInt(value);
 
-    if (intValue < 1) {
+    if (intValue < 0) {
       setInterimRestTime(restTime);
       return;
     }
@@ -125,6 +125,8 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           (e) => e.id === id
         ) as SelectedExercise);
 
+    exercise.restTime = intValue;
+
     await updateSelectedExercise(sessionIndex, id, exercise, blockId, isModel);
 
     setInterimRestTime(intValue);
@@ -139,12 +141,12 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     const intValue = typeof value === "number" ? value : parseInt(value);
 
     if (field === "effort") {
-      if (intValue > 10) {
+      if (intValue > 10 || isNaN(intValue)) {
         setDisplayProgression(formatProgression(progression));
         return;
       }
     }
-    if (intValue < 1) {
+    if (intValue < 1 || isNaN(intValue)) {
       setDisplayProgression(formatProgression(progression));
       return;
     }
@@ -168,7 +170,8 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
       id,
       index,
       formattedProgression,
-      isModel
+      isModel,
+      blockId
     );
 
     setDisplayProgression(newProgression);
@@ -197,7 +200,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
         </p>
         <input
           className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${inputStyles.input} col-span-2`}
-          value={displayProgression[currentWeek]?.series || series}
+          value={displayProgression[currentWeek]?.series}
           onChange={(e) =>
             handleProgressionChange(currentWeek, "series", e.target.value)
           }
@@ -208,7 +211,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
         />
         <input
           className={`text-xl text-center my-auto rounded-2xl w-32 mx-auto ${inputStyles.input} col-span-2`}
-          value={displayProgression[currentWeek]?.repetitions || repetitions}
+          value={displayProgression[currentWeek]?.repetitions}
           onChange={(e) =>
             handleProgressionChange(currentWeek, "repetitions", e.target.value)
           }
@@ -218,7 +221,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
         />
         <input
           className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${inputStyles.input} col-span-2`}
-          value={displayProgression[currentWeek]?.effort || effort}
+          value={displayProgression[currentWeek]?.effort}
           onChange={(e) =>
             handleProgressionChange(currentWeek, "effort", e.target.value)
           }

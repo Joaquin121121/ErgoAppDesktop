@@ -98,7 +98,7 @@ function ModelChoicePopup({
         Haga click en un modelo para seleccionarlo
       </p>
 
-      <div className="flex flex-col items-center w-full overflow-auto max-h-[70vh] mt-4">
+      <div className="flex flex-col items-center w-full overflow-auto max-h-[70vh] mt-4 pb-4">
         {filteredModels.length > 0 ? (
           filteredModels.map((model, index) => (
             <div

@@ -84,7 +84,7 @@ function NewExercisePopup({
     }, 200);
   };
 
-  const onSave = (
+  const onSave = async (
     progression: Progression[] | null,
     fatigueHandling: VolumeReduction | EffortReduction | null,
     factorToReduce: "volume" | "effort" | undefined,

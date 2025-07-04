@@ -198,13 +198,27 @@ const TrainingMenu = ({
             className="flex flex-col items-center relative  pr-4"
             style={{ width: creatingPlan ? "30%" : "60%" }}
           >
-            <TonalButton
-              inverse
-              title="Volver"
-              icon="backWhite"
-              onClick={onClose}
-              containerStyles="self-end my-8"
-            />
+            <div
+              className="flex w-full  items-center my-8"
+              style={{
+                justifyContent: creatingPlan ? "space-between" : "end",
+              }}
+            >
+              {creatingPlan && (
+                <OutlinedButton
+                  title="Ver Ondulacion de Cargas"
+                  onClick={showVolumePopup}
+                  icon="performance"
+                />
+              )}
+
+              <TonalButton
+                inverse
+                title="Volver"
+                icon="backWhite"
+                onClick={onClose}
+              />
+            </div>
             <TrainingSolutionsPanel
               isCreatingPlan={creatingPlan}
               accordionItems={accordionItems}

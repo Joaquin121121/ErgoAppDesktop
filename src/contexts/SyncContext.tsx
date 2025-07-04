@@ -15,7 +15,7 @@ interface SyncContextType {
 
 interface SyncOperation {
   name: string;
-  execute: () => Promise<void>;
+  execute: () => Promise<any>;
   status: "pending" | "inProgress" | "success" | "error";
 }
 
