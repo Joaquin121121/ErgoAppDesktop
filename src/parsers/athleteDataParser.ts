@@ -512,6 +512,9 @@ export const getAthletes = async (coachId: string): Promise<Athlete[]> => {
         institution: athlete.institution,
         comments: athlete.comments,
         completedStudies: [],
+        sessionPerformanceData: [],
+        wellnessData: [],
+        performanceData: [],
       });
       if (athleteObj) {
         athletesMap.set(athlete.id, athleteObj);

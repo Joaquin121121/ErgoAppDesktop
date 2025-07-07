@@ -103,7 +103,7 @@ function AthleteMenu({
         paddingLeft: isExpanded ? "100px" : "32px",
       }}
     >
-      <div className="my-10 w-4/5 flex justify-around items-center">
+      <div className="my-10 w-4/5 flex justify-center items-center">
         <div className="w-[122px]" />
         <p className="text-3xl">
           Menu del Atleta:{" "}
@@ -113,6 +113,7 @@ function AthleteMenu({
           inverse
           title="Volver"
           icon="backWhite"
+          containerStyles="absolute top-8 right-8"
           onClick={onClose}
         />
       </div>

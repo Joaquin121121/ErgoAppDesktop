@@ -25,7 +25,7 @@ export interface Athlete {
 }
 
 export interface WellnessData {
-  week: Date;
+  week: Date | string;
   sleep: number;
   nutrition: number;
   fatigue: number;
@@ -33,13 +33,13 @@ export interface WellnessData {
 
 export interface SessionPerformanceData {
   sessionId: string;
-  week: Date;
+  week: Date | string;
   performance: number;
   completedExercises: number;
 }
 
 export interface PerformanceData {
-  week: Date;
+  week: Date | string;
   attendance: string;
   completedExercises: string;
   performance: string;
@@ -189,6 +189,9 @@ export function transformToAthlete(data: unknown): Athlete | null {
         : [],
       performanceData: input.performanceData
         ? (input.performanceData as PerformanceData[])
+        : [],
+      sessionPerformanceData: input.sessionPerformanceData
+        ? (input.sessionPerformanceData as SessionPerformanceData[])
         : [],
     };
 

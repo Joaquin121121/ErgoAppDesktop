@@ -72,7 +72,12 @@ function Athletes({
   const [athleteToDelete, setAthleteToDelete] = useState("");
 
   const { readDirectoryJsons, deleteJson } = useJsonFiles();
-  const { resetAthlete, setAthlete, setSelectedAthletes } = useStudyContext();
+  const {
+    resetAthlete,
+    setAthlete,
+    setSelectedAthletes,
+    fillOutPerformanceData,
+  } = useStudyContext();
   const filterButtonRef = useRef(null);
   const { setAthleteToCompare1, setAthleteToCompare2 } = useAthleteComparison();
   const { pushRecord } = useDatabaseSync();
@@ -171,7 +176,7 @@ function Athletes({
 
     const athlete = loadedAthletes.find((athlete) => athlete[0] === key);
     if (athlete) {
-      setAthlete(athlete[1]);
+      fillOutPerformanceData(athlete[1]);
 
       console.log(athlete[1]);
       customNavigate("forward", "athletes", "athleteMenu");

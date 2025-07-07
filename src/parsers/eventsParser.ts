@@ -13,6 +13,24 @@ export const getEvents = async (coachId: string): Promise<Event[]> => {
        ORDER BY event_date DESC`,
       [coachId]
     );
+    const eventIds = events.map((event) => event.id);
+    const placeholders = eventIds.map(() => "?").join(", ");
+
+    const eventsAthletes = await db.select(
+      `SELECT ea.* 
+   FROM events_athletes ea
+   WHERE ea.deleted_at IS NULL AND ea.event_id IN (${placeholders})`,
+      eventIds
+    );
+
+    const eventAthleteMap = new Map<string, string[]>();
+
+    eventsAthletes.forEach((ea: any) => {
+      if (!eventAthleteMap.has(ea.event_id)) {
+        eventAthleteMap.set(ea.event_id, []);
+      }
+      eventAthleteMap.get(ea.event_id)!.push(ea.athlete_id);
+    });
 
     return events.map(
       (event: RawEvent) =>
@@ -25,7 +43,7 @@ export const getEvents = async (coachId: string): Promise<Event[]> => {
           name: event.event_name,
           date: new Date(event.event_date),
           duration: event.duration || undefined,
-          athleteId: event.athlete_id,
+          athleteIds: eventAthleteMap.get(event.id) || [],
         } as Event)
     );
   } catch (error) {
@@ -54,7 +72,7 @@ export const addEvent = async (
 
       await dbToUse.execute(
         `INSERT INTO event (id, event_type, event_name, event_date, 
-                           duration, last_changed, coach_id, athlete_id, created_at)
+                           duration, last_changed, coach_id, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           eventId,
@@ -64,9 +82,14 @@ export const addEvent = async (
           event.duration || null,
           now,
           coachId,
-          event.athleteId,
           now,
         ]
+      );
+
+      await dbToUse.execute(
+        `INSERT INTO events_athletes (id, event_id, athlete_id, created_at)
+         VALUES (?, ?, ?, ?)`,
+        [uuidv4(), eventId, event.athleteIds[0], now]
       );
 
       if (isManagingTransaction) {
@@ -115,7 +138,7 @@ export const updateEvent = async (
           event.date,
           event.duration || null,
           now,
-          event.athleteId,
+          event.athleteIds,
           event.id,
         ]
       );
@@ -188,12 +211,41 @@ export const getEventsByAthlete = async (
     const db =
       externalDb || (await (Database as any).load("sqlite:ergolab.db"));
 
+    // Get events through the events_athletes junction table
     const events = await db.select(
-      `SELECT * FROM event 
-       WHERE athlete_id = ? AND coach_id = ? AND deleted_at IS NULL 
-       ORDER BY event_date DESC`,
+      `SELECT e.* 
+       FROM event e
+       INNER JOIN events_athletes ea ON e.id = ea.event_id
+       WHERE ea.athlete_id = ? AND e.coach_id = ? AND e.deleted_at IS NULL AND ea.deleted_at IS NULL
+       ORDER BY e.event_date DESC`,
       [athleteId, coachId]
     );
+
+    const eventIds = events.map((event) => event.id);
+
+    if (eventIds.length === 0) {
+      return [];
+    }
+
+    const placeholders = eventIds.map(() => "?").join(", ");
+
+    // Get all athletes for these events
+    const eventsAthletes = await db.select(
+      `SELECT ea.* 
+       FROM events_athletes ea
+       WHERE ea.deleted_at IS NULL AND ea.event_id IN (${placeholders})`,
+      eventIds
+    );
+
+    // Create a map with event_id as key and array of athlete_ids as value
+    const eventAthleteMap = new Map<string, string[]>();
+
+    eventsAthletes.forEach((ea: any) => {
+      if (!eventAthleteMap.has(ea.event_id)) {
+        eventAthleteMap.set(ea.event_id, []);
+      }
+      eventAthleteMap.get(ea.event_id)!.push(ea.athlete_id);
+    });
 
     return events.map(
       (event: RawEvent) =>
@@ -206,7 +258,7 @@ export const getEventsByAthlete = async (
           name: event.event_name,
           date: new Date(event.event_date),
           duration: event.duration || undefined,
-          athleteId: event.athlete_id,
+          athleteIds: eventAthleteMap.get(event.id) || [],
         } as Event)
     );
   } catch (error) {

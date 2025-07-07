@@ -148,10 +148,7 @@ function About({
         style={{ paddingLeft: isExpanded ? "100px" : "32px" }}
       >
         {/* <div className="absolute w-16 h-16 top-8 right-8 bg-gray rounded-full"></div> */}
-        <div className="flex mt-12">
-          <h1 className="pt-2">Info sobre Tests</h1>
-          <img src="/books.png" className="h-16 w-16 ml-12" />
-        </div>
+        <h1 className="pt-2 mt-12">Información sobre Tests</h1>
         <div className="self-end w-3/4 flex items-center">
           <div
             className={`w-3/5 h-16 rounded-2xl bg-white shadow-sm flex items-center mt-12 px-4 mb-12 ${

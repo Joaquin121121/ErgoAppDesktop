@@ -399,32 +399,51 @@ export const initializeDisplayProgressionForSelectedExercise = (
   return formatProgression(selectedExercise.progression);
 };
 
-export function isSameWeek(date1: Date, date2: Date): boolean {
-  const startOfWeek1 = new Date(date1);
-  const startOfWeek2 = new Date(date2);
+export function isSameWeek(date1: string, date2: string): boolean {
+  // Parse dates as ISO strings to avoid timezone issues
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
 
-  // Set both dates to the start of their respective weeks (Monday)
-  startOfWeek1.setDate(
-    startOfWeek1.getDate() - ((startOfWeek1.getDay() + 6) % 7)
+  // Get UTC date components to avoid timezone offset issues
+  const startOfWeek1 = new Date(
+    Date.UTC(d1.getUTCFullYear(), d1.getUTCMonth(), d1.getUTCDate())
   );
-  startOfWeek2.setDate(
-    startOfWeek2.getDate() - ((startOfWeek2.getDay() + 6) % 7)
+  const startOfWeek2 = new Date(
+    Date.UTC(d2.getUTCFullYear(), d2.getUTCMonth(), d2.getUTCDate())
   );
 
-  // Compare the year and week number
-  const year1 = startOfWeek1.getFullYear();
-  const year2 = startOfWeek2.getFullYear();
-  const week1 = getWeekNumber(startOfWeek1);
-  const week2 = getWeekNumber(startOfWeek2);
+  // Set both dates to the start of their respective weeks (Monday) in UTC
+  startOfWeek1.setUTCDate(
+    startOfWeek1.getUTCDate() - ((startOfWeek1.getUTCDay() + 6) % 7)
+  );
+  startOfWeek2.setUTCDate(
+    startOfWeek2.getUTCDate() - ((startOfWeek2.getUTCDay() + 6) % 7)
+  );
+
+  // Compare the year and week number using UTC
+  const year1 = startOfWeek1.getUTCFullYear();
+  const year2 = startOfWeek2.getUTCFullYear();
+  const week1 = getWeekNumberUTC(startOfWeek1);
+  const week2 = getWeekNumberUTC(startOfWeek2);
 
   return year1 === year2 && week1 === week2;
 }
 
-// Helper function to get the week number
-function getWeekNumber(date: Date): number {
-  const start = new Date(date.getFullYear(), 0, 1);
+// Helper function to get the week number using UTC to avoid timezone issues
+function getWeekNumberUTC(date: Date): number {
+  const start = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
   const days = Math.floor((date.valueOf() - start.valueOf()) / 86400000);
-  return Math.ceil((days + start.getDay() + 1) / 7);
+  return Math.ceil((days + start.getUTCDay() + 1) / 7);
+}
+
+export function formatIsoToSpanishDate(isoDate: string | Date): string {
+  return new Date(isoDate)
+    .toISOString()
+    .split("T")[0]
+    .split("-")
+    .reverse()
+    .slice(0, 2)
+    .join("/");
 }
 
 export function countTotalExercises(session: Session): number {

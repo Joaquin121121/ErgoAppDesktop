@@ -30,7 +30,7 @@ function EventsList() {
   return (
     <div className="flex flex-col items-center ">
       <div
-        className={`flex flex-col items-center ml-4 overflow-y-auto p-3 ${styles.customScrollbar}`}
+        className={`flex flex-col items-center ml-4 overflow-y-auto px-3 ${styles.customScrollbar}`}
         style={{ maxHeight: "80vh" }}
       >
         {relevantEvents.map((event, index) => (
@@ -44,7 +44,7 @@ function EventsList() {
         ))}
         {relevantEvents.length === 0 && (
           <>
-            <div className="relative min-w-[16vw] rounded-t-2xl bg-lightRed text-secondary flex justify-center items-center text-xl py-2 font-medium -mb-2 z-50">
+            <div className="relative min-w-[16vw]  rounded-t-2xl bg-lightRed text-secondary flex justify-center items-center text-xl py-2 font-medium -mb-2 z-50">
               {isToday(selectedDate)
                 ? "Hoy"
                 : isTomorrow(selectedDate)

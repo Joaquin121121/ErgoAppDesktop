@@ -68,6 +68,7 @@ export const useDatabaseSync = () => {
           );
         }
       } catch (error) {
+        console.log(records);
         console.error(
           `Error batch upserting to local ${String(tableName)}:`,
           error

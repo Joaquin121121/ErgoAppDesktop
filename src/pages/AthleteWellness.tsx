@@ -1,9 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import TonalButton from "../components/TonalButton";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useStudyContext } from "../contexts/StudyContext";
 import AutocompleteDropdown from "../components/AutocompleteDropdown";
-import { isSameWeek, ratioToPercentage } from "../utils/utils";
+import {
+  formatIsoToSpanishDate,
+  isSameWeek,
+  ratioToPercentage,
+} from "../utils/utils";
 import {
   LineChart,
   Line,
@@ -68,7 +72,7 @@ function AthleteWellness({
   ];
 
   const performanceData: PerformanceData[] =
-    athlete.performanceData.length > 0
+    athlete.performanceData?.length > 0
       ? athlete.performanceData.map((p) => {
           return { ...p, week: new Date(p.week) };
         })
@@ -100,7 +104,7 @@ function AthleteWellness({
         ];
 
   const wellnessData: WellnessData[] =
-    athlete.wellnessData.length > 0
+    athlete.wellnessData?.length > 0
       ? athlete.wellnessData.map((p) => {
           return { ...p, week: new Date(p.week) };
         })
@@ -160,10 +164,14 @@ function AthleteWellness({
     .map((wellnessItem, index) => {
       const performanceItem = performanceData[index];
       return {
-        week: wellnessItem.week.toLocaleDateString("es-ES", {
-          day: "2-digit",
-          month: "2-digit",
-        }),
+        week: new Date(wellnessItem.week)
+          .toLocaleDateString("es-ES", {
+            day: "2-digit",
+            month: "2-digit",
+          })
+          .split("/")
+          .reverse()
+          .join("-"),
         fullDate: wellnessItem.week,
         // Wellness data
         sleep: wellnessItem.sleep,
@@ -199,13 +207,17 @@ function AthleteWellness({
     setTimeFrame(value);
   };
 
+  useEffect(() => {
+    console.log(athlete);
+  }, []);
+
   return (
     <div
       className={`flex-1 relative flex flex-col items-center  transition-all duration-300 ease-in-out ${animation} `}
-      style={{ paddingLeft: isExpanded ? "100px" : "32px" }}
+      style={{ paddingLeft: "9rem" }}
     >
       <TonalButton
-        containerStyles="absolute top-16 right-4"
+        containerStyles="absolute top-8 right-8"
         onClick={onClose}
         icon="backWhite"
         title="Volver"
@@ -234,63 +246,61 @@ function AthleteWellness({
           }
         />
       </div>
-      <div className="flex justify-center pr-[3%] gap-x-8 mt-8 self-end">
-        <div className="bg-white rounded-2xl shadow-sm flex flex-col items-center">
+      <div className="flex justify-center pr-4 gap-x-8 mt-8 w-full">
+        <div className="bg-white rounded-2xl shadow-sm flex flex-col items-center px-8 ">
           <div className="flex items-center justify-center mt-6 gap-x-4">
             <p className="text-secondary text-2xl">Bienestar</p>
             <img src="wellness.png" alt="" className="h-7 w-7" />
           </div>
-          <div className="grid grid-cols-4 gap-x-4 mt-10">
-            <p className="col-span-1 text-darkGray text-center w-48 text-lg flex items-center justify-center">
+          <div className="flex items-center gap-x-4 mt-10 py-[14px] ">
+            <p className="col-span-1 text-darkGray text-center w-36 text-lg flex items-center justify-center">
               Semana
             </p>
             <p
-              className="col-span-1 text-center w-48 text-lg flex items-center justify-center"
+              className="col-span-1 text-center w-24 text-lg flex items-center justify-center"
               style={{ color: "#3B82F6" }}
             >
               Sueño
             </p>
             <p
-              className="col-span-1 text-center w-48 text-lg flex items-center justify-center"
+              className="col-span-1 text-center w-24 text-lg flex items-center justify-center"
               style={{ color: "#10B981" }}
             >
               Nutrición
             </p>
             <p
-              className="col-span-1 text-center w-48 text-lg flex items-center justify-center"
+              className="col-span-1 text-center w-24 text-lg flex items-center justify-center"
               style={{ color: "#F59E0B" }}
             >
               Fatiga
             </p>
           </div>
           {displayWellnessData.map((item) => (
-            <div className="grid grid-cols-4 gap-x-4 w-full mt-6">
-              <p className="col-span-1 text-darkGray w-48 flex items-center justify-center text-center text-lg ">
-                {isSameWeek(item.week, today)
+            <div className="flex items-center gap-x-4 mt-6">
+              <p className="col-span-1 text-darkGray w-36 flex items-center justify-center text-center text-lg ">
+                {isSameWeek(
+                  new Date(item.week).toISOString(),
+                  today.toISOString()
+                )
                   ? "Esta Semana"
-                  : "Semana del " +
-                    item.week.toLocaleDateString("es-ES", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
+                  : "Semana del " + formatIsoToSpanishDate(item.week)}
               </p>
-              <p className="col-span-1 w-48 flex items-center justify-center text-center text-xl ">
+              <p className="col-span-1 w-24 flex items-center justify-center text-center text-xl ">
                 {item.sleep}
               </p>
-              <p className="col-span-1 w-48 flex items-center justify-center text-center text-xl ">
+              <p className="col-span-1 w-24 flex items-center justify-center text-center text-xl ">
                 {item.nutrition}
               </p>
-              <p className="col-span-1 w-48 flex items-center justify-center text-center text-xl ">
+              <p className="col-span-1 w-24 flex items-center justify-center text-center text-xl ">
                 {item.fatigue}
               </p>
             </div>
           ))}
           <div className="w-3/4 my-8">
-            <p className="text-darkGray text-lg mt-7">Mostrar</p>
+            <p className="text-darkGray text-lg ">Mostrar</p>
             <div className="flex items-center gap-x-4 mt-2">
               <button
-                className={`rounded-2xl px-4 py-1 text-sm flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+                className={`rounded-2xl px-4 py-1 text-sm flex  items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
                   wellnessDisplayFactors.includes("sleep")
                     ? "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                     : ""
@@ -323,7 +333,7 @@ function AthleteWellness({
           </div>
 
           {/* Wellness Chart */}
-          <div className="w-full px-6 pb-6">
+          <div className="w-full pb-6">
             <div className="w-full h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
@@ -369,53 +379,51 @@ function AthleteWellness({
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm flex flex-col items-center">
+        <div className="bg-white rounded-2xl shadow-sm flex flex-col items-center px-8 ">
           <div className="flex items-center justify-center mt-6 gap-x-4">
             <p className="text-secondary text-2xl ">Rendimiento</p>
             <img src="athletePerformance.png" alt="" className="h-7 w-7" />
           </div>
-          <div className="grid grid-cols-4 gap-x-4 mt-10">
-            <p className="col-span-1 text-darkGray text-center w-48 text-lg flex items-center justify-center">
+          <div className="flex items-center gap-x-4 mt-10 ">
+            <p className=" text-darkGray text-center w-36 text-lg flex items-center justify-center">
               Semana
             </p>
             <p
-              className="col-span-1 text-center w-48 text-lg flex items-center justify-center"
+              className=" text-center w-24 text-lg flex items-center justify-center"
               style={{ color: "#14B8A6" }}
             >
               Asistencia
             </p>
             <p
-              className="col-span-1 text-center w-48 text-lg flex items-center justify-center"
+              className=" text-center w-48 text-lg flex items-center justify-center"
               style={{ color: "#8B5CF6" }}
             >
               Ejercicios Completados
             </p>
             <p
-              className="col-span-1 text-center w-48 text-lg flex items-center justify-center"
+              className=" text-center w-28 text-lg flex items-center justify-center"
               style={{ color: "#F97316" }}
             >
               Rendimiento
             </p>
           </div>
           {displayPerformanceData.map((item) => (
-            <div className="grid grid-cols-4 gap-x-4 w-full mt-6">
-              <p className="col-span-1 text-darkGray w-48 flex items-center justify-center text-center text-lg ">
-                {isSameWeek(item.week, today)
+            <div className="flex items-center gap-x-4  mt-6">
+              <p className=" text-darkGray w-36 flex items-center justify-center text-center text-lg ">
+                {isSameWeek(
+                  new Date(item.week).toISOString(),
+                  today.toISOString()
+                )
                   ? "Esta Semana"
-                  : "Semana del " +
-                    item.week.toLocaleDateString("es-ES", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
+                  : "Semana del " + formatIsoToSpanishDate(item.week)}
               </p>
-              <p className="col-span-1 w-48 flex items-center justify-center text-center text-xl ">
+              <p className=" w-24 flex items-center justify-center text-center text-xl ">
                 {item.attendance}
               </p>
-              <p className="col-span-1 w-48 flex items-center justify-center text-center text-xl ">
+              <p className=" w-48 flex items-center justify-center text-center text-xl ">
                 {item.completedExercises}
               </p>
-              <p className="col-span-1 w-48 flex items-center justify-center text-center text-xl ">
+              <p className=" w-28 flex items-center justify-center text-center text-xl ">
                 {item.performance}
               </p>
             </div>
@@ -434,7 +442,7 @@ function AthleteWellness({
                 Asistencia
               </button>
               <button
-                className={`rounded-2xl px-4 py-1 text-sm flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none ${
+                className={`rounded-2xl px-4 py-1 text-sm flex items-center justify-center font-light ml-4 text-darkGray border border-secondary transition-colors duration-200 hover:bg-lightRed hover:text-secondary focus:outline-none whitespace-nowrap ${
                   performanceDisplayFactors.includes("completedExercises")
                     ? "bg-lightRed text-secondary hover:bg-slate-50 hover:text-darkGray"
                     : ""

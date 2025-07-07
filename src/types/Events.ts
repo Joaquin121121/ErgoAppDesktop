@@ -6,7 +6,7 @@ export interface Event {
   name: string;
   date: Date;
   duration?: number;
-  athleteId: string;
+  athleteIds: string[];
 }
 export interface RawEvent {
   id: string;

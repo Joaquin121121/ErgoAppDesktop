@@ -41,10 +41,7 @@ const Library = ({
         paddingLeft: isExpanded ? "100px" : "32px",
       }}
     >
-      <div className="flex mt-12 mb-16">
-        <h1 className="pt-4">Biblioteca de Contenido</h1>
-        <img src="/folder.svg " className="h-20 w-20 ml-12" />
-      </div>
+      <h1 className="my-12">Biblioteca de Contenido</h1>
       <OptionCard
         value="library"
         title="Biblioteca de Ejercicios"

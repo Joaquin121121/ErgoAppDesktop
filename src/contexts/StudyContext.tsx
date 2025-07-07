@@ -35,7 +35,7 @@ interface StudyContextType {
   athlete: SelectedAthlete;
   setAthlete: (athlete: SelectedAthlete) => void;
   resetAthlete: () => void;
-  fillOutPerformanceData: () => void;
+  fillOutPerformanceData: (athlete: Athlete) => void;
   selectedAthletes: Athlete[];
   setSelectedAthletes: (athletes: Athlete[]) => void;
 }
@@ -81,19 +81,32 @@ export const StudyProvider: React.FC<{ children: React.ReactNode }> = ({
     setAthlete(initialAthlete);
   };
 
-  const fillOutPerformanceData = () => {
-    if (!athlete.currentTrainingPlan) return;
+  const fillOutPerformanceData = (athlete: Athlete) => {
+    if (!athlete.currentTrainingPlan || athlete.performanceData?.length > 0) {
+      setAthlete({ ...athlete });
+      return;
+    }
 
     const trainingPlan = athlete.currentTrainingPlan;
     const processedAthlete = { ...athlete };
 
     const weeks = Array.from(
       new Set(athlete.sessionPerformanceData?.map((spd) => spd.week) || [])
-    );
+    )
+      .map((week) => new Date(week))
+      .sort((a, b) => b.getTime() - a.getTime())
+      .map((week) => week.toISOString());
 
+    console.log(
+      "unprocessedWeeks:",
+      Array.from(
+        new Set(athlete.sessionPerformanceData?.map((spd) => spd.week) || [])
+      )
+    );
+    console.log("weeks", weeks);
     weeks.forEach((week) => {
       const weekSessions = athlete.sessionPerformanceData?.filter(
-        (spd) => spd.week.toISOString() === week.toISOString()
+        (spd) => new Date(spd.week).toISOString() === week
       );
       const completedExercises = weekSessions?.reduce(
         (acc, spd) => acc + spd.completedExercises,

@@ -38,7 +38,7 @@ function AddEventModal({
     updateEventName,
     updateEventType,
     updateAthleteName,
-    updateAthleteId,
+    updateAthleteIds,
     updateStartTime,
     updateDuration,
     setEventNameError,
@@ -80,7 +80,8 @@ function AddEventModal({
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
-
+  const [filteredAthletes, setFilteredAthletes] =
+    useState<Athlete[]>(loadedAthletes);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { readDirectoryJsons } = useJsonFiles();
@@ -95,7 +96,6 @@ function AddEventModal({
   };
 
   const addAthlete = () => {
-    resetAthlete();
     customNavigate("forward", "dashboard", "newAthlete");
     setAnimation(styles.popupFadeOutTop);
     setTimeout(() => {
@@ -109,24 +109,21 @@ function AddEventModal({
     updateDuration(e.target.value);
   };
 
-  const filteredAthletes = loadedAthletes.filter((athlete) =>
-    athlete.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const handleAthleteSelect = (athlete: Athlete) => {
     updateAthleteName(athlete.name);
-    updateAthleteId(athlete.id);
-    setSearchTerm(athlete.name);
+    updateAthleteIds([...formState.selectedAthleteIds.value, athlete.id]);
+    setSearchTerm("");
+    setSearchBarFocus(false);
+    searchInputRef.current?.blur();
     setShowDropdown(false);
   };
 
-  const resetAthlete = () => {
+  const resetAthlete = (idToRemove: string) => {
     updateAthleteName("");
-    updateAthleteId("");
+    updateAthleteIds(
+      formState.selectedAthleteIds.value.filter((id) => id !== idToRemove)
+    );
     setSearchTerm("");
-    if (searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
   };
 
   const handleAthletePointer = (e: React.PointerEvent, athlete: Athlete) => {
@@ -192,7 +189,7 @@ function AddEventModal({
     }
 
     // Validate Athlete
-    if (!formState.selectedAthleteId?.value) {
+    if (!formState.selectedAthleteIds?.value) {
       setAthleteNameError("Please select an athlete.");
       hasError = true;
     }
@@ -218,7 +215,7 @@ function AddEventModal({
     }
 
     // Double-check that we have a valid athlete ID
-    if (!formState.selectedAthleteId?.value) {
+    if (!formState.selectedAthleteIds?.value) {
       console.error("No athlete selected");
       setAthleteNameError("Please select an athlete before adding the event.");
       return;
@@ -244,7 +241,7 @@ function AddEventModal({
         eventType: formState.eventType?.value as EventType,
         date: new Date(eventDateString),
         duration: parseFloat(formState.duration?.value || "0"),
-        athleteId: formState.selectedAthleteId?.value,
+        athleteIds: formState.selectedAthleteIds?.value,
       };
 
       await addEvent(newEvent);
@@ -275,6 +272,16 @@ function AddEventModal({
       }
     }
   }, [selectedIndex]);
+
+  useEffect(() => {
+    setFilteredAthletes(
+      loadedAthletes.filter(
+        (athlete) =>
+          athlete.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+          !formState.selectedAthleteIds.value.includes(athlete.id)
+      )
+    );
+  }, [searchTerm, formState.selectedAthleteIds.value]);
 
   // Reset selected index when search term changes or dropdown visibility changes
   useEffect(() => {
@@ -340,107 +347,112 @@ function AddEventModal({
         )}
         <p className="mt-8 text-lg">Atleta</p>
 
-        {!formState.selectedAthleteId?.value ? (
-          <div className="flex gap-x-8 items-center">
-            <div className="relative w-80">
-              <div
-                className={`${
-                  inputStyles.input
-                } h-10 rounded-2xl bg-offWhite shadow-sm flex items-center px-4 ${
-                  (searchBarFocus ||
-                    (validationAttempted &&
-                      formState.selectedAthleteName?.error?.length > 0)) &&
-                  inputStyles.focused
-                }`}
-              >
-                <img src="/search.png" className="h-6 w-6 mr-2" alt="Search" />
+        <div className="flex gap-x-8 items-center">
+          <div className="relative w-80">
+            <div
+              className={`${
+                inputStyles.input
+              } h-10 rounded-2xl bg-offWhite shadow-sm flex items-center px-4 ${
+                (searchBarFocus ||
+                  (validationAttempted &&
+                    formState.selectedAthleteName?.error?.length > 0)) &&
+                inputStyles.focused
+              }`}
+            >
+              <img src="/search.png" className="h-6 w-6 mr-2" alt="Search" />
 
-                <input
-                  type="text"
-                  ref={searchInputRef}
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setShowDropdown(true);
+              <input
+                type="text"
+                ref={searchInputRef}
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setShowDropdown(true);
+                }}
+                onKeyDown={handleKeyDown}
+                className="flex-1 h-full focus:outline-none bg-offWhite text-tertiary"
+                onFocus={() => {
+                  setSearchBarFocus(true);
+                  setShowDropdown(true);
+                }}
+                onBlur={() => {
+                  setSearchBarFocus(false);
+                  if (selectedIndex === -1) {
+                    setTimeout(() => setShowDropdown(false), 200);
+                  }
+                }}
+                placeholder="Buscar atleta..."
+              />
+              {searchTerm && (
+                <img
+                  src="/close.png"
+                  className="h-6 w-6 hover:opacity-70 cursor-pointer active:opacity-40"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setShowDropdown(false);
                   }}
-                  onKeyDown={handleKeyDown}
-                  className="flex-1 h-full focus:outline-none bg-offWhite text-tertiary"
-                  onFocus={() => {
-                    setSearchBarFocus(true);
-                    setShowDropdown(true);
-                  }}
-                  onBlur={() => {
-                    setSearchBarFocus(false);
-                    if (selectedIndex === -1) {
-                      setTimeout(() => setShowDropdown(false), 200);
-                    }
-                  }}
-                  placeholder="Buscar atleta..."
+                  alt="Clear"
                 />
-                {searchTerm && (
-                  <img
-                    src="/close.png"
-                    className="h-6 w-6 hover:opacity-70 cursor-pointer active:opacity-40"
-                    onClick={() => {
-                      setSearchTerm("");
-                      setShowDropdown(false);
-                    }}
-                    alt="Clear"
-                  />
-                )}
-              </div>
-
-              {showDropdown && (
-                <div
-                  ref={dropdownRef}
-                  className="absolute w-full mt-2 bg-white rounded-lg shadow-lg max-h-64 overflow-y-auto z-50"
-                  role="listbox"
-                  tabIndex={-1}
-                  onKeyDown={handleKeyDown}
-                >
-                  {filteredAthletes.length > 0 ? (
-                    filteredAthletes.map((athlete, index) => (
-                      <div
-                        key={index}
-                        role="option"
-                        aria-selected={selectedIndex === index}
-                        className={`px-4 py-2 cursor-pointer ${
-                          selectedIndex === index
-                            ? "bg-lightRed text-secondary"
-                            : "text-tertiary hover:bg-lightRed hover:text-secondary"
-                        }`}
-                        onPointerDown={(e) => handleAthletePointer(e, athlete)}
-                        style={{ touchAction: "none" }}
-                      >
-                        {athlete.name}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="px-4 py-2 text-darkGray">
-                      {searchTerm
-                        ? `No hay ningún atleta de nombre '${searchTerm}'`
-                        : "No hay atletas disponibles"}
-                    </div>
-                  )}
-                </div>
               )}
             </div>
-            <p
-              className="text-secondary hover:opacity-70 hover:cursor-pointer active:opacity-40"
-              onClick={addAthlete}
-            >
-              Añadir nuevo atleta
-            </p>
+
+            {showDropdown && (
+              <div
+                ref={dropdownRef}
+                className="absolute w-full mt-2 bg-white rounded-lg shadow-lg max-h-64 overflow-y-auto z-50"
+                role="listbox"
+                tabIndex={-1}
+                onKeyDown={handleKeyDown}
+              >
+                {filteredAthletes.length > 0 ? (
+                  filteredAthletes.map((athlete, index) => (
+                    <div
+                      key={index}
+                      role="option"
+                      aria-selected={selectedIndex === index}
+                      className={`px-4 py-2 cursor-pointer ${
+                        selectedIndex === index
+                          ? "bg-lightRed text-secondary"
+                          : "text-tertiary hover:bg-lightRed hover:text-secondary"
+                      }`}
+                      onPointerDown={(e) => handleAthletePointer(e, athlete)}
+                      style={{ touchAction: "none" }}
+                    >
+                      {athlete.name}
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-2 text-darkGray">
+                    {searchTerm
+                      ? `No hay ningún atleta de nombre '${searchTerm}'`
+                      : "No hay atletas disponibles"}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        ) : (
-          <div
-            className="flex items-center bg-lightRed rounded-2xl px-4 py-1 w-fit mt-2 cursor-pointer hover:opacity-90 active:opacity-80 transition-opacity"
-            onClick={resetAthlete}
+          <p
+            className="text-secondary hover:opacity-70 hover:cursor-pointer active:opacity-40"
+            onClick={addAthlete}
           >
-            <span className="text-secondary font-medium">
-              {formState.selectedAthleteName?.value || ""}
-            </span>
-            <img src="/close.png" className="h-5 w-5 ml-2" alt="Remove" />
+            Añadir nuevo atleta
+          </p>
+        </div>
+        {formState.selectedAthleteIds?.value.length > 0 && (
+          <div>
+            {formState.selectedAthleteIds.value.map((id) => (
+              <div
+                className="flex items-center bg-lightRed rounded-2xl px-4 py-1 w-fit my-4 cursor-pointer hover:opacity-90 active:opacity-80 transition-opacity"
+                onClick={() => {
+                  resetAthlete(id);
+                }}
+              >
+                <span className="text-secondary font-medium">
+                  {athletes.find((athlete) => athlete.id === id)?.name || ""}
+                </span>
+                <img src="/close.png" className="h-5 w-5 ml-2" alt="Remove" />
+              </div>
+            ))}
           </div>
         )}
         <p className=" text-lg mt-8">Hora de Inicio</p>

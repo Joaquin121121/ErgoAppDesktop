@@ -10,6 +10,7 @@ import { useNewPlan } from "../contexts/NewPlanContext";
 import { getTrainingModels } from "../parsers/trainingDataParser";
 import useBackspaceNavigation from "../hooks/useBackspaceNavigation";
 import { useTrainingModels } from "../contexts/TrainingModelsContext";
+import { useStudyContext } from "../contexts/StudyContext";
 function TrainingModelLibrary({
   isExpanded,
   animation,
@@ -37,6 +38,7 @@ function TrainingModelLibrary({
   const [modelToDelete, setModelToDelete] = useState<TrainingModel | null>(
     null
   );
+  const { resetAthlete } = useStudyContext();
 
   const onClose = () => {
     customNavigate("back", "trainingModelLibrary", "library");
@@ -87,6 +89,7 @@ function TrainingModelLibrary({
 
   useEffect(() => {
     resetModelState();
+    resetAthlete();
   }, []);
 
   return (

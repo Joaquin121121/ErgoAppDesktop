@@ -61,7 +61,7 @@ function EventInfoModal({
     updateEventName,
     updateEventType,
     updateAthleteName,
-    updateAthleteId,
+    updateAthleteIds,
     updateStartTime,
     updateDuration,
     setEventNameError,
@@ -87,10 +87,10 @@ function EventInfoModal({
 
   // Get athlete name from loaded athletes
   const [loadedAthletes, setLoadedAthletes] = useState<Athlete[]>(athletes);
-  const athleteForEvent = loadedAthletes.find(
-    (a) => a.id === eventInfo.athleteId
+  const athletesForEvent = loadedAthletes.filter((a) =>
+    eventInfo.athleteIds.includes(a.id)
   );
-  const athleteNameDisplay = athleteForEvent?.name || "Unknown Athlete";
+  const athleteNameDisplay = athletesForEvent.map((a) => a.name).join(", ");
 
   // Initialize the event information in local state for display purposes
   const [eventDisplay, setEventDisplay] = useState({
@@ -190,7 +190,7 @@ function EventInfoModal({
 
   const handleAthleteSelect = (athlete: Athlete) => {
     updateAthleteName(athlete.name);
-    updateAthleteId(athlete.id);
+    updateAthleteIds([...eventInfo.athleteIds, athlete.id]);
     setSearchTerm(athlete.name);
     setShowDropdown(false);
   };
@@ -206,7 +206,7 @@ function EventInfoModal({
 
   const resetAthlete = () => {
     updateAthleteName("");
-    updateAthleteId("");
+    updateAthleteIds([]);
     setSearchTerm("");
     if (searchInputRef.current) {
       searchInputRef.current.focus();
@@ -319,7 +319,7 @@ function EventInfoModal({
     }
 
     // Validate Athlete
-    if (!formState.selectedAthleteId.value) {
+    if (!formState.selectedAthleteIds.value) {
       setAthleteNameError("Please select an athlete.");
       hasError = true;
     }
@@ -362,7 +362,7 @@ function EventInfoModal({
     const updatedEvent = {
       name: formState.eventName.value,
       eventType: formState.eventType.value as EventType,
-      athleteId: formState.selectedAthleteId.value,
+      athleteIds: formState.selectedAthleteIds.value,
       date: new Date(eventDateString),
       duration: parseFloat(formState.duration.value),
       id: eventInfo.id,
@@ -388,18 +388,18 @@ function EventInfoModal({
 
   // Initialize form state when entering edit mode
   useEffect(() => {
-    if (editMode && athleteForEvent) {
+    if (editMode && athletesForEvent) {
       initializeEventEdit({
         id: eventInfo.id || "",
         name: eventDisplay.name,
         eventType: eventDisplay.eventType,
-        athleteName: athleteForEvent.name,
-        athleteId: eventInfo.athleteId,
+        athleteName: athletesForEvent.map((a) => a.name).join(", "),
+        athleteIds: eventInfo.athleteIds,
         time: eventDisplay.time,
         duration: eventDisplay.duration,
       });
     }
-  }, [editMode, athleteForEvent]);
+  }, [editMode, athletesForEvent]);
 
   // Ensure selected item is visible in the dropdown
   useEffect(() => {

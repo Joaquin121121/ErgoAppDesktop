@@ -21,8 +21,8 @@ interface EventFormState {
     value: string;
     error: string;
   };
-  selectedAthleteId: {
-    value: string;
+  selectedAthleteIds: {
+    value: string[];
     error: string;
   };
   startTime: {
@@ -49,7 +49,7 @@ interface NewEventContextType {
   updateEventName: (value: string) => void;
   updateEventType: (value: EventType) => void;
   updateAthleteName: (value: string) => void;
-  updateAthleteId: (value: string) => void;
+  updateAthleteIds: (value: string[]) => void;
   updateStartTime: (value: string) => void;
   updateDuration: (value: string) => void;
   setEventNameError: (error: string) => void;
@@ -69,7 +69,7 @@ interface NewEventContextType {
     name: string;
     eventType: string;
     athleteName: string;
-    athleteId: string;
+    athleteIds: string[];
     time: string;
     duration?: number;
   }) => void;
@@ -88,8 +88,8 @@ const initialFormState: EventFormState = {
     value: "",
     error: "",
   },
-  selectedAthleteId: {
-    value: "",
+  selectedAthleteIds: {
+    value: [],
     error: "",
   },
   startTime: {
@@ -152,10 +152,10 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
     }));
   };
 
-  const updateAthleteId = (value: string) => {
+  const updateAthleteIds = (value: string[]) => {
     setFormState((prevState) => ({
       ...prevState,
-      selectedAthleteId: { value, error: "" },
+      selectedAthleteIds: { value, error: "" },
     }));
   };
 
@@ -197,7 +197,7 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
   const setAthleteIdError = (error: string) => {
     setFormState((prevState) => ({
       ...prevState,
-      selectedAthleteId: { ...prevState.selectedAthleteId, error },
+      selectedAthleteIds: { ...prevState.selectedAthleteIds, error },
     }));
   };
 
@@ -239,7 +239,7 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
     name: string;
     eventType: string;
     athleteName: string;
-    athleteId: string;
+    athleteIds: string[];
     time: string;
     duration?: number;
   }) => {
@@ -253,7 +253,7 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
       updateEventName(eventData.name);
       updateEventType(eventData.eventType as EventType);
       updateAthleteName(eventData.athleteName);
-      updateAthleteId(eventData.athleteId);
+      updateAthleteIds(eventData.athleteIds);
       updateStartTime(eventData.time);
       updateDuration(eventData.duration?.toString() || "0");
       setSearchTerm(eventData.athleteName);
@@ -271,7 +271,7 @@ export function NewEventProvider({ children }: { children: ReactNode }) {
         updateEventName,
         updateEventType,
         updateAthleteName,
-        updateAthleteId,
+        updateAthleteIds,
         updateStartTime,
         updateDuration,
         setEventNameError,

@@ -96,8 +96,17 @@ CREATE TABLE IF NOT EXISTS "event" (
     "coach_id" UUID NOT NULL,
     "deleted_at" TIMESTAMP,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    FOREIGN KEY ("coach_id") REFERENCES "coach"("id")
+);
+
+CREATE TABLE IF NOT EXISTS "events_athletes" (
+    "event_id" UUID NOT NULL,
     "athlete_id" UUID NOT NULL,
-    FOREIGN KEY ("coach_id") REFERENCES "coach"("id"),
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "deleted_at" TIMESTAMP,
+    PRIMARY KEY ("event_id", "athlete_id"),
+    FOREIGN KEY ("event_id") REFERENCES "event"("id"),
     FOREIGN KEY ("athlete_id") REFERENCES "athlete"("id")
 );
 
@@ -209,6 +218,13 @@ CREATE TRIGGER IF NOT EXISTS set_last_changed_multiple_jumps_result
 AFTER UPDATE ON "multiple_jumps_result"
 BEGIN
     UPDATE "multiple_jumps_result" SET last_changed = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- events_athletes table
+CREATE TRIGGER IF NOT EXISTS set_last_changed_events_athletes
+AFTER UPDATE ON "events_athletes"
+BEGIN
+    UPDATE "events_athletes" SET last_changed = CURRENT_TIMESTAMP WHERE event_id = NEW.event_id AND athlete_id = NEW.athlete_id;
 END; 
 
 /* -- Insert coach data
@@ -487,6 +503,7 @@ CREATE INDEX IF NOT EXISTS idx_selected_exercises_last_changed ON "selected_exer
 CREATE INDEX IF NOT EXISTS idx_progressions_last_changed ON "progressions"("last_changed");
 CREATE INDEX IF NOT EXISTS idx_volume_reductions_last_changed ON "volume_reductions"("last_changed");
 CREATE INDEX IF NOT EXISTS idx_effort_reductions_last_changed ON "effort_reductions"("last_changed");
+CREATE INDEX IF NOT EXISTS idx_events_athletes_last_changed ON "events_athletes"("last_changed");
 
 -- Soft deletion indexes (deleted_at fields)
 -- These optimize queries that filter out deleted records
@@ -500,6 +517,7 @@ CREATE INDEX IF NOT EXISTS idx_selected_exercises_deleted_at ON "selected_exerci
 CREATE INDEX IF NOT EXISTS idx_progressions_deleted_at ON "progressions"("deleted_at");
 CREATE INDEX IF NOT EXISTS idx_volume_reductions_deleted_at ON "volume_reductions"("deleted_at");
 CREATE INDEX IF NOT EXISTS idx_effort_reductions_deleted_at ON "effort_reductions"("deleted_at");
+CREATE INDEX IF NOT EXISTS idx_events_athletes_deleted_at ON "events_athletes"("deleted_at");
 
 -- Foreign key indexes for join performance
 CREATE INDEX IF NOT EXISTS idx_training_plans_user_id ON "training_plans"("user_id");
@@ -516,6 +534,8 @@ CREATE INDEX IF NOT EXISTS idx_volume_reductions_selected_exercise_id ON "volume
 CREATE INDEX IF NOT EXISTS idx_volume_reductions_training_block_id ON "volume_reductions"("training_block_id");
 CREATE INDEX IF NOT EXISTS idx_effort_reductions_selected_exercise_id ON "effort_reductions"("selected_exercise_id");
 CREATE INDEX IF NOT EXISTS idx_effort_reductions_training_block_id ON "effort_reductions"("training_block_id");
+CREATE INDEX IF NOT EXISTS idx_events_athletes_event_id ON "events_athletes"("event_id");
+CREATE INDEX IF NOT EXISTS idx_events_athletes_athlete_id ON "events_athletes"("athlete_id");
 
 -- Composite indexes for common query patterns
 -- These optimize the most frequent sync and data retrieval operations
@@ -531,6 +551,7 @@ CREATE INDEX IF NOT EXISTS idx_selected_exercises_deleted_last_changed ON "selec
 CREATE INDEX IF NOT EXISTS idx_progressions_deleted_last_changed ON "progressions"("deleted_at", "last_changed");
 CREATE INDEX IF NOT EXISTS idx_volume_reductions_deleted_last_changed ON "volume_reductions"("deleted_at", "last_changed");
 CREATE INDEX IF NOT EXISTS idx_effort_reductions_deleted_last_changed ON "effort_reductions"("deleted_at", "last_changed");
+CREATE INDEX IF NOT EXISTS idx_events_athletes_deleted_last_changed ON "events_athletes"("deleted_at", "last_changed");
 
 -- For foreign key joins with soft deletion filtering
 CREATE INDEX IF NOT EXISTS idx_sessions_plan_deleted ON "sessions"("plan_id", "deleted_at");
@@ -544,6 +565,8 @@ CREATE INDEX IF NOT EXISTS idx_volume_reductions_exercise_deleted ON "volume_red
 CREATE INDEX IF NOT EXISTS idx_volume_reductions_block_deleted ON "volume_reductions"("training_block_id", "deleted_at");
 CREATE INDEX IF NOT EXISTS idx_effort_reductions_exercise_deleted ON "effort_reductions"("selected_exercise_id", "deleted_at");
 CREATE INDEX IF NOT EXISTS idx_effort_reductions_block_deleted ON "effort_reductions"("training_block_id", "deleted_at");
+CREATE INDEX IF NOT EXISTS idx_events_athletes_event_deleted ON "events_athletes"("event_id", "deleted_at");
+CREATE INDEX IF NOT EXISTS idx_events_athletes_athlete_deleted ON "events_athletes"("athlete_id", "deleted_at");
 
 -- Special indexes for common application queries
 CREATE INDEX IF NOT EXISTS idx_training_plans_user_deleted ON "training_plans"("user_id", "deleted_at");
@@ -571,7 +594,7 @@ FOR EACH ROW
 BEGIN
     UPDATE "base_result" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
     UPDATE "bosco_result" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
-    UPDATE "event" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
+    UPDATE "events_athletes" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
     UPDATE "multiple_drop_jump_result" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
 END;
 
@@ -602,6 +625,14 @@ BEGIN
     UPDATE "drop_jump_result" SET deleted_at = NEW.deleted_at WHERE multiple_drop_jump_id = NEW.id;
 END;
 
+-- Parent: event
+CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_event
+AFTER UPDATE OF deleted_at ON "event"
+FOR EACH ROW
+BEGIN
+    UPDATE "events_athletes" SET deleted_at = NEW.deleted_at WHERE event_id = NEW.id;
+END;
+
 -- Parent: training_plans
 CREATE TRIGGER IF NOT EXISTS cascade_soft_delete_training_plans
 AFTER UPDATE OF deleted_at ON "training_plans"
@@ -619,6 +650,7 @@ BEGIN
     UPDATE "session_days" SET deleted_at = NEW.deleted_at WHERE session_id = NEW.id;
     UPDATE "training_blocks" SET deleted_at = NEW.deleted_at WHERE session_id = NEW.id;
     UPDATE "selected_exercises" SET deleted_at = NEW.deleted_at WHERE session_id = NEW.id;
+    UPDATE "athlete_session_performance" SET deleted_at = NEW.deleted_at WHERE session_id = NEW.id;
 END;
 
 -- Parent: training_blocks
@@ -707,6 +739,7 @@ END;
 -- Athlete session performance table for tracking training session performance
 CREATE TABLE IF NOT EXISTS "athlete_session_performance" (
     "week_start_date" DATE NOT NULL,
+    "session_id" TEXT NOT NULL,
     -- Performance metrics
     "performance" INTEGER NOT NULL CHECK (performance >= 0),
     "completed_exercises" INTEGER NOT NULL CHECK (completed_exercises >= 0),
@@ -716,10 +749,11 @@ CREATE TABLE IF NOT EXISTS "athlete_session_performance" (
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "deleted_at" TIMESTAMP,
     -- Constraints
-    PRIMARY KEY ("athlete_id", "week_start_date"),
+    PRIMARY KEY ("session_id", "week_start_date"),
     -- Ensure week_start_date is always a Monday (SQLite uses strftime)
     CONSTRAINT session_week_starts_monday CHECK (strftime('%w', week_start_date) = '1'),
-    FOREIGN KEY ("athlete_id") REFERENCES "athlete"("id") ON DELETE CASCADE
+    FOREIGN KEY ("athlete_id") REFERENCES "athlete"("id") ON DELETE CASCADE,
+    FOREIGN KEY ("session_id") REFERENCES "sessions"("id") ON DELETE CASCADE
 );
 
 -- Index for date-based queries
@@ -740,7 +774,7 @@ FOR EACH ROW
 BEGIN
     UPDATE "athlete_session_performance" 
     SET last_changed = CURRENT_TIMESTAMP
-    WHERE athlete_id = NEW.athlete_id 
+    WHERE session_id = NEW.session_id 
     AND week_start_date = NEW.week_start_date;
 END;
 
