@@ -7,5 +7,5 @@ export interface SyncMetadata {
 
 export interface PendingRecord {
   tableName: TableName;
-  id: string;
+  id: string | Record<string, string>;
 }

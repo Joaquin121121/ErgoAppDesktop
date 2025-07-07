@@ -5,6 +5,7 @@ export const tablesInfo = new Map([
   ["base_result", "id"], // Base result depends on athlete and must come before all tables that reference it
   ["bosco_result", "id"], // Bosco result depends on athlete
   ["event", "id"], // Event depends on coach and athlete
+  ["events_athletes", "event_id,athlete_id"], // Events-athletes junction table with composite primary key
   ["multiple_drop_jump_result", "id"], // Multiple drop jump result depends on athlete
   ["athlete_weekly_stats", "athlete_id,week_start_date"], // Athlete weekly stats depends on athlete - composite primary key
   // All tables below reference base_result and must come after it
@@ -32,6 +33,7 @@ export type TableName =
   | "base_result"
   | "bosco_result"
   | "event"
+  | "events_athletes"
   | "multiple_drop_jump_result"
   | "athlete_weekly_stats"
   | "athlete_session_performance"

@@ -195,10 +195,16 @@ export const useDatabaseSync = () => {
 
           for (let i = 0; i < localWins.length; i += BATCH_SIZE) {
             const batch = localWins.slice(i, i + BATCH_SIZE);
+            // Determine the conflict resolution strategy for upsert
+            const primaryKeys = tablesInfo
+              .get(tableName as TableName)
+              ?.split(",") || ["id"];
+            const conflictColumns = primaryKeys.join(",");
+
             batchPromises.push(
               supabase
                 .from(String(tableName))
-                .upsert(batch, { onConflict: "id" })
+                .upsert(batch, { onConflict: conflictColumns })
                 .then(({ error }) => {
                   if (error) {
                     console.error(
@@ -257,24 +263,54 @@ export const useDatabaseSync = () => {
       for (const record of pendingRecords) {
         const { tableName, id } = record;
 
+        // Get the primary key(s) for this table
+        const primaryKeys = tablesInfo.get(tableName)?.split(",") || ["id"];
+
+        let whereClause: string;
+        let whereValues: any[];
+        let remoteFilter: any;
+
+        if (typeof id === "string") {
+          // Single primary key
+          whereClause = "id = ?";
+          whereValues = [id];
+          remoteFilter = { id };
+        } else {
+          // Composite primary key
+          const conditions = primaryKeys.map((pk) => `${pk} = ?`);
+          whereClause = conditions.join(" AND ");
+          whereValues = primaryKeys.map((pk) => id[pk]);
+          remoteFilter = id;
+        }
+
         const localRows = await db.select(
-          `SELECT * FROM ${String(tableName)} WHERE id = ?`,
-          [id]
+          `SELECT * FROM ${String(tableName)} WHERE ${whereClause}`,
+          whereValues
         );
+
         if (!localRows || localRows.length === 0) {
           console.warn(
-            `No local record found for ${String(tableName)} id=${id}`
+            `No local record found for ${String(tableName)} with keys:`,
+            id
           );
           continue;
         }
         const recordData = localRows[0];
 
         try {
-          // Fetch corresponding remote record for conflict resolution
-          const { data: remoteRecords, error: fetchError } = await supabase
-            .from(String(tableName))
-            .select("*")
-            .eq("id", recordData.id);
+          // Build remote query for composite keys
+          let remoteQuery = supabase.from(String(tableName)).select("*");
+
+          if (typeof id === "string") {
+            remoteQuery = remoteQuery.eq("id", id);
+          } else {
+            // Apply each filter condition for composite keys
+            for (const [key, value] of Object.entries(id)) {
+              remoteQuery = remoteQuery.eq(key, value);
+            }
+          }
+
+          const { data: remoteRecords, error: fetchError } = await remoteQuery;
 
           if (fetchError) {
             console.error(
@@ -285,7 +321,6 @@ export const useDatabaseSync = () => {
           }
 
           // Resolve conflicts
-
           console.log("passing in", [recordData], remoteRecords || []);
           const { localWins, remoteWins } = resolveConflicts(
             [recordData],
@@ -297,9 +332,18 @@ export const useDatabaseSync = () => {
           // Push local winner to remote
           if (localWins.length > 0) {
             console.log("Upserting to remote:", localWins[0]);
+
+            // Determine the conflict resolution strategy for upsert
+            let conflictColumns: string;
+            if (typeof id === "string") {
+              conflictColumns = "id";
+            } else {
+              conflictColumns = primaryKeys.join(",");
+            }
+
             const { error } = await supabase
               .from(String(tableName))
-              .upsert(localWins[0], { onConflict: "id" });
+              .upsert(localWins[0], { onConflict: conflictColumns });
 
             if (error) {
               console.error(

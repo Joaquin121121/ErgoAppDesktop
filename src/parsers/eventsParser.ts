@@ -70,15 +70,16 @@ export const addEvent = async (
       const eventId = uuidv4();
       const now = new Date().toISOString();
 
+      // Insert the event
       await dbToUse.execute(
         `INSERT INTO event (id, event_type, event_name, event_date, 
                            duration, last_changed, coach_id, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           eventId,
           event.eventType,
           event.name,
-          event.date,
+          event.date.toISOString(),
           event.duration || null,
           now,
           coachId,
@@ -86,15 +87,28 @@ export const addEvent = async (
         ]
       );
 
-      await dbToUse.execute(
-        `INSERT INTO events_athletes (id, event_id, athlete_id, created_at)
-         VALUES (?, ?, ?, ?)`,
-        [uuidv4(), eventId, event.athleteIds[0], now]
-      );
+      // Insert event-athlete relationships for all athletes
+      const recordsToSync: PendingRecord[] = [
+        { tableName: "event", id: eventId },
+      ];
+
+      for (const athleteId of event.athleteIds) {
+        await dbToUse.execute(
+          `INSERT INTO events_athletes (event_id, athlete_id, created_at, last_changed)
+           VALUES (?, ?, ?, ?)`,
+          [eventId, athleteId, now, now]
+        );
+
+        // Add sync record for each events_athletes relationship
+        recordsToSync.push({
+          tableName: "events_athletes",
+          id: { event_id: eventId, athlete_id: athleteId },
+        });
+      }
 
       if (isManagingTransaction) {
         await dbToUse.execute("COMMIT");
-        pushRecord([{ tableName: "event", id: eventId }]);
+        await pushRecord(recordsToSync);
       } else {
         return { tableName: "event", id: eventId };
       }
@@ -127,25 +141,74 @@ export const updateEvent = async (
     try {
       const now = new Date().toISOString();
 
+      // Update the event table
       await dbToUse.execute(
         `UPDATE event 
          SET event_type = ?, event_name = ?, event_date = ?, 
-             duration = ?, last_changed = ?, athlete_id = ?
+             duration = ?, last_changed = ?
          WHERE id = ? AND deleted_at IS NULL`,
         [
           event.eventType,
           event.name,
-          event.date,
+          event.date.toISOString(),
           event.duration || null,
           now,
-          event.athleteIds,
           event.id,
         ]
       );
 
+      // Get current athlete relationships
+      const currentAthletes = await dbToUse.select(
+        `SELECT athlete_id FROM events_athletes 
+         WHERE event_id = ? AND deleted_at IS NULL`,
+        [event.id]
+      );
+
+      const currentAthleteIds = currentAthletes.map((ea: any) => ea.athlete_id);
+      const newAthleteIds = event.athleteIds;
+
+      // Find athletes to remove and add
+      const athletesToRemove = currentAthleteIds.filter(
+        (id: string) => !newAthleteIds.includes(id)
+      );
+      const athletesToAdd = newAthleteIds.filter(
+        (id: string) => !currentAthleteIds.includes(id)
+      );
+
+      const recordsToSync: PendingRecord[] = [
+        { tableName: "event", id: event.id },
+      ];
+
+      // Soft delete removed athletes
+      for (const athleteId of athletesToRemove) {
+        await dbToUse.execute(
+          `UPDATE events_athletes 
+           SET deleted_at = ?, last_changed = ?
+           WHERE event_id = ? AND athlete_id = ?`,
+          [now, now, event.id, athleteId]
+        );
+        recordsToSync.push({
+          tableName: "events_athletes",
+          id: { event_id: event.id, athlete_id: athleteId },
+        });
+      }
+
+      // Add new athletes
+      for (const athleteId of athletesToAdd) {
+        await dbToUse.execute(
+          `INSERT INTO events_athletes (event_id, athlete_id, created_at, last_changed)
+           VALUES (?, ?, ?, ?)`,
+          [event.id, athleteId, now, now]
+        );
+        recordsToSync.push({
+          tableName: "events_athletes",
+          id: { event_id: event.id, athlete_id: athleteId },
+        });
+      }
+
       if (isManagingTransaction) {
         await dbToUse.execute("COMMIT");
-        pushRecord([{ tableName: "event", id: event.id }]);
+        await pushRecord(recordsToSync);
       } else {
         return { tableName: "event", id: event.id };
       }
