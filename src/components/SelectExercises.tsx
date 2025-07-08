@@ -66,8 +66,8 @@ function SelectExercises({
           />
         )}
       </div>
-      <div className="flex gap-x-8">
-        <div className="grid grid-cols-2 py-4 gap-x-[5%] gap-y-64 w-[40vw] mt-4 px-12 max-h-[600px] flex-grow items-start">
+      <div className="flex gap-x-8 h-[60vh]">
+        <div className="grid grid-cols-2 py-4 gap-x-[5%] gap-y-64 w-[40vw] mt-4 px-12 items-start overflow-y-scroll max-h-full">
           {filteredExercises.map((exercise) => (
             <ExerciseCard
               key={exercise.id}
@@ -82,7 +82,7 @@ function SelectExercises({
             <p className="text-secondary text-xl mt-12 ">
               Ejercicios Seleccionados
             </p>
-            <div className="flex flex-col w-80 px-10 h-[400px] overflow-y-scroll">
+            <div className="flex flex-col w-80 px-10 min-h-[200px] max-h-[300px] overflow-y-scroll">
               {selectedExercises.map((exercise) => (
                 <div
                   key={exercise.id}

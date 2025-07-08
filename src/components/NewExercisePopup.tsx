@@ -182,8 +182,12 @@ function NewExercisePopup({
 
   return (
     <div
-      className={`bg-white absolute shadow-sm rounded-2xl left-[30%] top-2 flex flex-col items-center h-auto z-50 overflow-x-hidden ${animation} overflow-y-scroll `}
-      style={{ maxHeight: "95vh", minWidth: "50vw" }}
+      className={`bg-white absolute shadow-sm rounded-2xl left-[30%] top-2 flex flex-col items-center h-auto z-50 overflow-x-hidden ${animation}  `}
+      style={{
+        maxHeight: "95vh",
+        minWidth: "50vw",
+        overflowY: currentSection === "selectExercises" ? "hidden" : "scroll",
+      }}
     >
       <div
         className="absolute z-50 hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"

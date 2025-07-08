@@ -287,52 +287,81 @@ export function getReductionFromRangeEntries(
 export const validateReps = (
   input: string,
   seriesN: number | string
-): boolean => {
+): { value: string; error: string } => {
   // Convert seriesN to number if it's a string
   const seriesNNum = Number(seriesN);
 
   // First check if it's a single positive integer
   if (/^[1-9]\d*$/.test(input)) {
-    return true;
+    return { value: input, error: "" };
   }
 
   // For multiple series, check format
   if (seriesNNum <= 1) {
-    return false;
+    return { value: "", error: "Solo se permite un número para una serie" };
   }
 
-  // Check if input uses consistent separator (- or /)
-  const separator = input.includes("-")
-    ? "-"
-    : input.includes("/")
-    ? "/"
-    : null;
-  if (!separator) {
-    return false;
+  // Check for mixed separators (reject things like "5-8/7")
+  if (input.includes("-") && input.includes("/")) {
+    return { value: "", error: "No se pueden mezclar separadores - y /" };
   }
 
-  // Split and validate each part
-  const parts = input.split(separator);
+  // Determine separator and trim input accordingly
+  let trimmedInput = input;
+  let separator: string | null = null;
 
-  // For hyphen (-) separator, only allow exactly 2 parts
+  if (input.includes("-")) {
+    separator = "-";
+    // For hyphen separator, trim to only first 2 parts (e.g., "5-8-9" becomes "5-8")
+    const parts = input.split("-");
+    if (parts.length > 2) {
+      trimmedInput = parts.slice(0, 2).join("-");
+    }
+  } else if (input.includes("/")) {
+    separator = "/";
+    // For slash separator, trim to match seriesN (e.g., "5/6/7" with seriesN=2 becomes "5/6")
+    const parts = input.split("/");
+    if (parts.length > seriesNNum) {
+      trimmedInput = parts.slice(0, seriesNNum).join("/");
+    }
+  } else {
+    return {
+      value: "",
+      error: "Formato inválido. Use números, rangos (5-8) o series (5/6/7)",
+    };
+  }
+
+  // Split and validate each part of the trimmed input
+  const parts = trimmedInput.split(separator);
+
+  // For hyphen (-) separator, should have exactly 2 parts after trimming
   if (separator === "-" && parts.length !== 2) {
-    return false;
+    return { value: "", error: "El formato de rango debe ser: número-número" };
   }
 
-  // For slash (/) separator, must match seriesN
+  // For slash (/) separator, should match seriesN after trimming
   if (separator === "/" && parts.length !== seriesNNum) {
-    return false;
+    return {
+      value: "",
+      error: `Debe especificar ${seriesNNum} repeticiones separadas por /`,
+    };
   }
 
   // Check each part is a valid positive number
   for (const part of parts) {
     const num = parseInt(part);
     if (isNaN(num) || num <= 0) {
-      return false;
+      return {
+        value: "",
+        error: "Todos los números deben ser positivos y válidos",
+      };
     }
   }
 
-  return true;
+  console.log("trimmedInput", trimmedInput);
+  console.log("seriesN", seriesNNum);
+
+  return { value: trimmedInput, error: "" };
 };
 
 export const generateInitialProgression = (

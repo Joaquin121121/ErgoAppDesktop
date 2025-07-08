@@ -393,6 +393,7 @@ const addTrainingPlan = async (
     } else {
       return recordsToSync;
     }
+    
   } catch (error) {
     if (isManagingTransaction) {
       console.error("Error saving training plan, rolling back:", error);

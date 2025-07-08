@@ -44,6 +44,7 @@ import { TrainingModelsProvider } from "./contexts/TrainingModelsContext";
 import navAnimations from "./styles/animations.module.css";
 import { SyncProvider } from "./contexts/SyncContext";
 import AthleteWellness from "./pages/AthleteWellness";
+import SplashScreen from "./components/SplashScreen";
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
@@ -63,7 +64,7 @@ const WithLayout = ({
   const window = getCurrentWindow();
   const handleLogout = async () => {
     resetAnimations();
-    await window.setSize(new PhysicalSize(800, 600));
+    await window.setSize(new PhysicalSize(1000, 800));
     logout();
   };
 
@@ -161,6 +162,7 @@ const WithLayout = ({
 const RouteContentWrapper = (props: any) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedOption, setSelectedOption] = useState("studies");
+  const [showSplashScreen, setShowSplashScreen] = useState(true);
 
   const getPageComponent = (page: string, routeProps: any = {}) => {
     // Extract animation props from props if available
@@ -459,6 +461,19 @@ const RouteContentWrapper = (props: any) => {
 function App() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedOption, setSelectedOption] = useState("studies");
+  const [showSplash, setShowSplash] = useState(true);
+  const window = getCurrentWindow();
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      setShowSplash(false);
+    }, 2200);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplash) {
+    return <SplashScreen />;
+  }
 
   return (
     <UserProvider>

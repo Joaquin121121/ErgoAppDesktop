@@ -29,7 +29,7 @@ const TrainingMenu = ({
   const { athlete } = useStudyContext();
   const navigate = useNavigate();
   const [closePopup, setClosePopup] = useState(false);
-  const { setPlanState, resetPlan } = useNewPlan();
+  const { setPlanState, resetPlan, planState } = useNewPlan();
   const { setHideNav } = useBlur();
   const trainingSolutions = parseAllTrainingSolutions() || [];
 
@@ -201,23 +201,29 @@ const TrainingMenu = ({
             <div
               className="flex w-full  items-center my-8"
               style={{
-                justifyContent: creatingPlan ? "space-between" : "end",
+                justifyContent:
+                  planState.sessions[sessionIndex]?.exercises.length > 0
+                    ? "space-between"
+                    : "end",
               }}
             >
-              {creatingPlan && (
-                <OutlinedButton
-                  title="Ver Ondulacion de Cargas"
-                  onClick={showVolumePopup}
-                  icon="performance"
+              {planState.sessions[sessionIndex]?.exercises.length > 0 ? (
+                <>
+                  <TonalButton title="Guardar" icon="next" onClick={() => {}} />
+                  <OutlinedButton
+                    title="Ver Ondulacion de Cargas"
+                    onClick={showVolumePopup}
+                    icon="performance"
+                  />
+                </>
+              ) : (
+                <TonalButton
+                  inverse
+                  title="Volver"
+                  icon="backWhite"
+                  onClick={onClose}
                 />
               )}
-
-              <TonalButton
-                inverse
-                title="Volver"
-                icon="backWhite"
-                onClick={onClose}
-              />
             </div>
             <TrainingSolutionsPanel
               isCreatingPlan={creatingPlan}

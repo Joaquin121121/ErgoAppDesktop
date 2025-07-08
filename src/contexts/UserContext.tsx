@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import { User } from "../types/User";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 const initialUserState: User = {
   email: "",
@@ -23,7 +24,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User>(initialUserState);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
+  const window = getCurrentWindow();
   // Map Supabase user to our User type
   const mapSupabaseUser = (supabaseUser: any): User => {
     if (!supabaseUser) return initialUserState;
@@ -86,7 +87,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
     });
-    return { error };
+    if (error) {
+      return { error };
+    }
+    window.maximize();
   };
 
   // Sign up with email and password
@@ -103,7 +107,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
     });
-    return { error };
+    if (error) {
+      return { error };
+    }
+    window.maximize();
   };
 
   // Logout

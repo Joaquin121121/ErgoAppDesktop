@@ -2,15 +2,14 @@ MVP
 Con Alfombra
 Saltos multiples arreglar limite
 Implementar biblioteca (pendiente de armar estructura y contenido de BDD)
-Seleccion multiple para atletas por evento
-Ver validacion repeticiones
-Funcionalidad del boton de filtrar de modelos (ver si falta añadir funcionalidad en otros botones)
-Editar bloque
+Añadir Ejercicios a bloque
+Editar nombre bloque
+
 Ver de cambiar colores en accordions
 Permitir mover ejercicios sessionoverviewstage
-Boton de ver papers
-Mejorar el mensaje de ConnectionStatus
+Boton de ver papers e Info del caracter del esfuerzo, volver a ver si implementamos peso en la creacion de ejercicios. Que tan necesario es que los bloques tengan nombre contra solo usar bloques cuando se deben hacer ciertos ejercicios en serie?
 RLS
+Mejorar el mensaje de ConnectionStatus
 Testear en diferentes dispositivos, implementar display uniforme, optimizar performance si no es buena
 Sacar licencia
 Mover el pipeline a privado (gh premium)
@@ -50,3 +49,4 @@ Reemplazar iconos por svgs
 Analizar implementar listeners
 Ver logica de saltos eliminados, aparecen en preview de tests
 Quizas implementar auto borrado de test si borras todos los saltos
+Que lso filtros de atletas se apliqquen solo cuando se apliquen

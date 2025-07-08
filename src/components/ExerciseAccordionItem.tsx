@@ -16,6 +16,7 @@ interface ExerciseAccordionItemProps {
   blockId?: string;
   last?: boolean;
   isModel?: boolean;
+  className?: string;
 }
 
 const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
@@ -25,6 +26,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
   blockId,
   last = false,
   isModel = false,
+  className,
 }) => {
   const {
     planState,
@@ -152,12 +154,15 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     }
 
     if (field === "repetitions") {
-      if (!validateReps(value, newProgression[index].series)) {
+      const validation = validateReps(value, newProgression[index].series);
+      if (validation.error) {
         setDisplayProgression(formatProgression(progression));
         return;
       }
+      newProgression[index][field] = validation.value;
+    } else {
+      newProgression[index][field] = value;
     }
-    newProgression[index][field] = value;
     const formattedProgression: Progression = {
       id: progression[index].id,
       series: parseInt(newProgression[index].series),
@@ -189,7 +194,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     <>
       {/* Header - Always visible */}
       <div
-        className={` grid grid-cols-13 gap-x-4   ${
+        className={` grid grid-cols-13 gap-x-4 ${className} ${
           blockId
             ? `w-full ${!last && "border-b border-gray"}`
             : "mt-4 border border-lightRed w-full rounded-2xl"

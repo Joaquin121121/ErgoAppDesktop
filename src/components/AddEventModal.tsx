@@ -57,7 +57,7 @@ function AddEventModal({
       name: "Test",
       defaultIcon: "/testDarkGray.png",
       selectedIcon: "/studiesRed.png",
-      value: "test" as EventType,
+      value: "testSession" as EventType,
     },
     {
       name: "Entrenamiento",

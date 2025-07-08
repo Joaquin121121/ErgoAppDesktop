@@ -5,8 +5,7 @@ import React, {
   ReactNode,
   useEffect,
 } from "react";
-
-type EventType = "competition" | "trainingSession" | "test";
+import type { EventType } from "../types/Events";
 
 interface EventFormState {
   eventName: {

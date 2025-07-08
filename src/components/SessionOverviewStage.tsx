@@ -80,6 +80,7 @@ function SessionOverviewStage({
                     currentWeek={currentWeek}
                     sessionIndex={sessionIndex}
                     isModel={isModel}
+                    className="mb-8"
                   />
                 );
               }

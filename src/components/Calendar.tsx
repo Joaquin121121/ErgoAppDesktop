@@ -233,7 +233,7 @@ const Calendar: React.FC<CalendarProps> = ({ locale = es, className = "" }) => {
 
   return (
     <div
-      className={`w-[70vw] rounded-2xl shadow-sm bg-white overflow-hidden ${className}`}
+      className={`w-[70vw] rounded-2xl shadow-sm bg-white overflow-hidden mt-2 ${className}`}
     >
       {/* Calendar header */}
       <div className="bg-red-200 text-red-600 py-4 px-2 text-center text-2xl rounded-t-lg">

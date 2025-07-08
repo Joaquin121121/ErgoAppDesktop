@@ -4,12 +4,12 @@ import {
   SelectedExercise,
   TrainingModel,
   DisplayProgression,
+  PlanState,
 } from "../types/trainingPlan";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import inputStyles from "../styles/inputStyles.module.css";
 import {
-  formatProgression,
   initializeDisplayProgressionForSelectedExercise,
   validateReps,
 } from "../utils/utils";
@@ -71,16 +71,15 @@ function SelectedExerciseVolumeDisplay({
       return;
     }
     if (field === "repetitions") {
-      if (
-        !validateReps(
-          newProgression[index][field],
-          newProgression[index].series
-        )
-      ) {
+      const validation = validateReps(
+        newProgression[index][field],
+        newProgression[index].series
+      );
+      if (validation.error) {
         resetDisplayProgression();
         return;
       }
-      newProgression[index][field] = newProgression[index][field];
+      newProgression[index][field] = validation.value;
     } else {
       newProgression[index][field] = Number(newProgression[index][field]);
     }
@@ -103,7 +102,7 @@ function SelectedExerciseVolumeDisplay({
         description: (currentPlan as TrainingModel).description,
       } as TrainingModel);
     } else {
-      setCurrentPlan(newPlanState);
+      setCurrentPlan(newPlanState as PlanState);
     }
     setDisplayProgression(
       initializeDisplayProgressionForSelectedExercise(newSelectedExercise)
@@ -116,7 +115,7 @@ function SelectedExerciseVolumeDisplay({
 
   return (
     <div
-      className="rounded-2xl border border-lightRed"
+      className="rounded-2xl border border-lightRed mt-8"
       style={{
         width: `calc(274px + ${
           (selectedExercise.progression.length || 0) * 224

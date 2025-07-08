@@ -95,12 +95,7 @@ const TrainingModel = ({
             )}
           </p>
 
-          <TonalButton
-            inverse
-            title="Volver"
-            icon="backWhite"
-            onClick={onClose}
-          />
+          <TonalButton title="Guardar" icon="next" onClick={onClose} />
         </div>
         <div className="bg-white rounded-2xl shadow-sm flex flex-col w-4/5 h-4/5 overflow-y-hidden">
           <TrainingPlanCRUD

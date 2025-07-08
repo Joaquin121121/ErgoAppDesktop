@@ -79,13 +79,13 @@ function ContentLibrary({
             placeholder="Buscar tests..."
           />
         </div>
-        <OutlinedButton
+        {/*       <OutlinedButton
           title="Filtrar"
           onClick={handleFilter}
           containerStyles="ml-8"
           icon="filter"
           ref={filterButtonRef}
-        />
+        /> */}
       </div>
       <div className="grid grid-cols-3 gap-x-[5%] gap-y-16 w-full  px-36">
         {filteredContent.map(([key, content]) => (

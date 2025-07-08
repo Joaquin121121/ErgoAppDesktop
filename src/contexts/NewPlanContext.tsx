@@ -428,6 +428,9 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
       status: "pending",
     });
     setPlanState(planToSave);
+    const updatedAthlete = { ...athlete, currentTrainingPlan: planToSave };
+    syncSpecificAthlete(updatedAthlete);
+    setAthlete(updatedAthlete);
     setIsNewTrainingPlan(false);
   };
 

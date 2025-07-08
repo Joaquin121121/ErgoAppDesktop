@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { Window, getCurrentWindow } from "@tauri-apps/api/window";
+import { PhysicalSize, Window, getCurrentWindow } from "@tauri-apps/api/window";
 import { supabase } from "../supabase";
 import ErrorPage from "../pages/ErrorPage";
 import LoginPage from "../pages/LoginPage";
@@ -9,6 +9,7 @@ import ConnectionStatus from "./ConnectionStatus";
 import ErrorBoundary from "./ErrorBoundary";
 import styles from "../styles/animations.module.css";
 import { useUser } from "../contexts/UserContext";
+import { useBlur } from "../contexts/BlurContext";
 
 // Define types for props
 type AuthGateProps = {
@@ -46,6 +47,7 @@ type Page = (typeof animationKeys)[number];
 const AuthGate = ({ children, WithLayout, layoutProps }: AuthGateProps) => {
   // Get authentication state from context
   const { isLoggedIn } = useUser();
+  const { hideNav, setHideNav } = useBlur();
 
   // Update state
   const [showUpdate, setShowUpdate] = useState(false);
@@ -100,6 +102,7 @@ const AuthGate = ({ children, WithLayout, layoutProps }: AuthGateProps) => {
 
   const handleErrorReset = () => {
     setHasGlobalError(false);
+    setHideNav(false);
     layoutProps.setSelectedOption("studies");
   };
 
@@ -124,6 +127,8 @@ const AuthGate = ({ children, WithLayout, layoutProps }: AuthGateProps) => {
 
   // If not logged in, show login page
   if (!isLoggedIn) {
+    const window = getCurrentWindow();
+    window.setSize(new PhysicalSize(1000, 800));
     return <LoginPage />;
   } else {
     const window = getCurrentWindow();

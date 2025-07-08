@@ -28,7 +28,7 @@ function TrainingVolumePopup({
   };
   return (
     <div
-      className={`bg-white rounded-2xl absolute left-1/2  -translate-x-1/2 top-8 w-[80%] px-8  overflow-x-scroll ${animation}`}
+      className={`bg-white rounded-2xl absolute left-1/2 pb-8 -translate-x-1/2 top-8 w-[80%] px-8  overflow-x-scroll ${animation}`}
     >
       <div
         className="absolute z-50 hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"

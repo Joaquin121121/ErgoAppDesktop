@@ -30,7 +30,7 @@ function EventsList() {
   return (
     <div className="flex flex-col items-center ">
       <div
-        className={`flex flex-col items-center ml-4 overflow-y-auto px-3 ${styles.customScrollbar}`}
+        className={`flex flex-col items-center ml-4 overflow-y-auto px-3 py-2 ${styles.customScrollbar}`}
         style={{ maxHeight: "80vh" }}
       >
         {relevantEvents.map((event, index) => (

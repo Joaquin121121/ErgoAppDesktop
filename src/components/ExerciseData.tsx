@@ -221,20 +221,17 @@ function ExerciseData({
               }}
               value={formState.repetitions.value}
               onBlur={(e) => {
-                if (
-                  !validateReps(
-                    e.target.value,
-                    parseInt(formState.series.value)
-                  )
-                ) {
-                  setFormState({
-                    ...formState,
-                    repetitions: {
-                      value: "",
-                      error: "invalidFormat",
-                    },
-                  });
-                }
+                const validation = validateReps(
+                  e.target.value,
+                  parseInt(formState.series.value)
+                );
+                setFormState({
+                  ...formState,
+                  repetitions: {
+                    value: validation.value,
+                    error: validation.error,
+                  },
+                });
               }}
             />
             <p className="text-darkGray ">

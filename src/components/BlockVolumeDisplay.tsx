@@ -3,6 +3,8 @@ import {
   Progression,
   TrainingBlock,
   TrainingModel,
+  DisplayProgressionCollection,
+  PlanState,
 } from "../types/trainingPlan";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,7 +14,6 @@ import {
   initializeDisplayProgressionCollection,
   validateReps,
 } from "../utils/utils";
-import { DisplayProgressionCollection } from "../types/trainingPlan";
 
 function BlockVolumeDisplay({
   sessionIndex,
@@ -75,17 +76,15 @@ function BlockVolumeDisplay({
       return;
     }
     if (field === "repetitions") {
-      console.log(newProgression[index][field], newProgression[index].series);
-      if (
-        !validateReps(
-          newProgression[index][field],
-          newProgression[index].series
-        )
-      ) {
+      const validation = validateReps(
+        newProgression[index][field],
+        newProgression[index].series
+      );
+      if (validation.error) {
         resetDisplayProgression();
         return;
       }
-      newProgression[index][field] = newProgression[index][field];
+      newProgression[index][field] = validation.value;
     } else {
       newProgression[index][field] = Number(newProgression[index][field]);
     }
@@ -111,7 +110,7 @@ function BlockVolumeDisplay({
         description: (currentPlan as TrainingModel).description,
       } as TrainingModel);
     } else {
-      setCurrentPlan(newPlanState);
+      setCurrentPlan(newPlanState as PlanState);
     }
     setDisplayProgression(
       initializeDisplayProgressionCollection(newTrainingBlock)
@@ -125,7 +124,7 @@ function BlockVolumeDisplay({
   return (
     <>
       <div
-        className="flex items-center relative justify-center mt-8"
+        className="flex items-center relative justify-center mt-88"
         style={{
           width: `calc(274px + ${
             (trainingBlock.selectedExercises[0]?.progression.length || 0) * 224
@@ -138,17 +137,12 @@ function BlockVolumeDisplay({
             {t(trainingBlock.blockModel)}
           </span>
         </p>
-        <div className="w-[130px]" />
         <div className="bg-lightRed flex items-center justify-center rounded-t-2xl text-secondary px-8  font-medium text-xl mx-16">
           {trainingBlock.name}
         </div>
-        <div className="flex items-center gap-x-2   hover:opacity-70 active:opacity-40  hover:cursor-pointer">
-          <p className="text-secondary ">Editar bloque</p>
-          <img src="/pencil.png" alt="Editar bloque" className="h-5 w-5" />
-        </div>
       </div>
       <div
-        className="rounded-2xl border border-lightRed"
+        className="rounded-2xl border border-lightRed flex flex-col items-center"
         style={{
           width: `calc(274px + ${
             (trainingBlock.selectedExercises[0]?.progression.length || 0) * 224

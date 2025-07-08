@@ -25,14 +25,14 @@ function CalendarEvent({
         return "bg-[#FFd700]";
       case "trainingSession":
         return "bg-green";
-      case "test":
+      case "testSession":
         return "bg-blue";
     }
   };
 
   const getEventIcon = () => {
     switch (eventType) {
-      case "test":
+      case "testSession":
         return "/testSessionBlack.png";
       case "trainingSession":
         return "/trainingSession.png";

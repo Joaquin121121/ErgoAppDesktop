@@ -1,4 +1,4 @@
-export type EventType = "competition" | "test" | "trainingSession";
+export type EventType = "competition" | "testSession" | "trainingSession";
 
 export interface Event {
   id: string;
