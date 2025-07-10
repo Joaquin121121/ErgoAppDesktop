@@ -115,7 +115,7 @@ function SelectedExerciseVolumeDisplay({
 
   return (
     <div
-      className="rounded-2xl border border-lightRed mt-8"
+      className="rounded-2xl border border-lightRed mt-4"
       style={{
         width: `calc(274px + ${
           (selectedExercise.progression.length || 0) * 224

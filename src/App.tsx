@@ -162,7 +162,6 @@ const WithLayout = ({
 const RouteContentWrapper = (props: any) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [selectedOption, setSelectedOption] = useState("studies");
-  const [showSplashScreen, setShowSplashScreen] = useState(true);
 
   const getPageComponent = (page: string, routeProps: any = {}) => {
     // Extract animation props from props if available
@@ -463,12 +462,16 @@ function App() {
   const [selectedOption, setSelectedOption] = useState("studies");
   const [showSplash, setShowSplash] = useState(true);
   const window = getCurrentWindow();
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      setShowSplash(false);
-    }, 2200);
 
-    return () => clearTimeout(timer);
+  const showSplashScreen = () => {
+    setTimeout(async () => {
+      setShowSplash(false);
+      window.maximize();
+    }, 2200);
+  };
+
+  useEffect(() => {
+    showSplashScreen();
   }, []);
 
   if (showSplash) {
@@ -489,6 +492,7 @@ function App() {
                         <HashRouter>
                           <AuthGate
                             WithLayout={WithLayout}
+                            showSplashScreen={showSplashScreen}
                             layoutProps={{
                               isExpanded,
                               setIsExpanded,

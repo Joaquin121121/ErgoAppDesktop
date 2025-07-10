@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNewPlan } from "../contexts/NewPlanContext";
 import inputStyles from "../styles/inputStyles.module.css";
 import TonalButton from "./TonalButton";
@@ -20,16 +20,27 @@ function SessionInfoStage({
   animation,
   onNext,
   isModel = false,
+  standAlone = false,
+  onClose,
+  sessionId,
+  sessionIndex,
+  setSessionIndex,
 }: {
   animation: string;
   onNext: () => void;
   isModel?: boolean;
+  standAlone?: boolean;
+  onClose?: () => void;
+  sessionId?: string;
+  sessionIndex?: number;
+  setSessionIndex?: (index: number) => void;
 }) {
   const {
     planState,
     model,
     addSession,
     updateSession,
+    removeSession,
     saveNewTrainingModel,
     saveNewTrainingPlan,
     setModel,
@@ -38,7 +49,16 @@ function SessionInfoStage({
   const currentPlan = isModel ? model : planState;
   const currentSetter = isModel ? setModel : setPlanState;
   const [localAnimation, setLocalAnimation] = useState(animation);
-  const [sessionN, setSessionN] = useState(0);
+  const [currentSession, setCurrentSession] = useState<Session | null>(
+    sessionId
+      ? currentPlan.sessions.find((session) => session.id === sessionId)
+      : null
+  );
+  const [sessionN, setSessionN] = useState(
+    sessionId
+      ? currentPlan.sessions.findIndex((session) => session.id === sessionId)
+      : 0
+  );
   const [loading, setLoading] = useState(false);
   const [formState, setFormState] = useState({
     name: { value: "Sesion 1", error: "" },
@@ -92,9 +112,9 @@ function SessionInfoStage({
     };
 
     if (currentPlan.sessions[sessionN]) {
-      updateSession(currentPlan.sessions[sessionN], isModel);
+      updateSession(currentPlan.sessions[sessionN], isModel, true);
     } else {
-      addSession(newSession, isModel);
+      addSession(newSession, isModel, true);
     }
 
     setLocalAnimation(navAnimations.fadeOutRight);
@@ -109,6 +129,46 @@ function SessionInfoStage({
       setSessionN(newSessionN);
       setLocalAnimation(navAnimations.fadeInLeft);
     }, 200);
+  };
+
+  const addStandaloneSession = () => {
+    setValidationAttempted(true);
+
+    if (!validateForm()) {
+      return;
+    }
+
+    const newSession: Omit<Session, "id" | "planId"> = {
+      name: formState.name.value,
+      days: formState.days.value,
+      exercises: [],
+    };
+    addSession(newSession, isModel);
+    onClose();
+  };
+
+  const deleteStandaloneSession = () => {
+    removeSession(sessionN, isModel);
+    setSessionIndex(sessionIndex - 1);
+    onClose();
+  };
+
+  const updateStandaloneSession = () => {
+    setValidationAttempted(true);
+
+    if (!validateForm()) {
+      return;
+    }
+
+    const newSession: Session = {
+      id: currentSession.id,
+      planId: currentSession.planId,
+      name: formState.name.value,
+      days: formState.days.value,
+      exercises: currentSession.exercises,
+    };
+    updateSession(newSession, isModel);
+    onClose();
   };
 
   const nextSession = async () => {
@@ -129,11 +189,12 @@ function SessionInfoStage({
       console.log("Updating session");
       updatedPlan = await updateSession(
         currentPlan.sessions[sessionN],
-        isModel
+        isModel,
+        true
       );
     } else {
       console.log("Adding session");
-      updatedPlan = await addSession(newSession, isModel);
+      updatedPlan = await addSession(newSession, isModel, true);
     }
 
     if (sessionN === currentPlan.nOfSessions - 1) {
@@ -166,11 +227,39 @@ function SessionInfoStage({
       setLocalAnimation(navAnimations.fadeInRight);
     }, 200);
   };
+  useEffect(() => {
+    if (standAlone) {
+      setFormState({
+        name: {
+          value: "Sesion " + (currentPlan.sessions.length + 1),
+          error: "",
+        },
+        days: { value: [], error: "" },
+      });
+    }
+    if (currentSession) {
+      setFormState({
+        name: { value: currentSession.name, error: "" },
+        days: { value: currentSession.days, error: "" },
+      });
+    }
+  }, [standAlone, currentSession]);
 
   return (
     <div className={`flex flex-col items-center ${localAnimation}`}>
       <div className="flex mt-8 mb-4 items-center justify-center gap-x-4">
-        <p className="text-3xl text-secondary">Sesion {sessionN + 1}</p>
+        <p className="text-3xl text-secondary">
+          {currentSession ? (
+            <>
+              <span className="text-tertiary">Editar Sesion: </span>{" "}
+              {currentSession.name}
+            </>
+          ) : standAlone ? (
+            "Nueva Sesión"
+          ) : (
+            "Sesión " + (sessionN + 1)
+          )}
+        </p>
         <img src="/trainingRed.png" className="h-8 w-8" alt="" />
       </div>
       <p className="text-darkGray text-lg px-36">
@@ -210,14 +299,14 @@ function SessionInfoStage({
               }
               ${
                 currentPlan.sessions
-                  .filter((_, i) => i !== sessionN)
+                  .filter((_, i) => standAlone || i !== sessionN)
                   .some((e) => e.days.includes(day.value)) &&
                 "opacity-40 cursor-not-allowed"
               }
               `}
               onClick={() => handleDayClick(day.value)}
               disabled={currentPlan.sessions
-                .filter((_, i) => i !== sessionN)
+                .filter((_, i) => standAlone || i !== sessionN)
                 .some((e) => e.days.includes(day.value))}
             >
               {day.name}
@@ -227,17 +316,20 @@ function SessionInfoStage({
             <p className="text-red-500 text-sm mt-1">{formState.days.error}</p>
           )}
         </div>
-        <div className="w-2/3 self-center flex justify-around items-center mt-20 mb-10">
-          {sessionN > 0 && (
-            <OutlinedButton
-              inverse
-              title="Sesion Anterior"
-              icon="back"
-              onClick={previousSession}
-            />
-          )}
+      </div>
+      <div className="w-2/3 self-center flex justify-around items-center mt-20 mb-10">
+        {sessionN > 0 && !currentSession && !standAlone && (
+          <OutlinedButton
+            inverse
+            title="Sesion Anterior"
+            icon="back"
+            onClick={previousSession}
+          />
+        )}
 
-          {sessionN < currentPlan.nOfSessions && (
+        {sessionN < currentPlan.nOfSessions &&
+          !standAlone &&
+          !currentSession && (
             <TonalButton
               title={
                 sessionN === currentPlan.nOfSessions - 1
@@ -245,10 +337,31 @@ function SessionInfoStage({
                   : "Siguiente Sesión"
               }
               icon="next"
-              onClick={nextSession}
+              onClick={standAlone ? addStandaloneSession : nextSession}
             />
           )}
-        </div>
+        {standAlone && (
+          <TonalButton
+            title="Guardar Sesión"
+            icon="next"
+            onClick={addStandaloneSession}
+          />
+        )}
+        {currentSession && (
+          <div className="flex items-center justify-center gap-x-8">
+            <OutlinedButton
+              title="Eliminar Sesión"
+              icon="delete"
+              onClick={deleteStandaloneSession}
+              disabled={currentPlan.sessions.length === 1}
+            />
+            <TonalButton
+              title="Guardar Sesión"
+              icon="next"
+              onClick={updateStandaloneSession}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

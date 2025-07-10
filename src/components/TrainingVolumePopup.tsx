@@ -41,7 +41,7 @@ function TrainingVolumePopup({
           Sesión {sessionIndex + 1}
         </p>
         <div
-          className="flex mb-8"
+          className="flex "
           style={{
             width: `calc(274px + ${currentPlan.nOfWeeks * 224}px)`,
           }}

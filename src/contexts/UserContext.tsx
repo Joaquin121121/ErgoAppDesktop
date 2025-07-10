@@ -12,7 +12,7 @@ interface UserContextType {
   setUser: React.Dispatch<React.SetStateAction<User>>;
   login: (email: string, password: string) => Promise<{ error: any }>;
   signup: (email: string, password: string) => Promise<{ error: any }>;
-  loginWithGoogle: () => Promise<{ error: any }>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<{ error: any }>;
   loading: boolean;
   isLoggedIn: boolean;
@@ -108,7 +108,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       provider: "google",
     });
     if (error) {
-      return { error };
+      console.log(error);
     }
     window.maximize();
   };

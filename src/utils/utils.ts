@@ -8,6 +8,7 @@ import {
   TrainingBlock,
   SelectedExercise,
   Session,
+  Exercise,
 } from "../types/trainingPlan";
 
 export function formatDateString(date: Date): string {
@@ -358,12 +359,28 @@ export const validateReps = (
     }
   }
 
-  console.log("trimmedInput", trimmedInput);
-  console.log("seriesN", seriesNNum);
-
   return { value: trimmedInput, error: "" };
 };
 
+export const initializeSelectedExerciseFromTrainingBlockData = (
+  exercise: Exercise,
+  trainingBlock: TrainingBlock
+) => {
+  return {
+    type: "selectedExercise",
+    id: "",
+    sessionId: "",
+    name: exercise.name,
+    exerciseId: exercise.id,
+    series: trainingBlock.series,
+    repetitions: trainingBlock.repetitions,
+    effort: trainingBlock.effort,
+    restTime: trainingBlock.restTime,
+    progression: trainingBlock.progression,
+    comments: trainingBlock.comments,
+    blockId: trainingBlock.id,
+  };
+};
 export const generateInitialProgression = (
   nOfWeeks: number,
   seriesN: number,

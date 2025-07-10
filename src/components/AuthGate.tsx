@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { PhysicalSize, Window, getCurrentWindow } from "@tauri-apps/api/window";
+import { Window } from "@tauri-apps/api/window";
 import { supabase } from "../supabase";
 import ErrorPage from "../pages/ErrorPage";
 import LoginPage from "../pages/LoginPage";
@@ -16,6 +16,7 @@ type AuthGateProps = {
   children: React.ReactNode;
   WithLayout: React.ComponentType<any>;
   layoutProps: any;
+  showSplashScreen: () => void;
 };
 
 // Define list of pages for animation keys
@@ -44,7 +45,12 @@ const animationKeys = [
 
 type Page = (typeof animationKeys)[number];
 
-const AuthGate = ({ children, WithLayout, layoutProps }: AuthGateProps) => {
+const AuthGate = ({
+  children,
+  WithLayout,
+  layoutProps,
+  showSplashScreen,
+}: AuthGateProps) => {
   // Get authentication state from context
   const { isLoggedIn } = useUser();
   const { hideNav, setHideNav } = useBlur();
@@ -127,12 +133,7 @@ const AuthGate = ({ children, WithLayout, layoutProps }: AuthGateProps) => {
 
   // If not logged in, show login page
   if (!isLoggedIn) {
-    const window = getCurrentWindow();
-    window.setSize(new PhysicalSize(1000, 800));
     return <LoginPage />;
-  } else {
-    const window = getCurrentWindow();
-    window.maximize();
   }
 
   // If there's a global error, show error page

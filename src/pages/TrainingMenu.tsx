@@ -12,6 +12,10 @@ import SeamlessLoopPlayer from "../components/SeamlessLoopPlayer";
 import ModelChoicePopup from "../components/ModelChoicePopup";
 import NewExercisePopup from "../components/NewExercisePopup";
 import { useNewPlan } from "../contexts/NewPlanContext";
+import NewSessionPopup from "../components/NewSessionPopup";
+import EditSessionPopup from "../components/EditSessionPopup";
+import EditBlockPopup from "../components/EditBlockPopup";
+import { TrainingBlock } from "@/types/trainingPlan";
 
 const TrainingMenu = ({
   isExpanded,
@@ -65,11 +69,38 @@ const TrainingMenu = ({
   const [showPopup, setShowPopup] = useState<
     "exercise" | "exerciseBlock" | null
   >(null);
+  const [displayAddSessionPopup, setDisplayAddSessionPopup] = useState(false);
   const [displayVolumePopup, setDisplayVolumePopup] = useState(false);
   const [currentWeek, setCurrentWeek] = useState(0);
-
-  const showExercisePopup = (type: "exercise" | "exerciseBlock") => {
+  const [blockId, setBlockId] = useState<string | null>(null);
+  const [currentBlock, setCurrentBlock] = useState<TrainingBlock | null>(null);
+  const [displayEditSessionPopup, setDisplayEditSessionPopup] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [displayEditBlockPopup, setDisplayEditBlockPopup] = useState(false);
+  const showExercisePopup = (
+    type: "exercise" | "exerciseBlock",
+    blockId: string
+  ) => {
     setShowPopup(type);
+    setIsBlurred(true);
+    setBlockId(blockId || null);
+  };
+
+  const showAddSessionPopup = () => {
+    setDisplayAddSessionPopup(true);
+    setIsBlurred(true);
+  };
+
+  const showEditSessionPopup = (sessionId: string) => {
+    setSessionId(sessionId);
+    setDisplayEditSessionPopup(true);
+    setIsBlurred(true);
+  };
+
+  const showEditBlockPopup = (block: TrainingBlock) => {
+    setCurrentBlock(block);
+
+    setDisplayEditBlockPopup(true);
     setIsBlurred(true);
   };
 
@@ -79,6 +110,7 @@ const TrainingMenu = ({
   };
 
   const closeExercisePopup = () => {
+    setBlockId(null);
     setShowPopup(null);
     setIsBlurred(false);
   };
@@ -161,6 +193,9 @@ const TrainingMenu = ({
                 showExercisePopup={showExercisePopup}
                 onToggleCreatingPlan={handleToggleCreatingPlan}
                 isNew={!athlete.currentTrainingPlan}
+                showAddSessionPopup={showAddSessionPopup}
+                showEditSessionPopup={showEditSessionPopup}
+                showEditBlockPopup={showEditBlockPopup}
               />
             ) : (
               <div className="flex flex-col items-center">
@@ -192,10 +227,15 @@ const TrainingMenu = ({
               onClose={closeExercisePopup}
               type={showPopup}
               sessionIndex={sessionIndex}
+              blockId={blockId}
             />
           )}
           <div
-            className="flex flex-col items-center relative  pr-4"
+            className={`flex flex-col items-center relative  pr-4  ${
+              displayAddSessionPopup || displayEditBlockPopup
+                ? "blur-md pointer-events-none"
+                : ""
+            }`}
             style={{ width: creatingPlan ? "30%" : "60%" }}
           >
             <div
@@ -207,20 +247,20 @@ const TrainingMenu = ({
                     : "end",
               }}
             >
-              {planState.sessions[sessionIndex]?.exercises.length > 0 ? (
-                <>
-                  <TonalButton title="Guardar" icon="next" onClick={() => {}} />
-                  <OutlinedButton
-                    title="Ver Ondulacion de Cargas"
-                    onClick={showVolumePopup}
-                    icon="performance"
-                  />
-                </>
+              {planState.sessions[sessionIndex]?.exercises.length > 0 && (
+                <OutlinedButton
+                  title="Ondulacion de Cargas"
+                  onClick={showVolumePopup}
+                  icon="performance"
+                />
+              )}
+              {planState.nOfSessions > 0 ? (
+                <TonalButton title="Guardar" icon="next" onClick={onClose} />
               ) : (
                 <TonalButton
-                  inverse
                   title="Volver"
                   icon="backWhite"
+                  inverse
                   onClick={onClose}
                 />
               )}
@@ -256,6 +296,37 @@ const TrainingMenu = ({
           closePopup={closeVolumePopup}
           sessionIndex={sessionIndex}
           currentWeek={currentWeek}
+        />
+      )}
+      {displayAddSessionPopup && (
+        <NewSessionPopup
+          onClose={() => {
+            setIsBlurred(false);
+            setDisplayAddSessionPopup(false);
+          }}
+          isModel={false}
+          sessionIndex={sessionIndex}
+          setSessionIndex={setSessionIndex}
+        />
+      )}
+      {displayEditSessionPopup && (
+        <EditSessionPopup
+          onClose={() => {
+            setIsBlurred(false);
+            setDisplayEditSessionPopup(false);
+            setSessionId(null);
+          }}
+          isModel={false}
+          sessionId={sessionId}
+          sessionIndex={sessionIndex}
+          setSessionIndex={setSessionIndex}
+        />
+      )}
+
+      {displayEditBlockPopup && (
+        <EditBlockPopup
+          onClose={() => setDisplayEditBlockPopup(false)}
+          trainingBlock={planState.sessions[sessionIndex].exercises[blockId]}
         />
       )}
     </>

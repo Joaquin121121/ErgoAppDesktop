@@ -9,6 +9,10 @@ import ModelChoicePopup from "../components/ModelChoicePopup";
 import NewExercisePopup from "../components/NewExercisePopup";
 import useBackspaceNavigation from "../hooks/useBackspaceNavigation";
 import { useSearchParams } from "react-router-dom";
+import NewSessionPopup from "../components/NewSessionPopup";
+import EditSessionPopup from "../components/EditSessionPopup";
+import { TrainingBlock } from "../types/trainingPlan";
+import EditBlockPopup from "../components/EditBlockPopup";
 const TrainingModel = ({
   animation,
   isExpanded,
@@ -37,10 +41,35 @@ const TrainingModel = ({
   >(null);
   const [displayVolumePopup, setDisplayVolumePopup] = useState(false);
   const [closePopup, setClosePopup] = useState(false);
-
-  const showExercisePopup = (type: "exercise" | "exerciseBlock") => {
+  const [blockId, setBlockId] = useState<string | null>(null);
+  const [displayAddSessionPopup, setDisplayAddSessionPopup] = useState(false);
+  const [displayEditSessionPopup, setDisplayEditSessionPopup] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [displayEditBlockPopup, setDisplayEditBlockPopup] = useState(false);
+  const [currentBlock, setCurrentBlock] = useState<TrainingBlock | null>(null);
+  const showEditBlockPopup = (block: TrainingBlock) => {
+    setCurrentBlock(block);
+    setDisplayEditBlockPopup(true);
+    setIsBlurred(true);
+  };
+  const showAddSessionPopup = () => {
+    setDisplayAddSessionPopup(true);
+    setIsBlurred(true);
+  };
+  const showEditSessionPopup = (sessionId: string) => {
+    setSessionId(sessionId);
+    setDisplayEditSessionPopup(true);
+    setIsBlurred(true);
+  };
+  const showExercisePopup = (
+    type: "exercise" | "exerciseBlock",
+    blockId: string
+  ) => {
+    console.log("type:", type);
+    console.log("blockId:", blockId);
     setShowPopup(type);
     setIsBlurred(true);
+    setBlockId(blockId || null);
   };
 
   const closeExercisePopup = () => {
@@ -107,6 +136,9 @@ const TrainingModel = ({
             onToggleCreatingPlan={onToggleCreatingPlan}
             isModel={true}
             isNew={isNew}
+            showAddSessionPopup={showAddSessionPopup}
+            showEditSessionPopup={showEditSessionPopup}
+            showEditBlockPopup={showEditBlockPopup}
           />
         </div>
       </div>
@@ -116,6 +148,7 @@ const TrainingModel = ({
           type={showPopup}
           sessionIndex={sessionIndex}
           isModel={true}
+          blockId={blockId}
         />
       )}
       {displayPopup && (
@@ -135,6 +168,40 @@ const TrainingModel = ({
           sessionIndex={sessionIndex}
           currentWeek={currentWeek}
           isModel={true}
+        />
+      )}
+      {displayAddSessionPopup && (
+        <NewSessionPopup
+          onClose={() => {
+            setIsBlurred(false);
+            setDisplayAddSessionPopup(false);
+          }}
+          isModel={true}
+          sessionIndex={sessionIndex}
+          setSessionIndex={setSessionIndex}
+        />
+      )}
+      {displayEditSessionPopup && (
+        <EditSessionPopup
+          onClose={() => {
+            setIsBlurred(false);
+            setDisplayEditSessionPopup(false);
+            setSessionId(null);
+          }}
+          isModel={true}
+          sessionId={sessionId}
+          sessionIndex={sessionIndex}
+          setSessionIndex={setSessionIndex}
+        />
+      )}
+      {displayEditBlockPopup && (
+        <EditBlockPopup
+          onClose={() => {
+            setDisplayEditBlockPopup(false);
+            setIsBlurred(false);
+            setCurrentBlock(null);
+          }}
+          trainingBlock={currentBlock}
         />
       )}
     </>

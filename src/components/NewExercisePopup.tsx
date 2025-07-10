@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useState } from "react";
 import navAnimations from "../styles/animations.module.css";
 import {
+  SelectedExercise,
   EffortReduction,
   Exercise,
   Progression,
@@ -15,22 +16,27 @@ import { RangeEntry } from "../utils/fatigueHandling";
 import { useNewPlan } from "../contexts/NewPlanContext";
 import TrainingBlockData from "./TrainingBlockData";
 import { getExercises } from "../parsers/trainingDataParser";
+import { initializeSelectedExerciseFromTrainingBlockData } from "../utils/utils";
 function NewExercisePopup({
   onClose,
   type = "exercise",
   sessionIndex,
   isModel = false,
+  blockId,
 }: {
   onClose: () => void;
   type: string;
   sessionIndex: number;
   isModel?: boolean;
+  blockId?: string;
 }) {
   const [animation, setAnimation] = useState(navAnimations.popupFadeInTop);
   const [currentSection, setCurrentSection] =
     useState<string>("selectExercises");
 
   const {
+    planState,
+    model,
     currentExerciseBlock,
     currentSelectedExercise,
     setCurrentSelectedExercise,
@@ -56,7 +62,7 @@ function NewExercisePopup({
     }, 200);
   };
 
-  const onSelectExercise = (exercise: Exercise) => {
+  const onSelectExercise = async (exercise: Exercise) => {
     if (selectedExercises.some((e) => e.id === exercise.id)) {
       setSelectedExercises(
         selectedExercises.filter((e) => e.id !== exercise.id)
@@ -64,8 +70,28 @@ function NewExercisePopup({
     } else {
       setSelectedExercises([...selectedExercises, exercise]);
     }
+
     if (type === "exercise") {
-      continueExerciseBlock();
+      if (blockId) {
+        const currentPlan = isModel ? model : planState;
+        const currentTrainingBlock = currentPlan.sessions[
+          sessionIndex
+        ].exercises.find((e) => e.id === blockId) as TrainingBlock;
+        const intializedSelectedExercise =
+          initializeSelectedExerciseFromTrainingBlockData(
+            exercise,
+            currentTrainingBlock
+          );
+        await saveSelectedExercise(
+          sessionIndex,
+          intializedSelectedExercise as SelectedExercise,
+          isModel,
+          blockId
+        );
+        onClose();
+      } else {
+        continueExerciseBlock();
+      }
     }
   };
 

@@ -17,6 +17,9 @@ interface ExerciseAccordionItemProps {
   last?: boolean;
   isModel?: boolean;
   className?: string;
+  standalone?: boolean;
+  expandedItemsFromBlock?: number;
+  setExpandedItemsFromBlock?: (isExpanded: number) => void;
 }
 
 const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
@@ -27,6 +30,9 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
   last = false,
   isModel = false,
   className,
+  standalone = false,
+  expandedItemsFromBlock,
+  setExpandedItemsFromBlock,
 }) => {
   const {
     planState,
@@ -89,6 +95,10 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
 
   const handleToggle = () => {
     setIsExpanded(!isExpanded);
+    console.log(expandedItemsFromBlock);
+    if (setExpandedItemsFromBlock) {
+      setExpandedItemsFromBlock(expandedItemsFromBlock + (isExpanded ? -1 : 1));
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,12 +201,12 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
   }, [restTime]);
 
   return (
-    <>
+    <div className={`${standalone ? "mb-8" : ""}`}>
       {/* Header - Always visible */}
       <div
-        className={` grid grid-cols-13 gap-x-4 ${className} ${
+        className={` grid grid-cols-13 gap-x-4 ${className}  ${
           blockId
-            ? `w-full ${!last && "border-b border-gray"}`
+            ? `w-full ${(!last || isExpanded) && "border-b border-gray"}`
             : "mt-4 border border-lightRed w-full rounded-2xl"
         }`}
       >
@@ -350,7 +360,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

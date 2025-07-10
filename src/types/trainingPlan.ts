@@ -213,11 +213,13 @@ export interface NewPlanContextType {
   updateWeeks: (weeks: number, isModel?: boolean) => Promise<void>;
   addSession: (
     session: Omit<Session, "id" | "planId">,
-    isModel?: boolean
+    isModel?: boolean,
+    initialCreation?: boolean
   ) => Promise<PlanState | TrainingModel>;
   updateSession: (
     session: Session,
-    isModel?: boolean
+    isModel?: boolean,
+    initialCreation?: boolean
   ) => Promise<PlanState | TrainingModel>;
   removeSession: (index: number, isModel?: boolean) => Promise<void>;
   addTrainingBlock: (
@@ -227,11 +229,9 @@ export interface NewPlanContextType {
     isModel?: boolean
   ) => Promise<PlanState | TrainingModel | void>;
   updateTrainingBlock: (
-    sessionIndex: number,
-    exerciseId: string,
     block: TrainingBlock,
     isModel?: boolean
-  ) => Promise<void>;
+  ) => Promise<PlanState | TrainingModel>;
   removeExercise: (
     sessionIndex: number,
     exerciseId: string,
@@ -251,7 +251,8 @@ export interface NewPlanContextType {
   saveSelectedExercise: (
     sessionIndex: number,
     currentSelectedExercise: SelectedExercise,
-    isModel: boolean
+    isModel: boolean,
+    blockId?: string
   ) => Promise<void>;
   model: TrainingModel;
   setModel: React.Dispatch<React.SetStateAction<TrainingModel>>;

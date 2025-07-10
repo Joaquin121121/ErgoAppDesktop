@@ -58,7 +58,7 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
     ...defaultPlanState,
     id: uuidv4(),
   });
-
+  const { athletes, setAthletes } = useAthletes();
   const [model, setModel] = useState<TrainingModel>({
     ...planState,
     name: "",
@@ -81,9 +81,11 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
   const saveSelectedExercise = async (
     sessionIndex: number,
     currentSelectedExercise: SelectedExercise,
-    isModel: boolean = false
+    isModel: boolean = false,
+    blockId?: string
   ) => {
     if (!currentSelectedExercise) return;
+
     const currentPlan = isModel ? model : planState;
     const setCurrentPlan = isModel ? setModel : setPlanState;
     const id = uuidv4();
@@ -97,7 +99,7 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
         await addSelectedExercise(
           updatedSelectedExercise,
           currentPlan.sessions[sessionIndex].id,
-          null,
+          blockId || null,
           pushRecord,
           undefined
         ),
@@ -111,10 +113,26 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
     };
     const updatedSessions = [...currentPlan.sessions];
     if (!updatedSessions[sessionIndex]) return; // guard
-    updatedSessions[sessionIndex].exercises = [
-      ...updatedSessions[sessionIndex].exercises,
-      processedExercise,
-    ];
+    if (blockId) {
+      updatedSessions[sessionIndex].exercises = updatedSessions[
+        sessionIndex
+      ].exercises.map((exercise) =>
+        exercise.id === blockId
+          ? {
+              ...exercise,
+              selectedExercises: [
+                ...(exercise as TrainingBlock).selectedExercises,
+                processedExercise,
+              ],
+            }
+          : exercise
+      );
+    } else {
+      updatedSessions[sessionIndex].exercises = [
+        ...updatedSessions[sessionIndex].exercises,
+        processedExercise,
+      ];
+    }
     setCurrentSelectedExercise(null);
     const updatedCurrentPlan = { ...currentPlan, sessions: updatedSessions };
     setCurrentPlan(updatedCurrentPlan);
@@ -192,7 +210,8 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
 
   const addSession = async (
     session: Omit<Session, "id" | "planId">,
-    isModel: boolean = false
+    isModel: boolean = false,
+    initialCreation: boolean = false
   ): Promise<PlanState | TrainingModel> => {
     const currentPlan = isModel ? model : planState;
     const setCurrentPlan = isModel ? setModel : setPlanState;
@@ -214,15 +233,49 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
       ...currentPlan,
       sessions: [...currentPlan.sessions, completeSession],
     };
+    if (!initialCreation) {
+      updatedPlan.nOfSessions = currentPlan.sessions.length + 1;
+    }
 
     setCurrentPlan(updatedPlan);
+
+    if (initialCreation) {
+      return;
+    }
+
+    if (isModel) {
+      setTrainingModels(
+        trainingModels.map((model) =>
+          model.id === currentPlan.id
+            ? {
+                ...model,
+                sessions: [...model.sessions, completeSession],
+                nOfSessions: model.sessions.length + 1,
+              }
+            : model
+        )
+      );
+    } else {
+      setAthletes([
+        ...athletes.map((athlete) =>
+          athlete.id === athlete.id
+            ? {
+                ...athlete,
+                currentTrainingPlan: updatedPlan,
+                nOfSessions: updatedPlan.sessions.length,
+              }
+            : athlete
+        ),
+      ]);
+    }
 
     return updatedPlan;
   };
 
   const updateSession = async (
     session: Session,
-    isModel: boolean = false
+    isModel: boolean = false,
+    initialCreation: boolean = false
   ): Promise<PlanState | TrainingModel> => {
     const currentPlan = isModel ? model : planState;
     const setCurrentPlan = isModel ? setModel : setPlanState;
@@ -235,6 +288,32 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
       await parserUpdateSession(session, pushRecord);
     }
     setCurrentPlan(updatedPlan);
+    if (initialCreation) {
+      return;
+    }
+    if (isModel) {
+      setTrainingModels(
+        trainingModels.map((model) =>
+          model.id === currentPlan.id
+            ? {
+                ...model,
+                sessions: updatedSessions,
+              }
+            : model
+        )
+      );
+    } else {
+      setAthletes([
+        ...athletes.map((athlete) =>
+          athlete.id === athlete.id
+            ? {
+                ...athlete,
+                currentTrainingPlan: updatedPlan,
+              }
+            : athlete
+        ),
+      ]);
+    }
     return updatedPlan;
   };
 
@@ -250,6 +329,32 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
 
     await parserDeleteSession(sessionToDelete.id, pushRecord);
     setCurrentPlan(updatedPlan);
+
+    if (isModel) {
+      setTrainingModels(
+        trainingModels.map((model) =>
+          model.id === currentPlan.id
+            ? {
+                ...model,
+                sessions: updatedSessions,
+                nOfSessions: updatedSessions.length,
+              }
+            : model
+        )
+      );
+    } else {
+      setAthletes([
+        ...athletes.map((athlete) =>
+          athlete.id === athlete.id
+            ? {
+                ...athlete,
+                currentTrainingPlan: updatedPlan,
+                nOfSessions: updatedPlan.sessions.length,
+              }
+            : athlete
+        ),
+      ]);
+    }
   };
 
   const addTrainingBlock = async (
@@ -312,19 +417,25 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const updateTrainingBlock = async (
-    sessionIndex: number,
-    exerciseId: string,
     block: TrainingBlock,
     isModel: boolean = false
-  ) => {
+  ): Promise<PlanState | TrainingModel> => {
     const currentPlan = isModel ? model : planState;
     const setCurrentPlan = isModel ? setModel : setPlanState;
 
     await parserUpdateTrainingBlock(block, pushRecord);
 
-    const updatedSessions = [...currentPlan.sessions];
-    updatedSessions[sessionIndex].exercises[exerciseId] = block;
+    const updatedSessions: Session[] = [...currentPlan.sessions];
+    const session = updatedSessions.find(
+      (session) => session.id === block.sessionId
+    );
+    if (!session) return;
+    session.exercises = session.exercises.map((exercise) =>
+      exercise.id === block.id ? block : exercise
+    );
+
     setCurrentPlan({ ...currentPlan, sessions: updatedSessions });
+    return { ...currentPlan, sessions: updatedSessions };
   };
 
   const removeExercise = async (

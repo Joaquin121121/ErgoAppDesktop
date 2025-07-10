@@ -4,16 +4,23 @@ import TrainingPlanCreator from "./TrainingPlanCreator";
 import SessionInfoStage from "./SessionInfoStage";
 import SessionOverviewStage from "./SessionOverviewStage";
 import navAnimations from "../styles/animations.module.css";
+import { TrainingBlock } from "../types/trainingPlan";
 
 interface TrainingPlanCRUDProps {
   sessionIndex: number;
   setSessionIndex: (index: number) => void;
   currentWeek: number;
   setDisplayPopup: (display: boolean) => void;
-  showExercisePopup: (type: "exercise" | "exerciseBlock") => void;
+  showExercisePopup: (
+    type: "exercise" | "exerciseBlock",
+    blockId?: string
+  ) => void;
+  showAddSessionPopup: () => void;
   onToggleCreatingPlan: () => void;
   isModel?: boolean;
   isNew?: boolean;
+  showEditSessionPopup: (sessionId: string) => void;
+  showEditBlockPopup: (block: TrainingBlock) => void;
 }
 
 const TrainingPlanCRUD: React.FC<TrainingPlanCRUDProps> = ({
@@ -22,9 +29,12 @@ const TrainingPlanCRUD: React.FC<TrainingPlanCRUDProps> = ({
   currentWeek,
   setDisplayPopup,
   showExercisePopup,
+  showAddSessionPopup,
   onToggleCreatingPlan,
   isModel = false,
   isNew = false,
+  showEditSessionPopup,
+  showEditBlockPopup,
 }) => {
   const { setIsBlurred } = useBlur();
   const [currentStage, setCurrentStage] = useState(
@@ -85,6 +95,8 @@ const TrainingPlanCRUD: React.FC<TrainingPlanCRUDProps> = ({
           goToStage("sessionInfoStage", "sessionOverviewStage");
         }}
         isModel={isModel}
+        sessionIndex={sessionIndex}
+        setSessionIndex={setSessionIndex}
       />
     ),
     sessionOverviewStage: (
@@ -95,6 +107,9 @@ const TrainingPlanCRUD: React.FC<TrainingPlanCRUDProps> = ({
         sessionIndex={sessionIndex}
         currentWeek={currentWeek}
         isModel={isModel}
+        showAddSessionPopup={showAddSessionPopup}
+        showEditSessionPopup={showEditSessionPopup}
+        showEditBlockPopup={showEditBlockPopup}
       />
     ),
   };
