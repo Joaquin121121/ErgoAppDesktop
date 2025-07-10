@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from "react";
 import ExerciseAccordionItem from "./ExerciseAccordionItem";
 import { useTranslation } from "react-i18next";
 import { useNewPlan } from "../contexts/NewPlanContext";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 function BlockAccordionItem({
   id,
@@ -23,6 +25,21 @@ function BlockAccordionItem({
   const { planState, model, currentSelectedExercise } = useNewPlan();
   const currentPlan = isModel ? model : planState;
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+  };
+
   const trainingBlock = currentPlan.sessions[sessionIndex].exercises.find(
     (e) => e.id === id
   ) as TrainingBlock;
@@ -33,7 +50,13 @@ function BlockAccordionItem({
   };
 
   return (
-    <div className="flex relative w-full text-center transition-all duration-300">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex relative w-full text-center transition-all duration-300 ${
+        isDragging ? "border-dashed border-2 border-gray-300 rounded-2xl" : ""
+      }`}
+    >
       <p
         style={{
           writingMode: "vertical-rl",
@@ -46,7 +69,9 @@ function BlockAccordionItem({
           transition: "height 0.3s ease-in-out",
         }}
         onClick={() => showEditBlockPopup(trainingBlock)}
-        className="absolute hover:cursor-pointer hover:opacity-70 active:opacity-40 transition-opacity duration-300  ease-in-out truncate left-0 z-50 transform  px-1 py-2 -rotate-180 text-xl font-medium text-secondary bg-lightRed rounded-r-2xl"
+        className="absolute hover:cursor-pointer hover:opacity-70 active:opacity-40 transition-opacity duration-300  ease-in-out truncate left-0 z-50 transform  px-1 py-2 -rotate-180 text-xl font-medium text-secondary bg-lightRed rounded-r-2xl cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
       >
         {trainingBlock.name}
       </p>

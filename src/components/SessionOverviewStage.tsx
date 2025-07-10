@@ -8,6 +8,26 @@ import { useStudyContext } from "../contexts/StudyContext";
 import { useBlur } from "../contexts/BlurContext";
 import NewSessionPopup from "./NewSessionPopup";
 import { TrainingBlock } from "../types/trainingPlan";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+  DropAnimation,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { createPortal } from "react-dom";
 
 function SessionOverviewStage({
   animation,
@@ -35,6 +55,29 @@ function SessionOverviewStage({
   const currentPlan = isModel ? model : planState;
   const [localAnimation, setLocalAnimation] = useState(animation);
   const { setIsBlurred } = useBlur();
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const dropAnimation: DropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+      styles: {
+        active: {
+          opacity: "0.5",
+        },
+      },
+    }),
+  };
+
   const addExercise = () => {
     showPopup("exercise");
   };
@@ -45,6 +88,96 @@ function SessionOverviewStage({
 
   const displayAddExercisePopup = (blockId: string) => {
     showPopup("exercise", blockId);
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setExerciseItems((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over?.id);
+
+        console.log(
+          `Moving ${active.id} from position ${oldIndex} to ${newIndex}`
+        );
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+
+    setActiveId(null);
+  };
+
+  const originalExerciseItems =
+    currentPlan.sessions[sessionIndex]?.exercises?.filter(
+      (exercise) =>
+        exercise.type === "selectedExercise" ||
+        (exercise.type === "trainingBlock" &&
+          exercise.selectedExercises.length > 0)
+    ) || [];
+
+  const [exerciseItems, setExerciseItems] = useState(originalExerciseItems);
+
+  // Update local state when the session changes
+  useEffect(() => {
+    setExerciseItems(originalExerciseItems);
+  }, [sessionIndex, currentPlan.sessions[sessionIndex]?.exercises]);
+
+  const exerciseIds = exerciseItems.map((exercise) => exercise.id);
+
+  const getActiveExercise = () => {
+    if (!activeId) return null;
+    return exerciseItems.find((exercise) => exercise.id === activeId);
+  };
+
+  const renderActiveExercise = () => {
+    const activeExercise = getActiveExercise();
+    if (!activeExercise) return null;
+
+    if (activeExercise.type === "selectedExercise") {
+      return (
+        <div
+          className="w-[800px] shadow-xl bg-white rounded-2xl pointer-events-none"
+          style={{
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <ExerciseAccordionItem
+            id={activeExercise.id}
+            currentWeek={currentWeek}
+            sessionIndex={sessionIndex}
+            isModel={isModel}
+            standalone
+          />
+        </div>
+      );
+    }
+
+    if (activeExercise.type === "trainingBlock") {
+      return (
+        <div
+          className="w-[800px] shadow-xl bg-white rounded-2xl pointer-events-none"
+          style={{
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <BlockAccordionItem
+            id={activeExercise.id}
+            currentWeek={currentWeek}
+            sessionIndex={sessionIndex}
+            isModel={isModel}
+            displayAddExercisePopup={displayAddExercisePopup}
+            showEditBlockPopup={showEditBlockPopup}
+          />
+        </div>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -90,38 +223,60 @@ function SessionOverviewStage({
       </div>
       <div className="h-[65%] w-full flex justify-center overflow-y-scroll -pr-4">
         <div className="w-[96%] ml-4 ">
-          {currentPlan.sessions[sessionIndex]?.exercises?.map(
-            (exercise, index) => {
-              if (exercise.type === "selectedExercise") {
-                return (
-                  <ExerciseAccordionItem
-                    key={exercise.id}
-                    id={exercise.id}
-                    currentWeek={currentWeek}
-                    sessionIndex={sessionIndex}
-                    isModel={isModel}
-                    standalone
-                  />
-                );
-              }
-              if (
-                exercise.type === "trainingBlock" &&
-                exercise.selectedExercises.length > 0
-              ) {
-                return (
-                  <BlockAccordionItem
-                    key={exercise.id}
-                    id={exercise.id}
-                    currentWeek={currentWeek}
-                    sessionIndex={sessionIndex}
-                    isModel={isModel}
-                    displayAddExercisePopup={displayAddExercisePopup}
-                    showEditBlockPopup={showEditBlockPopup}
-                  />
-                );
-              }
-            }
-          )}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={exerciseIds}
+              strategy={verticalListSortingStrategy}
+            >
+              {exerciseItems.map((exercise) => {
+                if (exercise.type === "selectedExercise") {
+                  return (
+                    <ExerciseAccordionItem
+                      key={exercise.id}
+                      id={exercise.id}
+                      currentWeek={currentWeek}
+                      sessionIndex={sessionIndex}
+                      isModel={isModel}
+                      standalone
+                    />
+                  );
+                }
+                if (
+                  exercise.type === "trainingBlock" &&
+                  exercise.selectedExercises.length > 0
+                ) {
+                  return (
+                    <BlockAccordionItem
+                      key={exercise.id}
+                      id={exercise.id}
+                      currentWeek={currentWeek}
+                      sessionIndex={sessionIndex}
+                      isModel={isModel}
+                      displayAddExercisePopup={displayAddExercisePopup}
+                      showEditBlockPopup={showEditBlockPopup}
+                    />
+                  );
+                }
+                return null;
+              })}
+            </SortableContext>
+            {createPortal(
+              <DragOverlay
+                adjustScale={false}
+                style={{
+                  cursor: "grabbing",
+                }}
+              >
+                {renderActiveExercise()}
+              </DragOverlay>,
+              document.body
+            )}
+          </DndContext>
         </div>
       </div>
       <div className="flex w-full items-center justify-center gap-x-8 mt-8 mb-4">

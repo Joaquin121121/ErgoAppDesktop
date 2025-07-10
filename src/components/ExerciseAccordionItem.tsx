@@ -8,6 +8,8 @@ import React, { useState, useRef, useEffect } from "react";
 import inputStyles from "../styles/inputStyles.module.css";
 import { useNewPlan } from "../contexts/NewPlanContext";
 import { formatProgression, validateReps } from "../utils/utils";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface ExerciseAccordionItemProps {
   id: string;
@@ -42,6 +44,21 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     updateProgression,
     updateSelectedExercise,
   } = useNewPlan();
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+  };
 
   const currentPlan = isModel ? model : planState;
 
@@ -201,16 +218,28 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
   }, [restTime]);
 
   return (
-    <div className={`${standalone ? "mb-8" : ""}`}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`${standalone ? "mb-8" : ""} ${
+        isDragging ? "border-dashed border-2 border-gray-300" : ""
+      }`}
+    >
       {/* Header - Always visible */}
       <div
         className={` grid grid-cols-13 gap-x-4 ${className}  ${
           blockId
             ? `w-full ${(!last || isExpanded) && "border-b border-gray"}`
-            : "mt-4 border border-lightRed w-full rounded-2xl"
+            : `mt-4 ${
+                isDragging ? "border-dashed border-gray-300" : "border-lightRed"
+              } border w-full rounded-2xl`
         }`}
       >
-        <p className="col-span-3 text-xl text-center my-auto py-2 rounded-2xl mx-auto">
+        <p
+          className="col-span-3 text-xl text-center my-auto py-2 rounded-2xl mx-auto cursor-grab active:cursor-grabbing"
+          {...attributes}
+          {...listeners}
+        >
           {name}
         </p>
         <input
