@@ -282,6 +282,19 @@ export interface NewPlanContextType {
     blockId?: string,
     isModel?: boolean
   ) => Promise<void>;
+  moveExerciseToIndex: (
+    sessionIndex: number,
+    exerciseId: string,
+    newIndex: number,
+    isModel?: boolean
+  ) => Promise<void>;
+  moveExerciseToIndexWithinBlock: (
+    sessionIndex: number,
+    blockId: string,
+    exerciseId: string,
+    newIndex: number,
+    isModel?: boolean
+  ) => Promise<void>;
 }
 
 // Default values

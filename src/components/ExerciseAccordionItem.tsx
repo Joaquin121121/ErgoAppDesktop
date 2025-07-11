@@ -12,7 +12,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 interface ExerciseAccordionItemProps {
-  id: string;
+  exercise: SelectedExercise;
   sessionIndex: number;
   currentWeek: number;
   blockId?: string;
@@ -25,7 +25,7 @@ interface ExerciseAccordionItemProps {
 }
 
 const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
-  id,
+  exercise,
   sessionIndex,
   currentWeek,
   blockId,
@@ -45,30 +45,19 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     updateSelectedExercise,
   } = useNewPlan();
 
+  const currentPlan = isModel ? model : planState;
   const {
     attributes,
     listeners,
     setNodeRef,
+    transition,
     transform,
-    transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({
+    id: exercise.id,
+  });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.3 : 1,
-  };
-
-  const currentPlan = isModel ? model : planState;
-
-  const { name, series, repetitions, effort, restTime, progression } = blockId
-    ? (
-        currentPlan.sessions[sessionIndex].exercises.find(
-          (e) => e.id === blockId
-        ) as TrainingBlock
-      ).selectedExercises.find((e) => e.id === id)
-    : currentPlan.sessions[sessionIndex].exercises.find((e) => e.id === id);
+  const { name, series, repetitions, effort, restTime, progression } = exercise;
 
   const [isExpanded, setIsExpanded] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -149,14 +138,22 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           currentPlan.sessions[sessionIndex].exercises.find(
             (e) => e.id === blockId
           ) as TrainingBlock
-        ).selectedExercises.find((e) => e.id === id) as SelectedExercise)
+        ).selectedExercises.find(
+          (e) => e.id === exercise.id
+        ) as SelectedExercise)
       : (currentPlan.sessions[sessionIndex].exercises.find(
-          (e) => e.id === id
+          (e) => e.id === exercise.id
         ) as SelectedExercise);
 
     exercise.restTime = intValue;
 
-    await updateSelectedExercise(sessionIndex, id, exercise, blockId, isModel);
+    await updateSelectedExercise(
+      sessionIndex,
+      exercise.id,
+      exercise,
+      blockId,
+      isModel
+    );
 
     setInterimRestTime(intValue);
   };
@@ -199,7 +196,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
 
     await updateProgression(
       sessionIndex,
-      id,
+      exercise.id,
       index,
       formattedProgression,
       isModel,
@@ -217,31 +214,38 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
     setInterimRestTime(restTime);
   }, [restTime]);
 
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: isDragging ? "none" : transition,
+  };
+
   return (
     <div
+      className={`${standalone ? "mb-4" : ""}`}
       ref={setNodeRef}
       style={style}
-      className={`${standalone ? "mb-8" : ""} ${
-        isDragging ? "border-dashed border-2 border-gray-300" : ""
-      }`}
     >
       {/* Header - Always visible */}
       <div
         className={` grid grid-cols-13 gap-x-4 ${className}  ${
           blockId
             ? `w-full ${(!last || isExpanded) && "border-b border-gray"}`
-            : `mt-4 ${
-                isDragging ? "border-dashed border-gray-300" : "border-lightRed"
-              } border w-full rounded-2xl`
+            : "border border-lightRed w-full rounded-2xl"
         }`}
       >
-        <p
-          className="col-span-3 text-xl text-center my-auto py-2 rounded-2xl mx-auto cursor-grab active:cursor-grabbing"
-          {...attributes}
-          {...listeners}
-        >
-          {name}
-        </p>
+        <div className="flex items-center gap-x-4 col-span-3 pl-14">
+          <img
+            src="draggable.png"
+            alt=""
+            className="h-6 w-6 cursor-grab active:cursor-grabbing z-50"
+            {...attributes}
+            {...listeners}
+          />
+          <p className="text-xl text-center my-auto py-2 rounded-2xl ">
+            {name}
+          </p>
+        </div>
+
         <input
           className={`text-xl text-center my-auto rounded-2xl w-16 mx-auto ${inputStyles.input} col-span-2`}
           value={displayProgression[currentWeek]?.series}
@@ -289,7 +293,7 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           className="flex flex-grow justify-center items-center"
           onClick={(e) => {
             e.stopPropagation();
-            removeExercise(sessionIndex, id, blockId, isModel);
+            removeExercise(sessionIndex, exercise.id, blockId, isModel);
           }}
         >
           <img
@@ -323,7 +327,12 @@ const ExerciseAccordionItem: React.FC<ExerciseAccordionItemProps> = ({
           margin: "0 auto",
         }}
       >
-        <div className="py-4 border-l border-r border-b border-lightRed rounded-b-2xl">
+        <div
+          className={`py-4 rounded-b-2xl ${
+            (!blockId || (blockId && !last)) &&
+            "border-l border-r border-b border-lightRed"
+          }`}
+        >
           {/* Progress data in grid format */}
           <div className="grid grid-cols-13 gap-x-4 gap-y-4">
             {displayProgression.map((week, index) => (

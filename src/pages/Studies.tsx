@@ -42,6 +42,7 @@ function Studies({
 
   const [searchBarFocus, setSearchBarFocus] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showFilter, setShowFilter] = useState(false);
 
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [selectedStatsToMeasure, setSelectedStatsToMeasure] = useState<
@@ -91,6 +92,7 @@ function Studies({
   const handleFilter = () => {
     setSearchTerm("");
     updateOverlayPosition();
+    setShowFilter(true);
     setIsBlurred(true);
   };
 
@@ -148,18 +150,20 @@ function Studies({
   }, []);
 
   useEffect(() => {
-    if (studyToDelete.length /* || !user.name.length */) {
+    if (studyToDelete.length || showFilter /* || !user.name.length */) {
       setIsBlurred(true);
       return;
     }
     setIsBlurred(false);
-  }, [studyToDelete.length, user]);
+  }, [studyToDelete.length, showFilter, user]);
 
   return (
     <>
       <div
         className={`flex-1 relative flex flex-col items-center ${
-          (isBlurred || studyToDelete.length) /* || !user.name.length */ &&
+          (isBlurred ||
+            studyToDelete.length ||
+            showFilter) /* || !user.name.length */ &&
           "blur-md pointer-events-none"
         } transition-all duration-300 ease-in-out ${animation}`}
         style={{ paddingLeft: isExpanded ? "100px" : "32px" }}
@@ -213,11 +217,12 @@ function Studies({
           ))}
         </div>
       </div>
-      {isBlurred && (
+      {showFilter && (
         <ReusableFilter
           sections={filterSections}
           position={overlayPosition}
           onClose={() => {
+            setShowFilter(false);
             setIsBlurred(false);
           }}
           onReset={() => {
@@ -266,6 +271,7 @@ function Studies({
                 );
               }) as [keyof Studies, Study][]
             );
+            setShowFilter(false);
             setIsBlurred(false);
           }}
         />

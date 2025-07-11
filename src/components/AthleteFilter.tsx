@@ -6,6 +6,7 @@ import AutocompleteDropdown from "./AutocompleteDropdown";
 import OutlinedButton from "./OutlinedButton";
 import TonalButton from "./TonalButton";
 import useBackspaceNavigation from "../hooks/useBackspaceNavigation";
+import navAnimations from "../styles/animations.module.css";
 
 interface FilterState {
   age: string[];
@@ -40,7 +41,7 @@ function AthleteFilter({
   const [processedDisciplines, setProcessedDisciplines] =
     useState(formattedDisciplines);
 
-  useBackspaceNavigation(onClose);
+  const [animation, setAnimation] = useState(navAnimations.popupFadeInTop);
 
   const parseLabel = (id: string | number, criterion: keyof FilterState) => {
     const stringId = id.toString();
@@ -176,14 +177,22 @@ function AthleteFilter({
     </div>
   );
 
+  const localOnClose = () => {
+    setAnimation(navAnimations.popupFadeOutTop);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
+  useBackspaceNavigation(localOnClose);
+
   return (
     <div
-      className={`bg-white shadow-sm z-50 rounded-2xl p-8 mx-auto fixed top-[5%] left-1/2 -translate-x-1/2 flex flex-col`}
+      className={`bg-white shadow-sm z-50 rounded-2xl p-8 mx-auto fixed top-[5%] left-1/2 -translate-x-1/2 flex flex-col ${animation}`}
       style={{ minWidth: "90%" }}
     >
       <div
         className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
-        onClick={onClose}
+        onClick={localOnClose}
       >
         <img src="/close.png" className="h-6 w-6" alt="Close" />
       </div>

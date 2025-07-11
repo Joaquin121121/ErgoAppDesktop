@@ -362,18 +362,15 @@ const addTrainingPlan = async (
     }
 
     const planId = planState.id || uuidv4();
-    const now = new Date().toISOString();
     await dbToUse.execute(
-      `INSERT INTO training_plans (id, n_of_weeks, n_of_sessions, user_id, athlete_id, created_at, last_changed)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO training_plans (id, n_of_weeks, n_of_sessions, user_id, athlete_id, created_at)
+        VALUES (?, ?, ?, ?, ?, datetime('now'))`,
       [
         planId,
         planState.nOfWeeks,
         planState.nOfSessions,
         userId,
         planState.athleteId || null,
-        now,
-        now,
       ]
     );
     recordsToSync.push({ tableName: "training_plans", id: planId });
@@ -393,7 +390,6 @@ const addTrainingPlan = async (
     } else {
       return recordsToSync;
     }
-    
   } catch (error) {
     if (isManagingTransaction) {
       console.error("Error saving training plan, rolling back:", error);
@@ -415,19 +411,18 @@ const addSession = async (
     const recordsToSync: PendingRecord[] = [];
 
     const sessionId = session.id || uuidv4();
-    const now = new Date().toISOString();
 
     await db.execute(
-      `INSERT INTO sessions (id, plan_id, name, created_at, last_changed) VALUES (?, ?, ?, ?, ?)`,
-      [sessionId, planId, session.name, now, now]
+      `INSERT INTO sessions (id, plan_id, name, created_at) VALUES (?, ?, ?, datetime('now'))`,
+      [sessionId, planId, session.name]
     );
     recordsToSync.push({ tableName: "sessions", id: sessionId });
 
     for (const day of session.days) {
       const dayId = uuidv4();
       await db.execute(
-        `INSERT INTO session_days (id, session_id, day_name, created_at, last_changed) VALUES (?, ?, ?, ?, ?)`,
-        [dayId, sessionId, day, now, now]
+        `INSERT INTO session_days (id, session_id, day_name, created_at) VALUES (?, ?, ?, datetime('now'))`,
+        [dayId, sessionId, day]
       );
       recordsToSync.push({ tableName: "session_days", id: dayId });
     }
@@ -475,14 +470,13 @@ const addSelectedExercise = async (
   try {
     const recordsToSync: PendingRecord[] = [];
     const exerciseId = exercise.id || uuidv4();
-    const now = new Date().toISOString();
 
     const db =
       externalDb || (await (Database as any).load("sqlite:ergolab.db"));
 
     await db.execute(
-      `INSERT INTO selected_exercises (id, session_id, exercise_id, block_id, series, repetitions, effort, rest_time, comments, created_at, last_changed)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO selected_exercises (id, session_id, exercise_id, block_id, series, repetitions, effort, rest_time, comments, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
       [
         exerciseId,
         sessionId,
@@ -493,8 +487,6 @@ const addSelectedExercise = async (
         exercise.effort,
         exercise.restTime,
         exercise.comments,
-        now,
-        now,
       ]
     );
     recordsToSync.push({ tableName: "selected_exercises", id: exerciseId });
@@ -503,8 +495,8 @@ const addSelectedExercise = async (
       const progression = exercise.progression[i];
       const progressionId = uuidv4();
       await db.execute(
-        `INSERT INTO progressions (id, selected_exercise_id, series, repetitions, effort, week_number, created_at, last_changed)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO progressions (id, selected_exercise_id, series, repetitions, effort, week_number, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
         [
           progressionId,
           exerciseId,
@@ -512,8 +504,6 @@ const addSelectedExercise = async (
           progression.repetitions,
           progression.effort,
           i + 1,
-          now,
-          now,
         ]
       );
       recordsToSync.push({ tableName: "progressions", id: progressionId });
@@ -527,9 +517,9 @@ const addSelectedExercise = async (
       )) {
         const volumeReductionId = uuidv4();
         await db.execute(
-          `INSERT INTO volume_reductions (id, selected_exercise_id, fatigue_level, reduction_percentage, created_at, last_changed)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-          [volumeReductionId, exerciseId, fatigueLevel, percentage, now, now]
+          `INSERT INTO volume_reductions (id, selected_exercise_id, fatigue_level, reduction_percentage, created_at)
+         VALUES (?, ?, ?, ?, datetime('now'))`,
+          [volumeReductionId, exerciseId, fatigueLevel, percentage]
         );
         recordsToSync.push({
           tableName: "volume_reductions",
@@ -549,9 +539,9 @@ const addSelectedExercise = async (
       )) {
         const effortReductionId = uuidv4();
         await db.execute(
-          `INSERT INTO effort_reductions (id, selected_exercise_id, effort_level, reduction_amount, created_at, last_changed)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-          [effortReductionId, exerciseId, effortLevel, amount, now, now]
+          `INSERT INTO effort_reductions (id, selected_exercise_id, effort_level, reduction_amount, created_at)
+         VALUES (?, ?, ?, ?, datetime('now'))`,
+          [effortReductionId, exerciseId, effortLevel, amount]
         );
         recordsToSync.push({
           tableName: "effort_reductions",
@@ -581,11 +571,10 @@ const addTrainingBlock = async (
       externalDb || (await (Database as any).load("sqlite:ergolab.db"));
     const recordsToSync: PendingRecord[] = [];
     const blockId = block.id || uuidv4();
-    const now = new Date().toISOString();
 
     await db.execute(
-      `INSERT INTO training_blocks (id, session_id, name, series, repetitions, effort, block_model, comments, rest_time, created_at, last_changed)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO training_blocks (id, session_id, name, series, repetitions, effort, block_model, comments, rest_time, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
       [
         blockId,
         sessionId,
@@ -596,8 +585,6 @@ const addTrainingBlock = async (
         block.blockModel,
         block.comments,
         block.restTime,
-        now,
-        now,
       ]
     );
     recordsToSync.push({ tableName: "training_blocks", id: blockId });
@@ -606,8 +593,8 @@ const addTrainingBlock = async (
       const progression = block.progression[i];
       const progressionId = uuidv4();
       await db.execute(
-        `INSERT INTO progressions (id, training_block_id, series, repetitions, effort, week_number, created_at, last_changed)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO progressions (id, training_block_id, series, repetitions, effort, week_number, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
         [
           progressionId,
           blockId,
@@ -615,8 +602,6 @@ const addTrainingBlock = async (
           progression.repetitions,
           progression.effort,
           i + 1,
-          now,
-          now,
         ]
       );
       recordsToSync.push({ tableName: "progressions", id: progressionId });
@@ -630,9 +615,9 @@ const addTrainingBlock = async (
       )) {
         const volumeReductionId = uuidv4();
         await db.execute(
-          `INSERT INTO volume_reductions (id, training_block_id, fatigue_level, reduction_percentage, created_at, last_changed)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-          [volumeReductionId, blockId, fatigueLevel, percentage, now, now]
+          `INSERT INTO volume_reductions (id, training_block_id, fatigue_level, reduction_percentage, created_at)
+         VALUES (?, ?, ?, ?, datetime('now'))`,
+          [volumeReductionId, blockId, fatigueLevel, percentage]
         );
         recordsToSync.push({
           tableName: "volume_reductions",
@@ -646,9 +631,9 @@ const addTrainingBlock = async (
       for (const [effortLevel, amount] of Object.entries(block.reduceEffort)) {
         const effortReductionId = uuidv4();
         await db.execute(
-          `INSERT INTO effort_reductions (id, training_block_id, effort_level, reduction_amount, created_at, last_changed)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-          [effortReductionId, blockId, effortLevel, amount, now, now]
+          `INSERT INTO effort_reductions (id, training_block_id, effort_level, reduction_amount, created_at)
+         VALUES (?, ?, ?, ?, datetime('now'))`,
+          [effortReductionId, blockId, effortLevel, amount]
         );
         recordsToSync.push({
           tableName: "effort_reductions",
@@ -679,6 +664,222 @@ const addTrainingBlock = async (
   }
 };
 
+const moveExerciseToIndex = async (
+  exerciseId: string,
+  newIndex: number,
+  sessionId: string,
+  type: "session" | "block",
+  pushRecord: (records: PendingRecord[]) => Promise<void>
+): Promise<void> => {
+  const db = await (Database as any).load("sqlite:ergolab.db");
+
+  try {
+    // Determine if we're moving a selected exercise or a training block
+    let currentIndex: number;
+    let isTrainingBlock = false;
+    let tableName: "selected_exercises" | "training_blocks";
+
+    // First check if it's a selected exercise
+    const exerciseData = await db.select(
+      'SELECT "index" FROM selected_exercises WHERE id = ? AND block_id IS NULL',
+      [exerciseId]
+    );
+
+    if (exerciseData.length > 0) {
+      currentIndex = exerciseData[0].index;
+      tableName = "selected_exercises";
+    } else {
+      // Check if it's a training block
+      const blockData = await db.select(
+        'SELECT "index" FROM training_blocks WHERE id = ?',
+        [exerciseId]
+      );
+
+      if (blockData.length > 0) {
+        currentIndex = blockData[0].index;
+        tableName = "training_blocks";
+        isTrainingBlock = true;
+      } else {
+        throw new Error("Exercise or block not found");
+      }
+    }
+
+    if (currentIndex === newIndex) {
+      return; // No move needed
+    }
+
+    // Get all exercises and blocks in the session ordered by index
+    const allSelectedExercises = await db.select(
+      "SELECT id, \"index\", 'selected_exercise' as type FROM selected_exercises WHERE session_id = ? AND block_id IS NULL AND deleted_at IS NULL",
+      [sessionId]
+    );
+
+    const allTrainingBlocks = await db.select(
+      "SELECT id, \"index\", 'training_block' as type FROM training_blocks WHERE session_id = ? AND deleted_at IS NULL",
+      [sessionId]
+    );
+
+    // Combine and sort by index
+    const allItems = [...allSelectedExercises, ...allTrainingBlocks].sort(
+      (a, b) => a.index - b.index
+    );
+
+    // Update indices for affected items
+    const recordsToSync: PendingRecord[] = [];
+
+    if (currentIndex < newIndex) {
+      // Moving down: shift items between current and new index up
+      for (const item of allItems) {
+        if (item.index > currentIndex && item.index <= newIndex) {
+          if (item.type === "selected_exercise") {
+            await db.execute(
+              'UPDATE selected_exercises SET "index" = ? WHERE id = ?',
+              [item.index - 1, item.id]
+            );
+            recordsToSync.push({
+              tableName: "selected_exercises",
+              id: item.id,
+            });
+          } else {
+            await db.execute(
+              'UPDATE training_blocks SET "index" = ? WHERE id = ?',
+              [item.index - 1, item.id]
+            );
+            recordsToSync.push({
+              tableName: "training_blocks",
+              id: item.id,
+            });
+          }
+        }
+      }
+    } else {
+      // Moving up: shift items between new and current index down
+      for (const item of allItems) {
+        if (item.index >= newIndex && item.index < currentIndex) {
+          if (item.type === "selected_exercise") {
+            await db.execute(
+              'UPDATE selected_exercises SET "index" = ? WHERE id = ?',
+              [item.index + 1, item.id]
+            );
+            recordsToSync.push({
+              tableName: "selected_exercises",
+              id: item.id,
+            });
+          } else {
+            await db.execute(
+              'UPDATE training_blocks SET "index" = ? WHERE id = ?',
+              [item.index + 1, item.id]
+            );
+            recordsToSync.push({
+              tableName: "training_blocks",
+              id: item.id,
+            });
+          }
+        }
+      }
+    }
+
+    // Update the moved item to its new index
+    if (isTrainingBlock) {
+      await db.execute('UPDATE training_blocks SET "index" = ? WHERE id = ?', [
+        newIndex,
+        exerciseId,
+      ]);
+    } else {
+      await db.execute(
+        'UPDATE selected_exercises SET "index" = ? WHERE id = ?',
+        [newIndex, exerciseId]
+      );
+    }
+    recordsToSync.push({ tableName, id: exerciseId });
+
+    // Push records for sync
+    await pushRecord(recordsToSync);
+  } catch (error) {
+    console.error("Error moving exercise:", error);
+    throw error;
+  }
+};
+
+const moveExerciseToIndexWithinBlock = async (
+  exerciseId: string,
+  newIndex: number,
+  blockId: string,
+  pushRecord: (records: PendingRecord[]) => Promise<void>
+): Promise<void> => {
+  const db = await (Database as any).load("sqlite:ergolab.db");
+
+  try {
+    // Get current index of the exercise within the block
+    const exerciseData = await db.select(
+      'SELECT "index" FROM selected_exercises WHERE id = ? AND block_id = ?',
+      [exerciseId, blockId]
+    );
+
+    if (exerciseData.length === 0) {
+      throw new Error("Exercise not found within the specified block");
+    }
+
+    const currentIndex = exerciseData[0].index;
+
+    if (currentIndex === newIndex) {
+      return; // No move needed
+    }
+
+    // Get all exercises in the block ordered by index
+    const allExercises = await db.select(
+      'SELECT id, "index" FROM selected_exercises WHERE block_id = ? AND deleted_at IS NULL ORDER BY "index"',
+      [blockId]
+    );
+
+    // Update indices for affected exercises
+    const recordsToSync: PendingRecord[] = [];
+
+    if (currentIndex < newIndex) {
+      // Moving down: shift exercises between current and new index up
+      for (const exercise of allExercises) {
+        if (exercise.index > currentIndex && exercise.index <= newIndex) {
+          await db.execute(
+            'UPDATE selected_exercises SET "index" = ? WHERE id = ? AND block_id = ?',
+            [exercise.index - 1, exercise.id, blockId]
+          );
+          recordsToSync.push({
+            tableName: "selected_exercises",
+            id: exercise.id,
+          });
+        }
+      }
+    } else {
+      // Moving up: shift exercises between new and current index down
+      for (const exercise of allExercises) {
+        if (exercise.index >= newIndex && exercise.index < currentIndex) {
+          await db.execute(
+            'UPDATE selected_exercises SET "index" = ? WHERE id = ? AND block_id = ?',
+            [exercise.index + 1, exercise.id, blockId]
+          );
+          recordsToSync.push({
+            tableName: "selected_exercises",
+            id: exercise.id,
+          });
+        }
+      }
+    }
+
+    // Update the moved exercise to its new index
+    await db.execute(
+      'UPDATE selected_exercises SET "index" = ? WHERE id = ? AND block_id = ?',
+      [newIndex, exerciseId, blockId]
+    );
+    recordsToSync.push({ tableName: "selected_exercises", id: exerciseId });
+
+    // Push records for sync
+    await pushRecord(recordsToSync);
+  } catch (error) {
+    console.error("Error moving exercise within block:", error);
+    throw error;
+  }
+};
+
 // Helper function to delete a session
 const deleteSession = async (
   sessionId: string,
@@ -686,13 +887,12 @@ const deleteSession = async (
   externalDb?: any
 ): Promise<void> => {
   try {
-    const now = new Date().toISOString();
     const db =
       externalDb || (await (Database as any).load("sqlite:ergolab.db"));
 
     await db.execute(
-      "UPDATE sessions SET deleted_at = ?, last_changed = ? WHERE id = ?",
-      [now, now, sessionId]
+      "UPDATE sessions SET deleted_at = datetime('now') WHERE id = ?",
+      [sessionId]
     );
     await pushRecord([{ tableName: "sessions", id: sessionId }]);
   } catch (error) {
@@ -707,13 +907,12 @@ const deleteTrainingBlock = async (
   pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
 ): Promise<void> => {
-  const now = new Date().toISOString();
   const db = externalDb || (await (Database as any).load("sqlite:ergolab.db"));
 
   try {
     await db.execute(
-      "UPDATE training_blocks SET deleted_at = ?, last_changed = ? WHERE id = ?",
-      [now, now, blockId]
+      "UPDATE training_blocks SET deleted_at = datetime('now') WHERE id = ?",
+      [blockId]
     );
     await pushRecord([{ tableName: "training_blocks", id: blockId }]);
   } catch (error) {
@@ -728,12 +927,11 @@ const deleteSelectedExercise = async (
   pushRecord: (records: PendingRecord[]) => Promise<void>,
   externalDb?: any
 ): Promise<void> => {
-  const now = new Date().toISOString();
   const db = externalDb || (await (Database as any).load("sqlite:ergolab.db"));
 
   await db.execute(
-    "UPDATE selected_exercises SET deleted_at = ?, last_changed = ? WHERE id = ?",
-    [now, now, exerciseId]
+    "UPDATE selected_exercises SET deleted_at = datetime('now') WHERE id = ?",
+    [exerciseId]
   );
 
   if (externalDb) {
@@ -756,10 +954,9 @@ const deleteTrainingPlan = async (
       await dbToUse.execute("BEGIN TRANSACTION");
     }
 
-    const now = new Date().toISOString();
     await dbToUse.execute(
-      "UPDATE training_plans SET deleted_at = ?, last_changed = ? WHERE id = ?",
-      [now, now, planId]
+      "UPDATE training_plans SET deleted_at = datetime('now') WHERE id = ?",
+      [planId]
     );
 
     if (isManagingTransaction) {
@@ -855,18 +1052,10 @@ const addTrainingModel = async (
       );
       recordsToSync.push(...planRecords);
 
-      const now = new Date().toISOString();
       await db.execute(
-        `INSERT INTO training_models (id, name, description, training_plan_id, created_at, last_changed)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          model.id,
-          model.name,
-          model.description,
-          model.trainingPlanId,
-          now,
-          now,
-        ]
+        `INSERT INTO training_models (id, name, description, training_plan_id, created_at)
+           VALUES (?, ?, ?, ?, datetime('now'))`,
+        [model.id, model.name, model.description, model.trainingPlanId]
       );
       await db.execute("COMMIT");
       recordsToSync.push({ tableName: "training_models", id: model.id });
@@ -888,12 +1077,11 @@ const deleteTrainingModel = async (
 ): Promise<void> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
-    const now = new Date().toISOString();
 
     try {
       await db.execute(
-        "UPDATE training_models SET deleted_at = ?, last_changed = ? WHERE id = ?",
-        [now, now, modelId]
+        "UPDATE training_models SET deleted_at = datetime('now') WHERE id = ?",
+        [modelId]
       );
 
       await pushRecord([{ tableName: "training_models", id: modelId }]);
@@ -912,12 +1100,11 @@ const addExercise = async (exercise: Exercise): Promise<void> => {
     const db = await (Database as any).load("sqlite:ergolab.db");
 
     const exerciseId = exercise.id || uuidv4();
-    const now = new Date().toISOString();
 
     await db.execute(
-      `INSERT INTO exercises (id, name, video_ref, created_at, last_changed)
-         VALUES (?, ?, ?, ?, ?)`,
-      [exerciseId, exercise.name, exercise.videoRef, now, now]
+      `INSERT INTO exercises (id, name, video_ref, created_at)
+         VALUES (?, ?, ?, datetime('now'))`,
+      [exerciseId, exercise.name, exercise.videoRef]
     );
   } catch (error) {
     console.error("Failed to save exercise:", error);
@@ -934,8 +1121,6 @@ const updateTrainingPlan = async (
   try {
     await db.execute("BEGIN TRANSACTION");
 
-    const now = new Date().toISOString();
-
     const existingPlan = await db.select(
       "SELECT id FROM training_plans WHERE id = ? AND deleted_at IS NULL",
       [planState.id]
@@ -947,9 +1132,9 @@ const updateTrainingPlan = async (
 
     await db.execute(
       `UPDATE training_plans 
-       SET n_of_weeks = ?, n_of_sessions = ?, last_changed = ?
+       SET n_of_weeks = ?, n_of_sessions = ?
        WHERE id = ?`,
-      [planState.nOfWeeks, planState.nOfSessions, now, planState.id]
+      [planState.nOfWeeks, planState.nOfSessions, planState.id]
     );
 
     await db.execute("COMMIT");
@@ -971,8 +1156,6 @@ const updateTrainingModel = async (
   try {
     await db.execute("BEGIN TRANSACTION");
 
-    const now = new Date().toISOString();
-
     const existingModel = await db.select(
       "SELECT id FROM training_models WHERE id = ? AND deleted_at IS NULL",
       [model.id]
@@ -984,9 +1167,9 @@ const updateTrainingModel = async (
 
     await db.execute(
       `UPDATE training_models 
-       SET name = ?, description = ?, last_changed = ?
+       SET name = ?, description = ?
        WHERE id = ?`,
-      [model.name, model.description, now, model.id]
+      [model.name, model.description, model.id]
     );
     recordsToSync.push({ tableName: "training_models", id: model.id });
     await pushRecord(recordsToSync);
@@ -1010,8 +1193,6 @@ const updateSession = async (
       await dbToUse.execute("BEGIN TRANSACTION");
     }
 
-    const now = new Date().toISOString();
-
     const existingSession = await dbToUse.select(
       "SELECT id FROM sessions WHERE id = ? AND deleted_at IS NULL",
       [session.id]
@@ -1021,10 +1202,10 @@ const updateSession = async (
       throw new Error(`Session with ID ${session.id} not found`);
     }
 
-    await dbToUse.execute(
-      `UPDATE sessions SET name = ?, last_changed = ? WHERE id = ?`,
-      [session.name, now, session.id]
-    );
+    await dbToUse.execute(`UPDATE sessions SET name = ? WHERE id = ?`, [
+      session.name,
+      session.id,
+    ]);
 
     if (isManagingTransaction) {
       await dbToUse.execute("COMMIT");
@@ -1053,8 +1234,6 @@ const updateSelectedExercise = async (
       await dbToUse.execute("BEGIN TRANSACTION");
     }
 
-    const now = new Date().toISOString();
-
     const existingExercise = await dbToUse.select(
       "SELECT id FROM selected_exercises WHERE id = ? AND deleted_at IS NULL",
       [exercise.id]
@@ -1066,7 +1245,7 @@ const updateSelectedExercise = async (
 
     await dbToUse.execute(
       `UPDATE selected_exercises 
-       SET exercise_id = ?, series = ?, repetitions = ?, effort = ?, rest_time = ?, comments = ?, last_changed = ?
+       SET exercise_id = ?, series = ?, repetitions = ?, effort = ?, rest_time = ?, comments = ?
        WHERE id = ?`,
       [
         exercise.exerciseId,
@@ -1075,7 +1254,6 @@ const updateSelectedExercise = async (
         exercise.effort,
         exercise.restTime,
         exercise.comments,
-        now,
         exercise.id,
       ]
     );
@@ -1107,8 +1285,6 @@ const updateTrainingBlock = async (
       await dbToUse.execute("BEGIN TRANSACTION");
     }
 
-    const now = new Date().toISOString();
-
     const existingBlock = await dbToUse.select(
       "SELECT id FROM training_blocks WHERE id = ? AND deleted_at IS NULL",
       [block.id]
@@ -1120,7 +1296,7 @@ const updateTrainingBlock = async (
 
     await dbToUse.execute(
       `UPDATE training_blocks 
-       SET name = ?, series = ?, repetitions = ?, effort = ?, block_model = ?, comments = ?, rest_time = ?, last_changed = ?
+       SET name = ?, series = ?, repetitions = ?, effort = ?, block_model = ?, comments = ?, rest_time = ?
        WHERE id = ?`,
       [
         block.name,
@@ -1130,7 +1306,6 @@ const updateTrainingBlock = async (
         block.blockModel,
         block.comments,
         block.restTime,
-        now,
         block.id,
       ]
     );
@@ -1157,13 +1332,11 @@ const updateExercise = async (exercise: Exercise): Promise<void> => {
       throw new Error(`Exercise with ID ${exercise.id} not found`);
     }
 
-    const now = new Date().toISOString();
-
     await db.execute(
       `UPDATE exercises 
-       SET name = ?, video_ref = ?, last_changed = ?
+       SET name = ?, video_ref = ?
        WHERE id = ?`,
-      [exercise.name, exercise.videoRef, now, exercise.id]
+      [exercise.name, exercise.videoRef, exercise.id]
     );
   } catch (error) {
     console.error("Failed to update exercise:", error);
@@ -1175,10 +1348,9 @@ const deleteExercise = async (exerciseId: string): Promise<void> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
 
-    const now = new Date().toISOString();
     await db.execute(
-      "UPDATE exercises SET deleted_at = ?, last_changed = ? WHERE id = ?",
-      [now, now, exerciseId]
+      "UPDATE exercises SET deleted_at = datetime('now') WHERE id = ?",
+      [exerciseId]
     );
   } catch (error) {
     console.error("Failed to delete exercise:", error);
@@ -1192,15 +1364,13 @@ const updateProgression = async (
 ): Promise<void> => {
   try {
     const db = await (Database as any).load("sqlite:ergolab.db");
-    const now = new Date().toISOString();
 
     await db.execute(
-      "UPDATE progressions SET series = ?, repetitions = ?, effort = ?, last_changed = ? WHERE id = ?",
+      "UPDATE progressions SET series = ?, repetitions = ?, effort = ? WHERE id = ?",
       [
         progression.series,
         progression.repetitions,
         progression.effort,
-        now,
         progression.id,
       ]
     );
@@ -1234,4 +1404,6 @@ export {
   deleteExercise,
   updateProgression,
   getExercises,
+  moveExerciseToIndex,
+  moveExerciseToIndexWithinBlock,
 };

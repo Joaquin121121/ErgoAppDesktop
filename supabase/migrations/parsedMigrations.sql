@@ -328,6 +328,7 @@ CREATE TABLE IF NOT EXISTS "training_blocks" (
     "block_model" TEXT NOT NULL DEFAULT 'sequential' CHECK (block_model IN ('sequential', 'series')),
     "comments" TEXT,
     "rest_time" INTEGER NOT NULL DEFAULT 60,
+    "index" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
@@ -345,6 +346,7 @@ CREATE TABLE IF NOT EXISTS "selected_exercises" (
     "effort" INTEGER NOT NULL DEFAULT 70,
     "rest_time" INTEGER NOT NULL DEFAULT 60,
     "comments" TEXT,
+    "index" INTEGER NOT NULL DEFAULT 0,
     "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "last_changed" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "deleted_at" TIMESTAMP,
@@ -574,6 +576,11 @@ CREATE INDEX IF NOT EXISTS idx_training_models_plan_deleted ON "training_models"
 CREATE INDEX IF NOT EXISTS idx_progressions_week_number ON "progressions"("week_number");
 CREATE INDEX IF NOT EXISTS idx_selected_exercises_exercise_session ON "selected_exercises"("exercise_id", "session_id");
 
+-- Indexes for ordering by index field
+CREATE INDEX IF NOT EXISTS idx_training_blocks_session_index ON "training_blocks"("session_id", "index");
+CREATE INDEX IF NOT EXISTS idx_selected_exercises_session_index ON "selected_exercises"("session_id", "index");
+CREATE INDEX IF NOT EXISTS idx_selected_exercises_block_index ON "selected_exercises"("block_id", "index");
+
 -- Covering indexes for sync metadata queries (include commonly selected columns)
 CREATE INDEX IF NOT EXISTS idx_training_plans_sync_cover ON "training_plans"("last_changed", "id", "deleted_at");
 CREATE INDEX IF NOT EXISTS idx_sessions_sync_cover ON "sessions"("last_changed", "id", "plan_id", "deleted_at");
@@ -683,6 +690,138 @@ BEGIN
 END;
 
 -- ========================================
+-- INDEX MANAGEMENT TRIGGERS
+-- ========================================
+
+-- Auto-assign index for training_blocks on insert (unified session indexing)
+CREATE TRIGGER IF NOT EXISTS auto_index_training_blocks_insert
+AFTER INSERT ON "training_blocks"
+FOR EACH ROW
+WHEN NEW."index" = 0
+BEGIN
+    UPDATE "training_blocks" 
+    SET "index" = (
+        SELECT MAX(unified_index) + 1 FROM (
+            SELECT COALESCE(MAX("index"), 0) as unified_index
+            FROM "training_blocks" 
+            WHERE "session_id" = NEW.session_id 
+            AND "deleted_at" IS NULL
+            AND "id" != NEW.id
+            
+            UNION ALL
+            
+            SELECT COALESCE(MAX("index"), 0) as unified_index
+            FROM "selected_exercises" 
+            WHERE "session_id" = NEW.session_id 
+            AND "block_id" IS NULL
+            AND "deleted_at" IS NULL
+        )
+    )
+    WHERE "id" = NEW.id;
+END;
+
+-- Auto-assign index for selected_exercises on insert (session-level - unified indexing)
+CREATE TRIGGER IF NOT EXISTS auto_index_selected_exercises_session_insert
+AFTER INSERT ON "selected_exercises"
+FOR EACH ROW
+WHEN NEW."index" = 0 AND NEW.block_id IS NULL
+BEGIN
+    UPDATE "selected_exercises" 
+    SET "index" = (
+        SELECT MAX(unified_index) + 1 FROM (
+            SELECT COALESCE(MAX("index"), 0) as unified_index
+            FROM "training_blocks" 
+            WHERE "session_id" = NEW.session_id 
+            AND "deleted_at" IS NULL
+            
+            UNION ALL
+            
+            SELECT COALESCE(MAX("index"), 0) as unified_index
+            FROM "selected_exercises" 
+            WHERE "session_id" = NEW.session_id 
+            AND "block_id" IS NULL
+            AND "deleted_at" IS NULL
+            AND "id" != NEW.id
+        )
+    )
+    WHERE "id" = NEW.id;
+END;
+
+-- Auto-assign index for selected_exercises on insert (block-level - separate indexing)
+CREATE TRIGGER IF NOT EXISTS auto_index_selected_exercises_block_insert
+AFTER INSERT ON "selected_exercises"
+FOR EACH ROW
+WHEN NEW."index" = 0 AND NEW.block_id IS NOT NULL
+BEGIN
+    UPDATE "selected_exercises" 
+    SET "index" = (
+        SELECT COALESCE(MAX("index"), 0) + 1 
+        FROM "selected_exercises" 
+        WHERE "block_id" = NEW.block_id 
+        AND "deleted_at" IS NULL
+        AND "id" != NEW.id
+    )
+    WHERE "id" = NEW.id;
+END;
+
+-- Reorder training_blocks indexes after delete (unified session reordering)
+CREATE TRIGGER IF NOT EXISTS reorder_training_blocks_after_delete
+AFTER UPDATE OF deleted_at ON "training_blocks"
+FOR EACH ROW
+WHEN OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL
+BEGIN
+    -- Reorder training_blocks
+    UPDATE "training_blocks" 
+    SET "index" = "index" - 1
+    WHERE "session_id" = NEW.session_id 
+    AND "deleted_at" IS NULL
+    AND "index" > OLD."index";
+    
+    -- Reorder session-level selected_exercises
+    UPDATE "selected_exercises" 
+    SET "index" = "index" - 1
+    WHERE "session_id" = NEW.session_id 
+    AND "block_id" IS NULL
+    AND "deleted_at" IS NULL
+    AND "index" > OLD."index";
+END;
+
+-- Reorder selected_exercises indexes after delete (session-level - unified reordering)
+CREATE TRIGGER IF NOT EXISTS reorder_selected_exercises_session_after_delete
+AFTER UPDATE OF deleted_at ON "selected_exercises"
+FOR EACH ROW
+WHEN OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL AND OLD.block_id IS NULL
+BEGIN
+    -- Reorder training_blocks
+    UPDATE "training_blocks" 
+    SET "index" = "index" - 1
+    WHERE "session_id" = NEW.session_id 
+    AND "deleted_at" IS NULL
+    AND "index" > OLD."index";
+    
+    -- Reorder session-level selected_exercises
+    UPDATE "selected_exercises" 
+    SET "index" = "index" - 1
+    WHERE "session_id" = NEW.session_id 
+    AND "block_id" IS NULL
+    AND "deleted_at" IS NULL
+    AND "index" > OLD."index";
+END;
+
+-- Reorder selected_exercises indexes after delete (block-level - separate reordering)
+CREATE TRIGGER IF NOT EXISTS reorder_selected_exercises_block_after_delete
+AFTER UPDATE OF deleted_at ON "selected_exercises"
+FOR EACH ROW
+WHEN OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL AND OLD.block_id IS NOT NULL
+BEGIN
+    UPDATE "selected_exercises" 
+    SET "index" = "index" - 1
+    WHERE "block_id" = NEW.block_id 
+    AND "deleted_at" IS NULL
+    AND "index" > OLD."index";
+END;
+
+-- ========================================
 -- ATHLETE WELLNESS AND PERFORMANCE TRACKING
 -- ========================================
 
@@ -784,4 +923,66 @@ AFTER UPDATE OF deleted_at ON "athlete"
 FOR EACH ROW
 BEGIN
     UPDATE "athlete_session_performance" SET deleted_at = NEW.deleted_at WHERE athlete_id = NEW.id;
+END;
+
+-- ========================================
+-- TRAINING PLAN SESSION COUNT TRIGGERS
+-- ========================================
+
+-- Update training_plans.n_of_sessions when a session is inserted
+CREATE TRIGGER IF NOT EXISTS update_plan_sessions_count_insert
+AFTER INSERT ON "sessions"
+FOR EACH ROW
+BEGIN
+    UPDATE "training_plans" 
+    SET "n_of_sessions" = (
+        SELECT COUNT(*) 
+        FROM "sessions" 
+        WHERE "plan_id" = NEW.plan_id 
+        AND "deleted_at" IS NULL
+    )
+    WHERE "id" = NEW.plan_id;
+END;
+
+-- Update training_plans.n_of_sessions when a session is soft deleted or restored
+CREATE TRIGGER IF NOT EXISTS update_plan_sessions_count_delete
+AFTER UPDATE OF deleted_at ON "sessions"
+FOR EACH ROW
+WHEN OLD.deleted_at IS DISTINCT FROM NEW.deleted_at
+BEGIN
+    UPDATE "training_plans" 
+    SET "n_of_sessions" = (
+        SELECT COUNT(*) 
+        FROM "sessions" 
+        WHERE "plan_id" = NEW.plan_id 
+        AND "deleted_at" IS NULL
+    )
+    WHERE "id" = NEW.plan_id;
+END;
+
+-- Update training_plans.n_of_sessions when a session's plan_id is changed
+CREATE TRIGGER IF NOT EXISTS update_plan_sessions_count_update
+AFTER UPDATE OF plan_id ON "sessions"
+FOR EACH ROW
+WHEN OLD.plan_id != NEW.plan_id
+BEGIN
+    -- Update the old plan
+    UPDATE "training_plans" 
+    SET "n_of_sessions" = (
+        SELECT COUNT(*) 
+        FROM "sessions" 
+        WHERE "plan_id" = OLD.plan_id 
+        AND "deleted_at" IS NULL
+    )
+    WHERE "id" = OLD.plan_id;
+    
+    -- Update the new plan
+    UPDATE "training_plans" 
+    SET "n_of_sessions" = (
+        SELECT COUNT(*) 
+        FROM "sessions" 
+        WHERE "plan_id" = NEW.plan_id 
+        AND "deleted_at" IS NULL
+    )
+    WHERE "id" = NEW.plan_id;
 END; 

@@ -36,6 +36,8 @@ import {
   updateProgression as parserUpdateProgression,
   deleteTrainingModel as parserDeleteTrainingModel,
   updateSelectedExercise as parserUpdateSelectedExercise,
+  moveExerciseToIndex as parserMoveExerciseToIndex,
+  moveExerciseToIndexWithinBlock as parserMoveExerciseToIndexWithinBlock,
 } from "../parsers/trainingDataParser";
 import { useUser } from "./UserContext";
 import { useDatabaseSync } from "../hooks/useDatabaseSync";
@@ -240,7 +242,7 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
     setCurrentPlan(updatedPlan);
 
     if (initialCreation) {
-      return;
+      return updatedPlan;
     }
 
     if (isModel) {
@@ -268,8 +270,144 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
         ),
       ]);
     }
+  };
 
-    return updatedPlan;
+  const moveExerciseToIndex = async (
+    sessionIndex: number,
+    exerciseId: string,
+    newIndex: number,
+    isModel: boolean = false
+  ) => {
+    const currentPlan = isModel ? model : planState;
+    const setCurrentPlan = isModel ? setModel : setPlanState;
+    const updatedSessions = [...currentPlan.sessions];
+    const session = updatedSessions[sessionIndex];
+
+    // Find the exercise or training block to move
+    const exerciseToMoveIndex = session.exercises.findIndex(
+      (ex) => ex.id === exerciseId
+    );
+    if (exerciseToMoveIndex === -1) return;
+
+    const exerciseToMove = session.exercises[exerciseToMoveIndex];
+
+    // Create new exercises array with the exercise/block moved to the new position
+    const updatedExercises = [...session.exercises];
+    updatedExercises.splice(exerciseToMoveIndex, 1); // Remove from current position
+    updatedExercises.splice(newIndex, 0, exerciseToMove); // Insert at new position
+
+    updatedSessions[sessionIndex] = { ...session, exercises: updatedExercises };
+
+    await parserMoveExerciseToIndex(
+      exerciseId,
+      newIndex,
+      session.id,
+      "session",
+      pushRecord
+    );
+
+    setCurrentPlan({ ...currentPlan, sessions: updatedSessions });
+
+    // Update the context state for other components
+    if (isModel) {
+      setTrainingModels(
+        trainingModels.map((model) =>
+          model.id === currentPlan.id
+            ? { ...model, sessions: updatedSessions }
+            : model
+        )
+      );
+    } else {
+      setAthletes([
+        ...athletes.map((athlete) =>
+          athlete.id === athlete.id
+            ? {
+                ...athlete,
+                currentTrainingPlan: {
+                  ...currentPlan,
+                  sessions: updatedSessions,
+                },
+              }
+            : athlete
+        ),
+      ]);
+    }
+  };
+
+  const moveExerciseToIndexWithinBlock = async (
+    sessionIndex: number,
+    blockId: string,
+    exerciseId: string,
+    newIndex: number,
+    isModel: boolean = false
+  ) => {
+    const currentPlan = isModel ? model : planState;
+    const setCurrentPlan = isModel ? setModel : setPlanState;
+    const updatedSessions = [...currentPlan.sessions];
+    const session = updatedSessions[sessionIndex];
+    const block = session.exercises.find(
+      (e) => e.id === blockId
+    ) as TrainingBlock;
+
+    // Find the exercise to move within the block
+    const exerciseToMoveIndex = block.selectedExercises.findIndex(
+      (ex) => ex.id === exerciseId
+    );
+    if (exerciseToMoveIndex === -1) return;
+
+    const exerciseToMove = block.selectedExercises[exerciseToMoveIndex];
+
+    // Create new selectedExercises array with the exercise moved to the new position
+    const updatedSelectedExercises = [...block.selectedExercises];
+    updatedSelectedExercises.splice(exerciseToMoveIndex, 1); // Remove from current position
+    updatedSelectedExercises.splice(newIndex, 0, exerciseToMove); // Insert at new position
+
+    const updatedBlock = {
+      ...block,
+      selectedExercises: updatedSelectedExercises,
+    };
+
+    // Update the session with the modified block
+    const updatedSession = { ...session, exercises: [...session.exercises] };
+    const blockIndex = updatedSession.exercises.findIndex(
+      (e) => e.id === blockId
+    );
+    updatedSession.exercises[blockIndex] = updatedBlock;
+    updatedSessions[sessionIndex] = updatedSession;
+
+    await parserMoveExerciseToIndexWithinBlock(
+      exerciseId,
+      newIndex,
+      blockId,
+      pushRecord
+    );
+
+    setCurrentPlan({ ...currentPlan, sessions: updatedSessions });
+
+    // Update the context state for other components
+    if (!isModel) {
+      setAthletes([
+        ...athletes.map((athlete) =>
+          athlete.id === athlete.id
+            ? {
+                ...athlete,
+                currentTrainingPlan: {
+                  ...currentPlan,
+                  sessions: updatedSessions,
+                },
+              }
+            : athlete
+        ),
+      ]);
+    } else {
+      setTrainingModels(
+        trainingModels.map((model) =>
+          model.id === currentPlan.id
+            ? { ...model, sessions: updatedSessions }
+            : model
+        )
+      );
+    }
   };
 
   const updateSession = async (
@@ -687,6 +825,8 @@ export const NewPlanProvider: React.FC<{ children: ReactNode }> = ({
         updateModelDescription,
         deleteTrainingModel,
         updateSelectedExercise,
+        moveExerciseToIndex,
+        moveExerciseToIndexWithinBlock,
       }}
     >
       {children}

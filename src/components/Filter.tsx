@@ -6,6 +6,7 @@ import TonalButton from "./TonalButton";
 import availableStudies from "../types/Studies";
 import { Dispatch, SetStateAction } from "react";
 import { useBlur } from "../contexts/BlurContext";
+import navAnimations from "../styles/animations.module.css";
 interface FilterProps {
   selectedEquipment: string[]; // Changed from [string] to string[]
   setSelectedEquipment: (selectedEquipment: string[]) => void; // Fixed type
@@ -26,6 +27,7 @@ function Filter({
   right,
 }: FilterProps) {
   const { isBlurred, setIsBlurred } = useBlur();
+  const [animation, setAnimation] = useState(navAnimations.popupFadeInTop);
   const selectEquipment = (equipment: string): void => {
     if (!selectedEquipment.includes(equipment)) {
       setSelectedEquipment([...selectedEquipment, equipment]);
@@ -34,19 +36,16 @@ function Filter({
     setSelectedEquipment(selectedEquipment.filter((e) => e !== equipment));
   };
 
-  const selectStatsToMeasure = (statToMeasure: string): void => {
-    if (!selectedStatsToMeasure.includes(statToMeasure)) {
-      setSelectedStatsToMeasure([...selectedStatsToMeasure, statToMeasure]);
-      return;
-    }
-    setSelectedStatsToMeasure(
-      selectedStatsToMeasure.filter((e) => e !== statToMeasure)
-    );
-  };
-
   const resetFilters = () => {
     setSelectedEquipment([]);
     setSelectedStatsToMeasure([]);
+  };
+
+  const localOnClose = () => {
+    setAnimation(navAnimations.popupFadeOutTop);
+    setTimeout(() => {
+      setIsBlurred(false);
+    }, 300);
   };
 
   const saveFilters = () => {
@@ -92,18 +91,16 @@ function Filter({
         );
       }) as [keyof Studies, Study][]
     );
-    setIsBlurred(false);
+    localOnClose();
   };
   return (
     <div
-      className="bg-white shadow-sm fixed z-50 rounded-2xl py-2 w-[500px] px-8"
+      className={`bg-white shadow-sm fixed z-50 rounded-2xl py-2 w-[500px] px-8 ${animation}`}
       style={{ top: `${top}px`, right: `${right}px` }}
     >
       <div
         className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
-        onClick={() => {
-          setIsBlurred(false);
-        }}
+        onClick={localOnClose}
       >
         <img src="/close.png" className="h-6 w-6" alt="" />
       </div>

@@ -9,25 +9,18 @@ import { useBlur } from "../contexts/BlurContext";
 import NewSessionPopup from "./NewSessionPopup";
 import { TrainingBlock } from "../types/trainingPlan";
 import {
-  DndContext,
   closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  DragStartEvent,
+  DndContext,
   DragOverlay,
-  defaultDropAnimationSideEffects,
-  DropAnimation,
+  getFirstCollision,
+  pointerWithin,
+  rectIntersection,
 } from "@dnd-kit/core";
 import {
-  arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { createPortal } from "react-dom";
+import { arrayMove } from "@dnd-kit/sortable";
 
 function SessionOverviewStage({
   animation,
@@ -50,33 +43,14 @@ function SessionOverviewStage({
   showEditSessionPopup: (sessionId: string) => void;
   showEditBlockPopup: (block: TrainingBlock) => void;
 }) {
-  const { planState, model, removeExercise } = useNewPlan();
+  const { planState, model, removeExercise, moveExerciseToIndex } =
+    useNewPlan();
   const { athlete } = useStudyContext();
   const currentPlan = isModel ? model : planState;
   const [localAnimation, setLocalAnimation] = useState(animation);
-  const { setIsBlurred } = useBlur();
   const [activeId, setActiveId] = useState<string | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const dropAnimation: DropAnimation = {
-    sideEffects: defaultDropAnimationSideEffects({
-      styles: {
-        active: {
-          opacity: "0.5",
-        },
-      },
-    }),
-  };
+  const [lastSwapTime, setLastSwapTime] = useState<number>(0);
+  const { setIsBlurred } = useBlur();
 
   const addExercise = () => {
     showPopup("exercise");
@@ -90,99 +64,97 @@ function SessionOverviewStage({
     showPopup("exercise", blockId);
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+  const getExerciseIndex = (exerciseId: string) => {
+    return currentPlan.sessions[sessionIndex]?.exercises.findIndex(
+      (exercise) => exercise.id === exerciseId
+    );
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragStart = (event) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragOver = (event) => {
     const { active, over } = event;
 
-    if (active.id !== over?.id) {
-      setExerciseItems((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over?.id);
-
-        console.log(
-          `Moving ${active.id} from position ${oldIndex} to ${newIndex}`
-        );
-        return arrayMove(items, oldIndex, newIndex);
-      });
+    if (!over || active.id === over.id) {
+      return;
     }
 
+    // Throttle swaps to prevent excessive re-renders (allow swap every 100ms)
+    const now = Date.now();
+    if (now - lastSwapTime < 100) {
+      return;
+    }
+
+    const activeIndex = getExerciseIndex(active.id);
+    const overIndex = getExerciseIndex(over.id);
+
+    if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
+      // Immediately swap positions during drag
+      moveExerciseToIndex(sessionIndex, active.id, overIndex, isModel);
+      setLastSwapTime(now);
+    }
+  };
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
     setActiveId(null);
+
+    // No need to do anything here since we're handling swaps in handleDragOver
+    // The final position is already set by the continuous swapping
   };
 
-  const originalExerciseItems =
-    currentPlan.sessions[sessionIndex]?.exercises?.filter(
-      (exercise) =>
-        exercise.type === "selectedExercise" ||
-        (exercise.type === "trainingBlock" &&
-          exercise.selectedExercises.length > 0)
-    ) || [];
-
-  const [exerciseItems, setExerciseItems] = useState(originalExerciseItems);
-
-  // Update local state when the session changes
-  useEffect(() => {
-    setExerciseItems(originalExerciseItems);
-  }, [sessionIndex, currentPlan.sessions[sessionIndex]?.exercises]);
-
-  const exerciseIds = exerciseItems.map((exercise) => exercise.id);
-
-  const getActiveExercise = () => {
-    if (!activeId) return null;
-    return exerciseItems.find((exercise) => exercise.id === activeId);
+  const handleDragCancel = () => {
+    setActiveId(null);
+    // Optionally reset to original position if needed
   };
 
-  const renderActiveExercise = () => {
-    const activeExercise = getActiveExercise();
-    if (!activeExercise) return null;
+  const activeExercise = activeId
+    ? currentPlan.sessions[sessionIndex]?.exercises.find(
+        (exercise) => exercise.id === activeId
+      )
+    : null;
 
-    if (activeExercise.type === "selectedExercise") {
-      return (
-        <div
-          className="w-[800px] shadow-xl bg-white rounded-2xl pointer-events-none"
-          style={{
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          <ExerciseAccordionItem
-            id={activeExercise.id}
-            currentWeek={currentWeek}
-            sessionIndex={sessionIndex}
-            isModel={isModel}
-            standalone
-          />
-        </div>
-      );
+  // Custom collision detection that handles size differences between exercises and blocks
+  const customCollisionDetection = (args) => {
+    const { active, droppableContainers } = args;
+
+    // Get the active item to determine its type
+    const activeItem = currentPlan.sessions[sessionIndex]?.exercises.find(
+      (exercise) => exercise.id === active.id
+    );
+
+    if (!activeItem) {
+      return closestCenter(args);
     }
 
-    if (activeExercise.type === "trainingBlock") {
-      return (
-        <div
-          className="w-[800px] shadow-xl bg-white rounded-2xl pointer-events-none"
-          style={{
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          <BlockAccordionItem
-            id={activeExercise.id}
-            currentWeek={currentWeek}
-            sessionIndex={sessionIndex}
-            isModel={isModel}
-            displayAddExercisePopup={displayAddExercisePopup}
-            showEditBlockPopup={showEditBlockPopup}
-          />
-        </div>
-      );
+    // For immediate swapping, prioritize pointer-based collision for all items
+    // This makes the swapping more responsive and immediate
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) {
+      return pointerCollisions;
     }
 
-    return null;
+    // For exercises (smaller items), use rect intersection as fallback
+    if (activeItem.type === "selectedExercise") {
+      const rectCollisions = rectIntersection(args);
+      if (rectCollisions.length > 0) {
+        return rectCollisions;
+      }
+    }
+
+    // For blocks (larger items), use closest center as fallback
+    return closestCenter(args);
+  };
+
+  const changeSessionIndex = (index: number) => {
+    setSessionIndex(index);
   };
 
   return (
     <div
-      className={`relative flex flex-col items-center ${localAnimation}`}
+      className={`relative flex flex-col items-center overflow-x-hidden ${localAnimation}`}
       style={{
         height: isModel ? "85vh" : "90vh",
       }}
@@ -222,60 +194,90 @@ function SessionOverviewStage({
         <div className="h-10 w-10"></div>
       </div>
       <div className="h-[65%] w-full flex justify-center overflow-y-scroll -pr-4">
-        <div className="w-[96%] ml-4 ">
+        <div className="w-[96%] ml-4 flex flex-col gap-y-2">
           <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={customCollisionDetection}
             onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
           >
             <SortableContext
-              items={exerciseIds}
+              items={currentPlan.sessions[sessionIndex]?.exercises.map(
+                (exercise) => exercise.id
+              )}
               strategy={verticalListSortingStrategy}
             >
-              {exerciseItems.map((exercise) => {
-                if (exercise.type === "selectedExercise") {
-                  return (
-                    <ExerciseAccordionItem
-                      key={exercise.id}
-                      id={exercise.id}
-                      currentWeek={currentWeek}
-                      sessionIndex={sessionIndex}
-                      isModel={isModel}
-                      standalone
-                    />
-                  );
+              {currentPlan.sessions[sessionIndex]?.exercises.map(
+                (exercise, index) => {
+                  if (exercise.type === "selectedExercise") {
+                    return (
+                      <ExerciseAccordionItem
+                        key={exercise.id}
+                        exercise={exercise}
+                        currentWeek={currentWeek}
+                        sessionIndex={sessionIndex}
+                        isModel={isModel}
+                        standalone
+                      />
+                    );
+                  }
+                  if (
+                    exercise.type === "trainingBlock" &&
+                    exercise.selectedExercises.length > 0
+                  ) {
+                    return (
+                      <BlockAccordionItem
+                        key={exercise.id}
+                        block={exercise}
+                        currentWeek={currentWeek}
+                        sessionIndex={sessionIndex}
+                        isModel={isModel}
+                        displayAddExercisePopup={displayAddExercisePopup}
+                        showEditBlockPopup={showEditBlockPopup}
+                      />
+                    );
+                  }
                 }
-                if (
-                  exercise.type === "trainingBlock" &&
-                  exercise.selectedExercises.length > 0
-                ) {
-                  return (
-                    <BlockAccordionItem
-                      key={exercise.id}
-                      id={exercise.id}
-                      currentWeek={currentWeek}
-                      sessionIndex={sessionIndex}
-                      isModel={isModel}
-                      displayAddExercisePopup={displayAddExercisePopup}
-                      showEditBlockPopup={showEditBlockPopup}
-                    />
-                  );
-                }
-                return null;
-              })}
+              )}
             </SortableContext>
-            {createPortal(
-              <DragOverlay
-                adjustScale={false}
-                style={{
-                  cursor: "grabbing",
-                }}
-              >
-                {renderActiveExercise()}
-              </DragOverlay>,
-              document.body
-            )}
+            <DragOverlay dropAnimation={null}>
+              {activeExercise && activeExercise.type === "trainingBlock" && (
+                <div
+                  className="opacity-90 shadow-2xl pointer-events-none"
+                  style={{
+                    transform: "translate(-16%, -50%)",
+                    cursor: "grabbing",
+                  }}
+                >
+                  <BlockAccordionItem
+                    block={activeExercise}
+                    currentWeek={currentWeek}
+                    sessionIndex={sessionIndex}
+                    isModel={isModel}
+                    displayAddExercisePopup={displayAddExercisePopup}
+                    showEditBlockPopup={showEditBlockPopup}
+                  />
+                </div>
+              )}
+              {activeExercise && activeExercise.type === "selectedExercise" && (
+                <div
+                  className="opacity-90 shadow-2xl pointer-events-none"
+                  style={{
+                    transform: "translate(-16%, -200%)",
+                    cursor: "grabbing",
+                  }}
+                >
+                  <ExerciseAccordionItem
+                    exercise={activeExercise}
+                    currentWeek={currentWeek}
+                    sessionIndex={sessionIndex}
+                    isModel={isModel}
+                    standalone
+                  />
+                </div>
+              )}
+            </DragOverlay>
           </DndContext>
         </div>
       </div>
@@ -305,7 +307,7 @@ function SessionOverviewStage({
                   backgroundColor: sessionIndex === index && "#FFC1C1",
                   color: sessionIndex === index && "#e81d23",
                 }}
-                onClick={() => setSessionIndex(index)}
+                onClick={() => changeSessionIndex(index)}
               >
                 {session?.name}
               </button>

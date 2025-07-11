@@ -1,6 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import OutlinedButton from "./OutlinedButton";
 import TonalButton from "./TonalButton";
+import navAnimations from "../styles/animations.module.css";
 
 interface FilterOption {
   id: string;
@@ -32,7 +33,14 @@ function ReusableFilter({
   onReset,
   onApply,
 }: FilterProps) {
-  // Add DEL key event listener
+  const [animation, setAnimation] = useState(navAnimations.popupFadeInTop);
+
+  const localOnClose = () => {
+    setAnimation(navAnimations.popupFadeOutTop);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
   useEffect(() => {
     const handleKeyDown = (event) => {
       // Only trigger onClose if Backspace is pressed AND no input/textarea is focused
@@ -64,12 +72,12 @@ function ReusableFilter({
 
   return (
     <div
-      className="bg-white shadow-sm fixed z-50 rounded-2xl py-2 w-[500px] px-8"
+      className={`bg-white shadow-sm fixed z-50 rounded-2xl py-2 w-[500px] px-8 ${animation}`}
       style={{ top: `${top}px`, right: `${right}px` }}
     >
       <div
         className="absolute hover:opacity-70 transition-all duration-200 top-4 right-4 p-1 rounded-full bg-lightRed flex items-center justify-center cursor-pointer"
-        onClick={onClose}
+        onClick={localOnClose}
       >
         <img src="/close.png" className="h-6 w-6" alt="" />
       </div>

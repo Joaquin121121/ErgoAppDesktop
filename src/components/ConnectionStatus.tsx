@@ -155,7 +155,7 @@ const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ showUpdate }) => {
             : syncStatus === "error"
             ? "Error de sincronización"
             : isOnline
-            ? "Conectado a internet"
+            ? "Sincronización completa"
             : "Sin conexión a internet - Modo offline activo"}
         </p>
       </div>

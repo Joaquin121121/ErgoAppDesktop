@@ -1,6 +1,6 @@
 import Database from "@tauri-apps/plugin-sql";
 import { v4 as uuidv4 } from "uuid";
-import { Event, RawEvent } from "../types/Events";
+import { Event, RawEvent, EventType } from "../types/Events";
 import { PendingRecord } from "@/types/Sync";
 
 export const getEvents = async (coachId: string): Promise<Event[]> => {
@@ -36,10 +36,7 @@ export const getEvents = async (coachId: string): Promise<Event[]> => {
       (event: RawEvent) =>
         ({
           id: event.id,
-          eventType: event.event_type as
-            | "competition"
-            | "test"
-            | "trainingSession",
+          eventType: event.event_type as EventType,
           name: event.event_name,
           date: new Date(event.event_date),
           duration: event.duration || undefined,
@@ -314,10 +311,7 @@ export const getEventsByAthlete = async (
       (event: RawEvent) =>
         ({
           id: event.id,
-          eventType: event.event_type as
-            | "competition"
-            | "test"
-            | "trainingSession",
+          eventType: event.event_type as EventType,
           name: event.event_name,
           date: new Date(event.event_date),
           duration: event.duration || undefined,

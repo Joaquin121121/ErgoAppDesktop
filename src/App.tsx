@@ -45,6 +45,8 @@ import navAnimations from "./styles/animations.module.css";
 import { SyncProvider } from "./contexts/SyncContext";
 import AthleteWellness from "./pages/AthleteWellness";
 import SplashScreen from "./components/SplashScreen";
+import { useCloseConfirmation } from "./hooks/useCloseConfirmation";
+import CloseConfirmationModal from "./components/CloseConfirmationModal";
 // Create a wrapper that controls showing the Layout
 const WithLayout = ({
   children,
@@ -462,6 +464,8 @@ function App() {
   const [selectedOption, setSelectedOption] = useState("studies");
   const [showSplash, setShowSplash] = useState(true);
   const window = getCurrentWindow();
+  const { showCloseConfirmation, confirmClose, cancelClose } =
+    useCloseConfirmation();
 
   const showSplashScreen = () => {
     setTimeout(async () => {
@@ -501,6 +505,11 @@ function App() {
                             }}
                           >
                             <RouteContentWrapper />
+                            <CloseConfirmationModal
+                              isOpen={showCloseConfirmation}
+                              onConfirm={confirmClose}
+                              onCancel={cancelClose}
+                            />
                           </AuthGate>
                         </HashRouter>
                       </CalendarProvider>

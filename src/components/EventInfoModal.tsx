@@ -142,7 +142,7 @@ function EventInfoModal({
   const displayKeys = [
     {
       key: "event_type",
-      icon: editMode ? "info" : getEventIcon(),
+      icon: editMode ? "info.png" : getEventIcon(),
       value: t(eventDisplay.eventType),
     },
     {
